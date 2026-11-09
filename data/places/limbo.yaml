@@ -1,0 +1,15 @@
+# Sem conexões: só se chega aqui por punição grave (Fase 2).
+id: limbo
+nome: O Limbo
+descricao: Entre a tela e o mundo real. Branco estourado, quase sem cor, silêncio. Quem volta, volta estranho.
+regiao: beyond
+ambiente: externo
+acesso: especial
+perigo: 90
+sinistro: true
+paleta:
+  principal: "#f8f9fa"
+  secundaria: "#e9ecef"
+  luz: "#ffffff"
+tem: [nada, silêncio]
+acoes: []

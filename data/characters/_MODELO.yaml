@@ -1,0 +1,133 @@
+# =====================================================================
+# _MODELO.yaml — modelo comentado para criar um personagem novo
+# =====================================================================
+# Como usar:
+#   1. Copie este arquivo para data/characters/<id>.yaml
+#      (ex.: data/characters/baker.yaml). Arquivos que começam com "_"
+#      são ignorados pelo mundo, então este modelo nunca entra em cena.
+#   2. Troque os valores. Apague as linhas opcionais que não quiser.
+#   3. Rode:  python -m tools.validate
+#      Ele aponta qualquer erro (campo faltando, id que não existe...).
+#
+# Regras de ouro:
+#   - "id" é PERMANENTE: em inglês ou snake_case, sem acento, sem espaço.
+#     É por ele que o código, o banco, as memórias e as relações acham o
+#     personagem. Nunca mude o id de quem já existe.
+#   - "nome" é LIVRE: mude quando quiser, nada quebra.
+#   - Para se referir a OUTRO personagem (relações, herdeiros, falas),
+#     use sempre o id dele, nunca o nome.
+#   - Textos com ":" ou "," dentro de { } ou [ ] precisam de aspas.
+#   - Cores entre aspas: "#ff8800".
+# =====================================================================
+
+# OBRIGATÓRIO. Identificador fixo (letras minúsculas, números e _).
+id: modelo_exemplo
+
+# OBRIGATÓRIO. Nome que aparece no Chat do Mundo e nos balões.
+nome: O Exemplo
+
+# ele | ela (opcional, padrão: ele). Usado nas falas.
+pronome: ele
+
+# Opcional. Grupo definido em world.yaml > grupos (ex.: cowboys, tecnicos).
+# grupo: cowboys
+
+# Opcional. Uma linha que resume o papel (só informativo).
+papel: Exemplo · só para copiar
+
+# OBRIGATÓRIO. Descrição livre da aparência (vai para guias e para o LLM).
+aparencia: Uma pessoa qualquer, de chapéu amarelo e botas vermelhas.
+
+# Opcional. Como anda e se move (o visual da Fase 5 usa como inspiração).
+movimento: Anda depressa olhando para os lados.
+
+# OBRIGATÓRIO. Dicas para o boneco placeholder 3D (Fase 5).
+# Se existir viewer/public/models/characters/<id>.glb, ele substitui tudo.
+visual:
+  cor: "#e9c46a"            # cor principal (#RRGGBB)
+  cor_secundaria: "#e63946" # cor de detalhes
+  altura: 1.0               # 1.0 = altura normal (0.2 a 3)
+  corpo: normal             # magro | normal | barrigudo | enorme | baixinho | corcunda
+  chapeu: chapéu amarelo    # texto livre ou "nenhum"
+  acessorio: nenhum         # texto livre ou "nenhum"
+
+# OBRIGATÓRIO. Traços (ids definidos em data/traits.yaml). Normalmente 3.
+# Eles mudam a velocidade das necessidades e a vontade de fazer cada ação.
+tracos: [curioso, alegre, distraido]
+
+# Opcional. O que quer da vida (texto; usado em falas e pelo LLM).
+quer: Conhecer todos os lugares do mundo.
+
+# Opcional. Medos. "gatilho" é uma palavra-chave que o código pode
+# reconhecer (ex.: chuva, aranha, silencio, seita, sala_do_servidor).
+medos:
+  - {descricao: Escuro., gatilho: escuro}
+
+# Opcional. Defeito mais engraçado (texto).
+defeito: Esquece o caminho de volta.
+
+# Opcional. Bordões e manias. Aparecem nas falas via {bordao}.
+bordoes:
+  - Olha que coisa!
+
+# Opcional. Segredo (texto; as fases 2+ podem fazer vazar por fofoca).
+segredo: Tem medo de altura, mas jura que não.
+
+# Opcional. Como é um dia normal (texto, informativo).
+dia_normal: Acorda cedo, passeia pela feira e janta na taverna.
+
+# OBRIGATÓRIO. Profissão (id em data/traits.yaml > profissoes).
+# Use "nenhuma" para quem não trabalha.
+profissao: florista
+
+# Opcional. Onde trabalha (id de lugar). A ação "trabalhar" acontece aqui.
+local_trabalho: town_square
+
+# OBRIGATÓRIO. Onde mora e dorme (id de lugar).
+casa: houses
+
+# Opcional. Rotina-base. NÃO é roteiro: cada bloco só multiplica a vontade
+# de fazer aquela ação naquele horário (peso, padrão 2.0). Se a fome ou o
+# sono apertarem, o personagem faz outra coisa. Horários podem atravessar
+# a meia-noite (das "22:00" ate "06:00"). "lugar" é opcional.
+rotina:
+  - {das: "07:00", ate: "08:00", acao: comer, lugar: community_kitchen}
+  - {das: "08:00", ate: "12:00", acao: trabalhar, lugar: town_square}
+  - {das: "22:00", ate: "06:30", acao: dormir, lugar: houses, peso: 2.5}
+
+# Opcional. Ajustes de necessidades (ids em world.yaml > necessidades).
+#   inicial: valor ao nascer (0 a 100)
+#   taxa: multiplica a taxa do world.yaml (1.5 = 50% mais rápido)
+necessidades:
+  fome: {inicial: 20, taxa: 1.1}
+  tedio: {taxa: 1.3}
+
+# Opcional. Afinidade com quem não está em "relacoes" (-100 a 100, padrão 0).
+afinidade_padrao: 10
+
+# Opcional. Relações iniciais. A afinidade vai de -100 (ódio) a 100 (amor).
+# É a afinidade DESTE personagem com o outro; a do outro com este fica
+# no arquivo do outro. "tipo" é livre (casal, irmao, amigo, rival...).
+relacoes:
+  - {com: florist, afinidade: 50, tipo: amigo, nota: Vendem flores juntos.}
+  - {com: inspector, afinidade: -30, tipo: chato_oficial}
+
+# Opcional. Coisas especiais que o código conhece: criaturas, nevoa.
+imunidades: []
+
+# Opcional. Ligação com o mundo real.
+#   canal: nenhum | ordens_civicas | voz_do_criador | homelab |
+#          instrumento_real | luz_do_quarto
+ligacao_real:
+  canal: nenhum
+  descricao: ""
+
+# Opcional. O que deixa ao morrer (Fase 3): objetos e manias que alguém
+# pode herdar, e herdeiros preferidos (ids).
+heranca:
+  objetos: [chapéu amarelo]
+  manias: [dizer "olha que coisa!"]
+  herdeiros: [florist]
+
+# Opcional. O que acontece com o mundo se morrer (texto, guia a Fase 3).
+se_morrer: A feira fica sem graça por uma semana.

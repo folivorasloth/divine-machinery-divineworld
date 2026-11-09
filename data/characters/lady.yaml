@@ -1,0 +1,42 @@
+id: lady
+nome: A Dama
+pronome: ela
+papel: Soberba
+aparencia: Vestido longo exagerado, leque, nariz empinado, joias por todo lado.
+movimento: Desfila. Nunca corre, nunca se abaixa.
+visual:
+  cor: "#ff70a6"
+  cor_secundaria: "#ffd670"
+  altura: 1.1
+  corpo: normal
+  chapeu: nenhum
+  acessorio: leque
+tracos: [soberbo, vaidoso, fofoqueiro]
+quer: Uma estátua dela no meio da praça.
+medos:
+  - {descricao: Sujeira., gatilho: sujeira}
+  - {descricao: Ser ignorada., gatilho: ser_ignorado}
+defeito: Acha que todos estão apaixonados por ela.
+bordoes:
+  - Que gentalha.
+segredo: As joias são tampinhas de garrafa.
+dia_normal: Passeia, critica a roupa dos outros, toma chá sozinha e vai à missa só pra ser vista.
+profissao: nenhuma
+casa: houses
+rotina:
+  - {das: "08:00", ate: "09:00", acao: comer, lugar: community_kitchen}
+  - {das: "09:30", ate: "11:30", acao: perambular, peso: 1.5}
+  - {das: "12:30", ate: "13:30", acao: comer, lugar: community_kitchen}
+  - {das: "16:00", ate: "17:30", acao: rezar, lugar: cathedral, peso: 2}
+  - {das: "19:00", ate: "20:00", acao: comer, lugar: community_kitchen}
+  - {das: "22:00", ate: "07:30", acao: dormir, lugar: houses}
+relacoes:
+  - {com: chief, afinidade: 20, tipo: tolerancia, nota: Tolera o Chefe.}
+  - {com: cowboy_fat, afinidade: -60, tipo: desprezo}
+  - {com: cowboy_thin, afinidade: -60, tipo: desprezo}
+  - {com: cowboy_old, afinidade: -60, tipo: desprezo}
+  - {com: clown, afinidade: -60, tipo: desprezo}
+afinidade_padrao: -10
+heranca:
+  objetos: [leque, joias de tampinha de garrafa]
+se_morrer: O funeral mais pomposo da história, e ninguém chora.

@@ -1,0 +1,18 @@
+id: market
+nome: A Feira
+descricao: Barracas coloridas, trocas suspeitas e as pegadinhas do Palhaço.
+regiao: city
+ambiente: externo
+perigo: 8
+perigo_noite: 20
+paleta:
+  principal: "#43aa8b"
+  secundaria: "#f9c74f"
+  luz: "#fff3b0"
+  noite: "#2e3f66"
+tem: [barracas, lixo cheio de tesouros, placas trocadas]
+conexoes:
+  - {para: town_square, tipo: caminho, minutos: 3}
+  - {para: tavern, tipo: caminho, minutos: 2}
+  - {para: sea, tipo: tunel, minutos: 5}
+acoes: [comer, festejar, roubar, quebrar, construir]

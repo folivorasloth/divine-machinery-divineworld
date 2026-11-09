@@ -1,0 +1,15 @@
+id: prison
+nome: A Prisão
+descricao: Para infratores comuns. Cinza, fria e cheia de advertências do Fiscal.
+regiao: city
+ambiente: interno
+perigo: 20
+paleta:
+  principal: "#8d8d8d"
+  secundaria: "#4a4a4a"
+  luz: "#cfcfcf"
+tem: [celas, grades, lista de infrações]
+conexoes:
+  - {para: town_square, tipo: caminho, minutos: 3}
+  - {para: town_hall, tipo: caminho, minutos: 2}
+acoes: [cochilar, rezar]

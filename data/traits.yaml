@@ -1,0 +1,342 @@
+# =====================================================================
+# traits.yaml — traços, profissões e o sorteio dos nascimentos
+# =====================================================================
+# TRAÇOS: cada personagem lista os seus em `tracos:`. Um traço pode:
+#   efeitos.necessidades: multiplicar a taxa de uma necessidade
+#                         (1.5 = sobe 50% mais rápido; 0.5 = metade)
+#   efeitos.acoes:        multiplicar a nota de uma ação
+#                         (2.0 = o dobro de vontade; 0.3 = quase nunca)
+#   sorteavel: false      não sai em nascimentos automáticos
+#   opostos:              traços que não podem sair juntos num sorteio
+#
+# Os traços dos personagens da bible vêm das "três palavras de
+# personalidade" de cada ficha. Os números são um ponto de partida; o
+# balanceamento fino é feito nas fases 1 a 3 e na 6.
+# =====================================================================
+
+tracos:
+  # --- O Chefe
+  - id: conciliador
+    nome: Conciliador
+    efeitos:
+      acoes: {brigar: 0.5, consolar: 1.5, conversar: 1.2}
+  - id: preguicoso
+    nome: Preguiçoso
+    opostos: [empolgado, perfeccionista]
+    efeitos:
+      necessidades: {sono: 1.3}
+      acoes: {cochilar: 2.0, trabalhar: 0.7, construir: 0.6}
+  - id: bonachao
+    nome: Bonachão
+    efeitos:
+      acoes: {conversar: 1.3, comer: 1.2, brigar: 0.7}
+
+  # --- O Palhaço
+  - id: debochado
+    nome: Debochado
+    efeitos:
+      acoes: {fofocar: 1.3, conversar: 1.1}
+  - id: imprevisivel
+    nome: Imprevisível
+    efeitos:
+      acoes: {perambular: 1.3, quebrar: 1.2, encarar_tela: 1.5}
+  - id: carente
+    nome: Carente
+    opostos: [solitario]
+    efeitos:
+      necessidades: {social: 1.4}
+      acoes: {conversar: 1.3}
+
+  # --- The Fool
+  - id: gentil
+    nome: Gentil
+    efeitos:
+      acoes: {consolar: 1.5, brigar: 0.4}
+  - id: melancolico
+    nome: Melancólico
+    opostos: [alegre, otimista]
+    efeitos:
+      necessidades: {tedio: 1.2}
+      acoes: {festejar: 0.7, encarar_tela: 1.5}
+  - id: autodepreciativo
+    nome: Autodepreciativo
+    opostos: [soberbo, vaidoso]
+    efeitos:
+      acoes: {brigar: 0.6}
+
+  # --- O Músico
+  - id: tranquilo
+    nome: Tranquilo
+    opostos: [bravo, irritado]
+    efeitos:
+      necessidades: {raiva: 0.6}
+      acoes: {brigar: 0.5}
+  - id: sonhador
+    nome: Sonhador
+    efeitos:
+      acoes: {perambular: 1.3, encarar_tela: 1.3}
+  - id: distraido
+    nome: Distraído
+    efeitos:
+      acoes: {trabalhar: 0.8, perambular: 1.2}
+
+  # --- O Padre
+  - id: devoto
+    nome: Devoto
+    efeitos:
+      necessidades: {fe: 1.8}
+      acoes: {rezar: 1.6, ritual: 0.2}
+  - id: ranzinza
+    nome: Ranzinza
+    opostos: [alegre]
+    efeitos:
+      necessidades: {raiva: 1.3}
+      acoes: {festejar: 0.6}
+  - id: fofoqueiro
+    nome: Fofoqueiro
+    efeitos:
+      acoes: {fofocar: 1.8, conversar: 1.2}
+
+  # --- A Cozinheira
+  - id: bravo
+    nome: Bravo
+    opostos: [tranquilo, calmo]
+    efeitos:
+      necessidades: {raiva: 1.4}
+      acoes: {brigar: 1.4}
+  - id: carinhoso
+    nome: Carinhoso
+    efeitos:
+      acoes: {consolar: 1.5}
+  - id: mandao
+    nome: Mandão
+    efeitos:
+      acoes: {trabalhar: 1.2}
+
+  # --- O Cozinheiro
+  - id: sensivel
+    nome: Sensível
+    efeitos:
+      necessidades: {medo: 1.2}
+      acoes: {consolar: 1.2}
+  - id: perfeccionista
+    nome: Perfeccionista
+    opostos: [preguicoso]
+    efeitos:
+      acoes: {trabalhar: 1.3, construir: 1.2}
+  - id: dramatico
+    nome: Dramático
+    efeitos:
+      acoes: {brigar: 1.2}
+
+  # --- O Adolescente
+  - id: rebelde
+    nome: Rebelde
+    efeitos:
+      acoes: {quebrar: 1.4, trabalhar: 0.5, festejar: 1.3}
+  - id: sarcastico
+    nome: Sarcástico
+    efeitos:
+      acoes: {fofocar: 1.2}
+  - id: inseguro
+    nome: Inseguro
+    efeitos:
+      necessidades: {medo: 1.2}
+
+  # --- Os Cowboys
+  - id: briguento
+    nome: Briguento
+    efeitos:
+      necessidades: {raiva: 1.3}
+      acoes: {brigar: 1.6}
+  - id: leal
+    nome: Leal
+    efeitos:
+      acoes: {consolar: 1.2}
+  - id: contador_de_causo
+    nome: Contador de causo
+    efeitos:
+      acoes: {conversar: 1.4}
+
+  # --- A Médium
+  - id: misterioso
+    nome: Misterioso
+    efeitos:
+      acoes: {ritual: 1.3, encarar_tela: 1.2}
+  - id: carismatico
+    nome: Carismático
+    efeitos:
+      acoes: {conversar: 1.3, festejar: 1.2}
+  - id: manipulador
+    nome: Manipulador
+    efeitos:
+      acoes: {fofocar: 1.4}
+
+  # --- O Esquisito
+  - id: estranho
+    nome: Estranho
+    efeitos:
+      acoes: {encarar_tela: 2.0, perambular: 1.3}
+  - id: curioso
+    nome: Curioso
+    efeitos:
+      acoes: {perambular: 1.4}
+  - id: inofensivo
+    nome: Inofensivo
+    efeitos:
+      acoes: {brigar: 0.3, quebrar: 0.5}
+
+  # --- Mike (únicos dele: não saem em sorteio)
+  - id: vazio
+    nome: Vazio
+    sorteavel: false
+    efeitos:
+      necessidades: {social: 0.2, tedio: 0.3}
+      acoes: {perambular: 3.0, conversar: 0.3}
+  - id: calmo
+    nome: Calmo
+    opostos: [bravo, irritado]
+    efeitos:
+      necessidades: {raiva: 0.5, medo: 0.5}
+  - id: indecifravel
+    nome: Indecifrável
+    sorteavel: false
+    efeitos:
+      acoes: {encarar_tela: 1.5}
+
+  # --- A Dama
+  - id: soberbo
+    nome: Soberbo
+    opostos: [autodepreciativo]
+    efeitos:
+      acoes: {conversar: 0.8, consolar: 0.4}
+  - id: vaidoso
+    nome: Vaidoso
+    efeitos:
+      acoes: {festejar: 1.1}
+
+  # --- O Fiscal
+  - id: chato
+    nome: Chato
+    efeitos:
+      acoes: {conversar: 0.9}
+  - id: burocrata
+    nome: Burocrata
+    efeitos:
+      acoes: {trabalhar: 1.4}
+  - id: solitario
+    nome: Solitário
+    opostos: [carente]
+    efeitos:
+      necessidades: {social: 0.6}
+
+  # --- O Ferreiro
+  - id: irritado
+    nome: Irritado
+    opostos: [tranquilo, calmo]
+    efeitos:
+      necessidades: {raiva: 1.5}
+      acoes: {brigar: 1.3, quebrar: 1.3}
+  - id: honesto
+    nome: Honesto
+    opostos: [ganancioso, manipulador]
+    efeitos:
+      acoes: {roubar: 0.1}
+  - id: protetor
+    nome: Protetor
+    efeitos:
+      acoes: {consolar: 1.3}
+
+  # --- A Florista
+  - id: alegre
+    nome: Alegre
+    opostos: [melancolico, ranzinza]
+    efeitos:
+      necessidades: {tedio: 0.8}
+      acoes: {festejar: 1.4}
+  - id: otimista
+    nome: Otimista
+    opostos: [melancolico]
+    efeitos:
+      necessidades: {medo: 0.7}
+  - id: ingenuo
+    nome: Ingênuo
+    efeitos:
+      acoes: {conversar: 1.1}
+
+  # --- O Ganancioso
+  - id: ganancioso
+    nome: Ganancioso
+    opostos: [honesto]
+    efeitos:
+      acoes: {roubar: 3.0}
+  - id: desconfiado
+    nome: Desconfiado
+    efeitos:
+      necessidades: {medo: 1.2}
+      acoes: {conversar: 0.8}
+  - id: astuto
+    nome: Astuto
+    efeitos:
+      acoes: {roubar: 1.3}
+
+  # --- Os Técnicos
+  - id: experiente
+    nome: Experiente
+    efeitos:
+      acoes: {trabalhar: 1.2}
+  - id: cansado
+    nome: Cansado
+    efeitos:
+      necessidades: {sono: 1.3}
+  - id: desastrado
+    nome: Desastrado
+    descricao: Mais chance de falha nas ações (Fase 2 usa este traço nas falhas).
+    efeitos:
+      acoes: {quebrar: 1.3}
+  - id: empolgado
+    nome: Empolgado
+    opostos: [preguicoso, cansado]
+    efeitos:
+      necessidades: {tedio: 1.3}
+
+# =====================================================================
+# PROFISSÕES: o personagem trabalha (ação "trabalhar") no local_trabalho.
+# atividade: vira a variável {trabalho} nas falas.
+# papel_importante: se morrer, alguém assume com o tempo (Fase 3).
+# =====================================================================
+profissoes:
+  - {id: lider, nome: Chefe da cidade, atividade: ouve reclamações e aprova tudo, local_trabalho: town_hall, papel_importante: true, sorteavel: false}
+  - {id: palhaco, nome: Palhaço, atividade: apronta pegadinhas, local_trabalho: market}
+  - {id: bobo, nome: Bobo da corte, atividade: faz truques para as crianças, local_trabalho: cathedral}
+  - {id: musico, nome: Músico, atividade: toca viola caipira, local_trabalho: town_square}
+  - {id: padre, nome: Padre, atividade: celebra a missa, local_trabalho: cathedral, papel_importante: true, sorteavel: false}
+  - {id: cozinheiro, nome: Cozinheiro, atividade: cozinha para a cidade, local_trabalho: community_kitchen, papel_importante: true}
+  - {id: vaqueiro, nome: Vaqueiro, atividade: trabalha no campo, local_trabalho: fields}
+  - {id: medium, nome: Médium, atividade: recebe visões, local_trabalho: forest, papel_importante: true, sorteavel: false}
+  - {id: colecionador, nome: Colecionador, atividade: revira o lixo atrás de coisas sagradas, local_trabalho: market}
+  - {id: fiscal, nome: Fiscal, atividade: distribui advertências, local_trabalho: town_hall, papel_importante: true, sorteavel: false}
+  - {id: ferreiro, nome: Ferreiro, atividade: forja ferramentas, local_trabalho: forge, papel_importante: true}
+  - {id: florista, nome: Florista, atividade: cuida das flores, local_trabalho: town_square}
+  - {id: tecnico, nome: Técnico do servidor, atividade: conserta a Sala do Servidor, local_trabalho: server_room, papel_importante: true}
+  - {id: nenhuma, nome: Sem profissão, atividade: não faz nada em especial}
+
+# =====================================================================
+# APARÊNCIAS para nascimentos automáticos (Fase 3)
+# =====================================================================
+aparencias:
+  cores: ["#e63946", "#f4a261", "#2a9d8f", "#e9c46a", "#8338ec", "#3a86ff", "#ff006e", "#06d6a0", "#8d99ae", "#6a4c93"]
+  corpos: [magro, normal, barrigudo, enorme, baixinho, corcunda]
+  chapeus: [nenhum, boné, chapéu de palha, cartola, gorro, capacete]
+  acessorios: [nenhum, cachecol, mochila, guarda-chuva, bengala, lanterna]
+  descricoes:
+    - Um rosto que ninguém lembra direito, com uma mancha de tinta na bochecha.
+    - Cabelo espetado, roupa grande demais e um sorriso torto.
+    - Sardas, botas enlameadas e um bolso sempre cheio de pedrinhas.
+    - Olhos fundos, casaco remendado e um jeito de quem chegou de longe.
+
+nascimento:
+  tracos_min: 2
+  tracos_max: 3
+  chance_herdar_do_morto: 0.5
+  nome_padrao: Recém-chegado

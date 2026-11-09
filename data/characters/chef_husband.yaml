@@ -1,0 +1,46 @@
+id: chef_husband
+nome: O Cozinheiro
+pronome: ele
+grupo: cozinha
+papel: Casal · brigão e apaixonado
+aparencia: Alto e magro, bigode fino, chapéu de chef torto, pano de prato no ombro.
+movimento: Lento, ansioso, prova tudo dez vezes.
+visual:
+  cor: "#f1faee"
+  cor_secundaria: "#264653"
+  altura: 1.25
+  corpo: magro
+  chapeu: chapéu de chef torto
+  acessorio: pano de prato
+tracos: [sensivel, perfeccionista, dramatico]
+quer: Ganhar um elogio de verdade dela.
+medos:
+  - {descricao: Que ela deixe de amá-lo., gatilho: perder_amor}
+defeito: Briga aos gritos em público com a esposa e faz as pazes cinco minutos depois.
+bordoes:
+  - Faltou sal... faltou SAL!
+segredo: Queima tudo que cozinha e não sabe que ela salva os pratos escondido há anos.
+dia_normal: Café da manhã comunitário, almoço, a briga das três da tarde, jantar e dança na taverna.
+profissao: cozinheiro
+local_trabalho: community_kitchen
+casa: houses
+rotina:
+  - {das: "06:00", ate: "14:30", acao: trabalhar, lugar: community_kitchen, peso: 2.5}
+  - {das: "14:30", ate: "15:00", acao: comer, lugar: community_kitchen}
+  - {das: "16:00", ate: "19:30", acao: trabalhar, lugar: community_kitchen, peso: 2.5}
+  - {das: "20:00", ate: "22:00", acao: festejar, lugar: tavern}
+  - {das: "22:00", ate: "06:00", acao: dormir, lugar: houses}
+necessidades:
+  medo: {taxa: 0.8}
+relacoes:
+  - {com: chef_wife, afinidade: 85, tipo: casal, nota: "Briga às três da tarde, pazes às três e cinco."}
+  - {com: teen, afinidade: 75, tipo: pai}
+  - {com: chief, afinidade: 55, tipo: amigo}
+  - {com: priest, afinidade: 50, tipo: amigo}
+  - {com: blacksmith, afinidade: 50, tipo: amigo}
+  - {com: greedy, afinidade: -60, tipo: vitima, nota: Ele rouba comida.}
+afinidade_padrao: 15
+heranca:
+  objetos: [chapéu de chef torto, pano de prato]
+  herdeiros: [chef_wife, teen]
+se_morrer: A esposa entra em luto longo, a cozinha fecha por dias e a comida da cidade piora.

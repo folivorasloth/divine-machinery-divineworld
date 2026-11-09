@@ -1,0 +1,23 @@
+# Roda o Mundo Vivo no homelab (VM Ubuntu + Docker).
+#   docker compose up --build
+# Endereços e senhas vêm do arquivo .env (copie de .env.example; o .env
+# não vai para o git).
+#
+# Fase 0: o serviço "sim" só valida data/ e sai. As fases seguintes trocam
+# o "command" (Fase 1: simulação headless; Fase 4: simulação + API/WebSocket
+# + ponte MQTT no mesmo processo, com a porta publicada).
+services:
+  sim:
+    build: .
+    image: divine-world:dev
+    container_name: dw-world
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DW_DB_PATH: /app/var/world.sqlite
+    volumes:
+      - ./data:/app/data
+      - ./var:/app/var
+    command: ["python", "-m", "tools.validate"]
+    restart: "no"   # Fase 1+: unless-stopped

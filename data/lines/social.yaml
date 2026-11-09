@@ -1,0 +1,44 @@
+# Falas sociais. Formato explicado no topo de rotina.yaml.
+situacoes:
+  conversa:
+    - "{eu} puxa conversa com {outro}."
+    - "{eu} e {outro} falam do tempo: {clima}."
+    - "{eu} conta um causo para {outro}, que finge acreditar."
+    - texto: "{eu}: \"{bordao}\""
+      peso: 2
+    - texto: "{eu} buzina pra {outro}. *FOM FOM*"
+      personagens: [clown]
+      peso: 2
+    - texto: "{eu} conta uma piada pra {outro} ...hehe."
+      personagens: [fool]
+    - texto: "{eu} olha {outro} de cima a baixo. \"{bordao}\""
+      personagens: [lady]
+      peso: 2
+    - texto: "{eu}: \"...\""
+      personagens: [mike]
+    - texto: "{eu} cochicha pra {outro}: \"{bordao}\""
+      personagens: [medium, weirdo]
+
+  festejar:
+    - "{eu} dança no meio de {lugar}."
+    - "{eu} pede mais uma rodada."
+    - texto: "{eu} puxa um modão. \"{bordao}\""
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+    - texto: "{eu} toca a viola até a corda arrebentar. {bordao}"
+      personagens: [musician]
+
+  briga:
+    - "{eu} grita com {outro}."
+    - "{eu} e {outro} discutem aos berros em {lugar}."
+  tombo:
+    - "{eu} tenta acertar {outro}, escorrega e cai de cara no chão."
+  fofoca:
+    - "{eu} cochicha uma fofoca no ouvido de {outro}."
+  consolar:
+    - "{eu} dá um abraço desajeitado em {outro}."
+  roubo:
+    - "{eu} enfia alguma coisa no bolso. \"{bordao}\""
+  construir:
+    - "{eu} martela, serra e pinta em {lugar}."
+  quebrar:
+    - "{eu} quebra alguma coisa em {lugar}. Ops."

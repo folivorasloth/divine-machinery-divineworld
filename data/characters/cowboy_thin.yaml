@@ -1,0 +1,48 @@
+id: cowboy_thin
+nome: O Cowboy Magrelo
+pronome: ele
+grupo: cowboys
+papel: Trio caipira
+aparencia: Magrelo do trio. Chapéu de couro, botina, camisa xadrez, cigarro de palha no canto da boca.
+movimento: Devagar e gingado. Cospe no chão a cada poucos passos.
+visual:
+  cor: "#a0522d"
+  cor_secundaria: "#c1121f"
+  altura: 1.15
+  corpo: magro
+  chapeu: chapéu de couro
+  acessorio: cigarro de palha
+tracos: [briguento, leal, contador_de_causo]
+quer: Cerveja gelada e moda de viola.
+medos:
+  - {descricao: Lei seca., gatilho: lei_seca}
+  - {descricao: Cerveja quente., gatilho: cerveja_quente}
+defeito: Briga com os outros dois por nada e termina abraçado.
+bordoes:
+  - Ô loco, sô.
+  - Ê trem bão.
+segredo: O velho do trio já viu um anjo uma vez (o Criador) e ninguém acredita nele.
+dia_normal: Trabalha no campo de manhã, sinuca e cerveja à tarde, taverna e cantoria com o Músico à noite.
+profissao: vaqueiro
+local_trabalho: fields
+casa: houses
+rotina:
+  - {das: "05:30", ate: "06:30", acao: comer, lugar: community_kitchen}
+  - {das: "06:30", ate: "11:30", acao: trabalhar, lugar: fields, peso: 2.5}
+  - {das: "12:00", ate: "13:00", acao: comer, lugar: community_kitchen}
+  - {das: "14:00", ate: "18:00", acao: festejar, lugar: tavern, peso: 1.5}
+  - {das: "19:00", ate: "20:00", acao: comer, lugar: tavern}
+  - {das: "20:00", ate: "23:59", acao: festejar, lugar: tavern, peso: 2.5}
+  - {das: "00:30", ate: "05:30", acao: dormir, lugar: houses}
+relacoes:
+  - {com: cowboy_fat, afinidade: 65, tipo: parceiro, nota: Brigam por nada e terminam abraçados.}
+  - {com: cowboy_old, afinidade: 65, tipo: parceiro, nota: Brigam por nada e terminam abraçados.}
+  - {com: musician, afinidade: 60, tipo: parceiro, nota: Modão na taverna até de madrugada.}
+  - {com: chief, afinidade: 45, tipo: amigo}
+  - {com: blacksmith, afinidade: 45, tipo: amigo, nota: Mas vivem discutindo.}
+  - {com: lady, afinidade: -55, tipo: desprezo, nota: Cuspe perto do vestido = crise diplomática.}
+  - {com: inspector, afinidade: -55, tipo: chato_oficial}
+heranca:
+  objetos: [chapéu de couro, cigarro de palha]
+  herdeiros: [cowboy_fat, cowboy_old]
+se_morrer: Os que sobram fazem velório com cerveja e viola até o dia nascer.

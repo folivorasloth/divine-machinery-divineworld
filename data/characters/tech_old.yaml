@@ -1,0 +1,47 @@
+id: tech_old
+nome: O Técnico
+pronome: ele
+grupo: tecnicos
+papel: Manutenção da Sala do Servidor
+aparencia: Velho, capacete, lanterna na testa, luvas de borracha.
+movimento: Cauteloso, testando tudo antes.
+visual:
+  cor: "#ffb703"
+  cor_secundaria: "#023047"
+  altura: 1.0
+  corpo: normal
+  chapeu: capacete com lanterna
+  acessorio: luvas de borracha
+tracos: [experiente, cansado, misterioso]
+quer: Se aposentar sem ver aquilo de novo.
+medos:
+  - {descricao: O que existe no fundo da Sala., gatilho: fundo_da_sala}
+defeito: (da dupla) O Aprendiz leva choque toda semana.
+bordoes:
+  - Não encosta nisso.
+segredo: Já viu os segredos do universo lá dentro e nunca contou.
+dia_normal: Entra na Sala do Servidor quando aparece um problema real no homelab e sai quando ele é resolvido.
+profissao: tecnico
+local_trabalho: server_room
+casa: houses
+# Trabalham na Sala do Servidor quando há problema real no homelab
+# (Fase 3/4 liga isso ao MQTT). No resto do tempo, vida na cidade.
+rotina:
+  - {das: "07:00", ate: "08:00", acao: comer, lugar: community_kitchen}
+  - {das: "12:00", ate: "13:00", acao: comer, lugar: community_kitchen}
+  - {das: "19:00", ate: "20:00", acao: comer, lugar: community_kitchen}
+  - {das: "22:00", ate: "06:30", acao: dormir, lugar: houses}
+necessidades:
+  sono: {taxa: 1.2}
+relacoes:
+  - {com: tech_apprentice, afinidade: 50, tipo: mentor, nota: Vive dizendo pra ele não encostar.}
+  - {com: blacksmith, afinidade: 45, tipo: amigo}
+  - {com: chief, afinidade: 40, tipo: amigo}
+  - {com: priest, afinidade: -10, tipo: conhecido}
+heranca:
+  objetos: [capacete com lanterna, luvas de borracha]
+  herdeiros: [tech_apprentice]
+ligacao_real:
+  canal: homelab
+  descricao: Os problemas reais do homelab (MQTT homelab/servicos/#) viram trabalho dele.
+se_morrer: A Sala fica sem cuidado e os problemas se acumulam até alguém assumir.

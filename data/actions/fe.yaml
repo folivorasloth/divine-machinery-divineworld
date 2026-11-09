@@ -1,0 +1,61 @@
+# Ações de fé: Igreja (Padre) e Seita (Médium).
+# Formato explicado no topo de basicas.yaml.
+
+acoes:
+  - id: tocar_sino
+    nome: Tocar o sino
+    descricao: O Padre toca o sino na hora certa (relógio real).
+    tipo: individual
+    peso: 30           # alto de propósito: na janela certa, quase sempre vence
+    duracao_minutos: [3, 5]
+    condicoes:
+      profissoes: [padre]
+      horarios:
+        - {das: "06:00", ate: "06:15"}
+        - {das: "12:00", ate: "12:15"}
+        - {das: "18:00", ate: "18:15"}
+    efeitos:
+      necessidades: {fe: -10}
+    fala: tocar_sino
+    chance_fala: 0.6
+    tags: [igreja]
+
+  - id: rezar
+    nome: Rezar
+    descricao: Reza sozinho ou na missa.
+    tipo: individual
+    peso: 0.8
+    duracao_minutos: [15, 60]
+    consideracoes:
+      - entrada: necessidade.fe
+        curva: {tipo: pontos, pontos: [[0, 0], [30, 0.1], [70, 0.7], [100, 1]]}
+      - entrada: necessidade.medo
+        nota: com medo, todo mundo reza um pouco mais
+        curva: {tipo: pontos, pontos: [[0, 0.8], [60, 1], [100, 1]]}
+    efeitos:
+      necessidades: {fe: -40, medo: -15, tedio: 5}
+    fala: rezar
+    chance_fala: 0.3
+    tags: [igreja]
+
+  - id: ritual
+    nome: Ritual da seita
+    descricao: Velas, ossinhos e a Médium dizendo que as vozes disseram. Só à noite.
+    tipo: individual
+    ativa: false        # Fase 2 (facções)
+    peso: 0.8
+    duracao_minutos: [45, 120]
+    condicoes:
+      periodos: [noite, madrugada]
+    consideracoes:
+      - entrada: necessidade.fe
+        curva: {tipo: linear}
+      - entrada: perigo
+        nota: o perigo atrai a seita, até certo ponto
+        curva: {tipo: pontos, pontos: [[0, 0.5], [50, 1], [90, 0.4]]}
+    efeitos:
+      necessidades: {fe: -50, medo: 10, tedio: -20}
+    fala: ritual
+    chance_fala: 0.5
+    tags: [seita]
+    importancia: 1

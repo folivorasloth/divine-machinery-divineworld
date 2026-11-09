@@ -1,0 +1,19 @@
+id: cemetery
+nome: O Cemitério
+descricao: Às margens da cidade, sempre úmido. Lápides de todos os mortos e, raramente, fantasmas.
+regiao: city
+ambiente: externo
+perigo: 15
+perigo_noite: 50
+sinistro: true
+paleta:
+  principal: "#6c7a89"
+  secundaria: "#3e4a59"
+  luz: "#a9bcd0"
+  noite: "#1b2a41"
+tem: [lápides, portão rangendo, névoa baixa]
+conexoes:
+  - {para: cathedral, tipo: caminho, minutos: 6}
+  - {para: houses, tipo: caminho, minutos: 6}
+  - {para: underground, tipo: tunel, minutos: 5}
+acoes: [rezar, ritual]

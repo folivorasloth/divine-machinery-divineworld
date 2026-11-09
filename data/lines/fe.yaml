@@ -1,0 +1,26 @@
+# Falas de fé e mistério. Formato explicado no topo de rotina.yaml.
+situacoes:
+  tocar_sino:
+    - "DONG... DONG... O sino da {@cathedral} toca: {hora}."
+    - texto: "{eu} puxa a corda do sino com força demais e tropeça na batina. \"{bordao}\""
+      personagens: [priest]
+
+  rezar:
+    - "{eu} reza baixinho em {lugar}."
+    - texto: "{eu} reza só quando tem alguém olhando."
+      personagens: [lady]
+    - texto: "{eu} reza e, sem perceber, conta em voz alta o que ouviu na confissão."
+      personagens: [priest]
+
+  ritual:
+    - "Velas acesas em {lugar}. {eu} chama as vozes."
+    - texto: "{eu} abre os braços: \"{bordao}\""
+      personagens: [medium]
+      peso: 3
+
+  encarar_tela:
+    - "{eu} para e encara a tela por um tempo longo demais."
+    - "{eu} olha fixo pra cá. Depois volta ao normal."
+    - texto: "{eu} encara a tela e sussurra: \"{bordao}\""
+      personagens: [weirdo]
+      peso: 3

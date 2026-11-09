@@ -1,0 +1,26 @@
+# A Praça: o coração da Cidade e o lugar central do grafo.
+id: town_square
+nome: A Praça
+descricao: Coração da cidade. Banco, chafariz e o lugar preferido do Chefe para cochilar.
+regiao: city
+ambiente: externo
+perigo: 5
+perigo_noite: 15
+paleta:
+  principal: "#f2b134"
+  secundaria: "#e4572e"
+  luz: "#ffe8a3"
+  noite: "#3a4a7a"
+tem: [chafariz, bancos, coreto, lugar reservado para uma estátua]
+conexoes:
+  - {para: town_hall, tipo: caminho, minutos: 2}
+  - {para: cathedral, tipo: caminho, minutos: 2}
+  - {para: market, tipo: caminho, minutos: 3}
+  - {para: community_kitchen, tipo: caminho, minutos: 3}
+  - {para: tavern, tipo: caminho, minutos: 3}
+  - {para: houses, tipo: caminho, minutos: 4}
+  - {para: forge, tipo: caminho, minutos: 4}
+  - {para: prison, tipo: caminho, minutos: 3}
+  - {para: fields, tipo: caminho, minutos: 8}
+  - {para: forest, tipo: tunel, minutos: 5}
+acoes: [cochilar, festejar, construir, quebrar]

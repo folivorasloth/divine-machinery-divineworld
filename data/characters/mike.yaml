@@ -1,0 +1,34 @@
+id: mike
+nome: Mike
+pronome: ele
+papel: Só existe
+aparencia: Um cara comum, camiseta branca, calça jeans, nenhuma expressão. Estranhamente mais "normal" que todo mundo.
+movimento: Anda sem destino, para, olha pro nada e muda de direção.
+visual:
+  cor: "#ffffff"
+  cor_secundaria: "#3d5a80"
+  altura: 1.0
+  corpo: normal
+  chapeu: nenhum
+  acessorio: nenhum
+tracos: [vazio, calmo, indecifravel]
+quer: Nada.
+medos: []
+defeito: Atravessa os eventos mais importantes sem perceber, inclusive o meio de um funeral.
+bordoes:
+  - "..."
+segredo: É imune às criaturas e à névoa. Ninguém sabe por quê.
+dia_normal: Perambula pela cidade e por todos os biomas, inclusive os lugares perigosos.
+profissao: nenhuma
+casa: houses
+# Rotina mínima de propósito: Mike só perambula; come e dorme quando precisa.
+rotina:
+  - {das: "06:00", ate: "23:00", acao: perambular, peso: 2}
+imunidades: [criaturas, nevoa]
+necessidades:
+  social: {taxa: 0.2}
+  medo: {inicial: 0, taxa: 3}
+# Ninguém e todo mundo: afinidade neutra com todos.
+afinidade_padrao: 0
+relacoes: []
+se_morrer: Ninguém percebe por dias.

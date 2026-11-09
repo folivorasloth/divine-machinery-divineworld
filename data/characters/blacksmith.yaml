@@ -1,0 +1,47 @@
+id: blacksmith
+nome: O Ferreiro
+pronome: ele
+papel: Bravo · irritado
+aparencia: Enorme, avental de couro, braços cheios de cicatriz de queimadura, monocelha.
+movimento: Passos pesados. Bufa fumaça de verdade quando se irrita.
+visual:
+  cor: "#5c3d2e"
+  cor_secundaria: "#ff7b00"
+  altura: 1.35
+  corpo: enorme
+  chapeu: nenhum
+  acessorio: martelo
+tracos: [irritado, honesto, protetor]
+quer: Paz pra trabalhar.
+medos:
+  - {descricao: Aranha., gatilho: aranha}
+defeito: Explode por qualquer coisa e quebra justamente o que estava consertando.
+bordoes:
+  - GRRR *martelada na bigorna*
+segredo: Tem pavor de aranha.
+dia_normal: Forja ferramentas, lidera as reconstruções e discute com os Cowboys.
+profissao: ferreiro
+local_trabalho: forge
+casa: houses
+rotina:
+  - {das: "06:00", ate: "07:00", acao: comer, lugar: community_kitchen}
+  - {das: "07:00", ate: "12:00", acao: trabalhar, lugar: forge, peso: 3}
+  - {das: "12:00", ate: "13:00", acao: comer, lugar: community_kitchen}
+  - {das: "13:00", ate: "18:00", acao: trabalhar, lugar: forge, peso: 3}
+  - {das: "19:00", ate: "20:00", acao: comer, lugar: community_kitchen}
+  - {das: "21:30", ate: "06:00", acao: dormir, lugar: houses}
+necessidades:
+  raiva: {inicial: 25}
+relacoes:
+  - {com: chef_wife, afinidade: 55, tipo: amigo}
+  - {com: chef_husband, afinidade: 40, tipo: amigo}
+  - {com: mike, afinidade: 50, tipo: amigo, nota: Mike não faz barulho.}
+  - {com: clown, afinidade: -70, tipo: odio, nota: "Pegadinha na ferraria, martelada, perseguição pela praça."}
+  - {com: cowboy_fat, afinidade: 20, tipo: discussao, nota: Discute com os Cowboys.}
+  - {com: cowboy_thin, afinidade: 20, tipo: discussao}
+  - {com: cowboy_old, afinidade: 20, tipo: discussao}
+  - {com: tech_old, afinidade: 40, tipo: amigo}
+  - {com: tech_apprentice, afinidade: 30, tipo: amigo}
+heranca:
+  objetos: [martelo, avental de couro]
+se_morrer: As reconstruções ficam lentíssimas.

@@ -1,0 +1,16 @@
+id: desert
+nome: O Deserto
+descricao: Laranja e ocre. Ruínas e objetos "sagrados" enterrados.
+regiao: biomes
+ambiente: externo
+perigo: 35
+perigo_noite: 50
+paleta:
+  principal: "#f4a259"
+  secundaria: "#bc6c25"
+  luz: "#ffe5b4"
+  noite: "#3d2c5e"
+tem: [dunas, ruínas, buracos onde o Esquisito enterra coisas]
+conexoes:
+  - {para: sea, tipo: caminho, minutos: 40}
+acoes: [rezar, ritual]

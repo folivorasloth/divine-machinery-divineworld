@@ -1,0 +1,41 @@
+id: tech_apprentice
+nome: O Aprendiz
+pronome: ele
+grupo: tecnicos
+papel: Manutenção da Sala do Servidor
+aparencia: Jovem, cabelo eternamente arrepiado.
+movimento: Apressado, encosta onde não deve.
+visual:
+  cor: "#219ebc"
+  cor_secundaria: "#ffb703"
+  altura: 0.95
+  corpo: magro
+  chapeu: cabelo arrepiado
+  acessorio: nenhum
+tracos: [curioso, desastrado, empolgado]
+quer: Descobrir os segredos do universo.
+medos: []   # nada, e esse é o problema
+defeito: Leva choque toda semana.
+bordoes: []   # a bible ainda não deu um bordão ao Aprendiz
+segredo: ""   # a bible não define
+dia_normal: Entra na Sala do Servidor com o Técnico quando aparece um problema real no homelab e sai quando ele é resolvido.
+profissao: tecnico
+local_trabalho: server_room
+casa: houses
+rotina:
+  - {das: "08:00", ate: "09:00", acao: comer, lugar: community_kitchen}
+  - {das: "12:30", ate: "13:30", acao: comer, lugar: community_kitchen}
+  - {das: "14:00", ate: "17:00", acao: perambular, peso: 1.2}
+  - {das: "19:30", ate: "20:30", acao: comer, lugar: tavern}
+  - {das: "00:00", ate: "08:00", acao: dormir, lugar: houses}
+necessidades:
+  tedio: {taxa: 1.3}
+  medo: {taxa: 2}
+relacoes:
+  - {com: tech_old, afinidade: 60, tipo: aprendiz}
+  - {com: blacksmith, afinidade: 40, tipo: amigo}
+  - {com: chief, afinidade: 35, tipo: amigo}
+ligacao_real:
+  canal: homelab
+  descricao: Os problemas reais do homelab viram trabalho dele (e choques).
+se_morrer: A Sala fica sem cuidado e os problemas se acumulam até alguém assumir.

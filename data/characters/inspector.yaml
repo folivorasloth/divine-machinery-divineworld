@@ -1,0 +1,44 @@
+id: inspector
+nome: O Fiscal
+pronome: ele
+papel: Chato · burocrata
+aparencia: Terno cinza apertado, bigodinho, bloquinho, apito e uma régua.
+movimento: Anda reto, em linha reta mesmo, medindo coisas com a régua.
+visual:
+  cor: "#6c757d"
+  cor_secundaria: "#212529"
+  altura: 1.05
+  corpo: magro
+  chapeu: nenhum
+  acessorio: apito e régua
+tracos: [chato, burocrata, solitario]
+quer: Que todo mundo cumpra as regras.
+medos:
+  - {descricao: Bagunça., gatilho: bagunca}
+defeito: Inventa regras novas que ninguém pediu.
+bordoes:
+  - "*PRIIIIII* Infração!"
+segredo: Tem uma coleção secreta de bichos de pelúcia.
+dia_normal: Distribui advertências, manda gente pra prisão e, nos casos graves, pede o Limbo.
+profissao: fiscal
+local_trabalho: town_hall
+casa: houses
+rotina:
+  - {das: "06:30", ate: "07:00", acao: comer, lugar: community_kitchen}
+  - {das: "07:00", ate: "12:00", acao: trabalhar, lugar: town_hall, peso: 3}
+  - {das: "12:00", ate: "12:30", acao: comer, lugar: community_kitchen}
+  - {das: "12:30", ate: "18:00", acao: trabalhar, lugar: town_hall, peso: 3}
+  - {das: "18:30", ate: "19:00", acao: comer, lugar: community_kitchen}
+  - {das: "21:30", ate: "06:00", acao: dormir, lugar: houses}
+relacoes:
+  - {com: chief, afinidade: 15, tipo: superior, nota: O Chefe aguenta ele.}
+  - {com: clown, afinidade: -60, tipo: infrator}
+  - {com: teen, afinidade: -55, tipo: infrator}
+  - {com: cowboy_fat, afinidade: -45, tipo: infrator}
+  - {com: cowboy_thin, afinidade: -45, tipo: infrator}
+  - {com: cowboy_old, afinidade: -45, tipo: infrator}
+  - {com: musician, afinidade: -40, tipo: infrator, nota: Barulho.}
+afinidade_padrao: -15
+heranca:
+  objetos: [apito, régua, bichos de pelúcia]
+se_morrer: A cidade faz uma festa escondida, e depois sente culpa.

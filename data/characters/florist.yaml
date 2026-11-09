@@ -1,0 +1,41 @@
+id: florist
+nome: A Florista
+pronome: ela
+papel: Feliz · otimista demais
+aparencia: Vestido amarelo, sardas, cesta de flores e um sorriso que nunca sai do rosto.
+movimento: Pulando.
+visual:
+  cor: "#ffd60a"
+  cor_secundaria: "#ff595e"
+  altura: 0.95
+  corpo: normal
+  chapeu: nenhum
+  acessorio: cesta de flores
+tracos: [alegre, otimista, ingenuo]
+quer: Que todo mundo seja feliz.
+medos:
+  - {descricao: A tristeza dos outros., gatilho: tristeza_dos_outros}
+defeito: Distribui flores cantando no meio dos funerais.
+bordoes:
+  - Que dia LINDO!
+segredo: O sorriso não desliga, nem quando ela quer chorar.
+dia_normal: Cuida das flores, visita todo mundo e tenta animar o Fool.
+profissao: florista
+local_trabalho: town_square
+casa: houses
+rotina:
+  - {das: "06:30", ate: "07:30", acao: comer, lugar: community_kitchen}
+  - {das: "07:30", ate: "11:30", acao: trabalhar, lugar: town_square}
+  - {das: "12:00", ate: "13:00", acao: comer, lugar: community_kitchen}
+  - {das: "14:00", ate: "17:00", acao: perambular, peso: 1.5}
+  - {das: "19:00", ate: "20:00", acao: comer, lugar: community_kitchen}
+  - {das: "22:00", ate: "06:30", acao: dormir, lugar: houses}
+relacoes:
+  - {com: fool, afinidade: 70, tipo: amigo, nota: Tenta animá-lo; às vezes consegue.}
+  - {com: chef_wife, afinidade: 55, tipo: amigo}
+  - {com: chef_husband, afinidade: 55, tipo: amigo}
+# Gosta de todos.
+afinidade_padrao: 40
+heranca:
+  objetos: [cesta de flores]
+se_morrer: As flores da cidade murcham.

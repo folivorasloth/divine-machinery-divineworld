@@ -1,0 +1,17 @@
+id: sea
+nome: O Mar
+descricao: Turquesa vibrante. Naufrágios e coisas estranhas que a maré traz.
+regiao: biomes
+ambiente: externo
+perigo: 20
+perigo_noite: 45
+paleta:
+  principal: "#00b4d8"
+  secundaria: "#0077b6"
+  luz: "#caf0f8"
+  noite: "#03045e"
+tem: [praia, barcos de pesca, destroços de naufrágio]
+conexoes:
+  - {para: market, tipo: tunel, minutos: 5}
+  - {para: desert, tipo: caminho, minutos: 40}
+acoes: [cochilar, festejar, rezar]

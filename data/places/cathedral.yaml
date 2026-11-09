@@ -1,0 +1,15 @@
+id: cathedral
+nome: A Catedral
+descricao: Réplica da Catedral de Botucatu. Missas, casamentos, funerais e uma escadaria onde o Fool se senta.
+regiao: city
+ambiente: interno
+perigo: 3
+paleta:
+  principal: "#e9e4d4"
+  secundaria: "#b8b2a1"
+  luz: "#7fb7e8"
+tem: [sino, vitrais coloridos, escadaria, confessionário]
+conexoes:
+  - {para: town_square, tipo: caminho, minutos: 2}
+  - {para: cemetery, tipo: caminho, minutos: 6}
+acoes: [rezar, tocar_sino, construir]

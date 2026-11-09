@@ -1,0 +1,18 @@
+# Não está na tabela de lugares da bible, mas os Cowboys "trabalham no
+# campo de manhã" (bible, seção 5). Ver relatório da Fase 0.
+id: fields
+nome: O Campo
+descricao: Pasto e plantação na beirada da cidade, onde os Cowboys trabalham de manhã.
+regiao: city
+ambiente: externo
+perigo: 10
+perigo_noite: 30
+paleta:
+  principal: "#90be6d"
+  secundaria: "#b5838d"
+  luz: "#fefae0"
+  noite: "#283d5e"
+tem: [cerca, curral, plantação]
+conexoes:
+  - {para: town_square, tipo: caminho, minutos: 8}
+acoes: [cochilar, festejar, construir]

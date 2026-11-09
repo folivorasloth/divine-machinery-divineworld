@@ -1,0 +1,18 @@
+id: underground
+nome: O Subterrâneo
+descricao: Escuro, azul e roxo frios. Raves escondidas e túneis esquecidos.
+regiao: biomes
+ambiente: interno
+perigo: 45
+perigo_noite: 70
+sinistro: true
+paleta:
+  principal: "#3a0ca3"
+  secundaria: "#4361ee"
+  luz: "#b5179e"
+  noite: "#10002b"
+tem: [túneis esquecidos, caixas de som improvisadas, pichações antigas]
+conexoes:
+  - {para: cemetery, tipo: tunel, minutos: 5}
+  - {para: server_room, tipo: caminho, minutos: 15}
+acoes: [festejar, ritual, quebrar]

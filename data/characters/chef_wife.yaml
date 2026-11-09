@@ -1,0 +1,47 @@
+id: chef_wife
+nome: A Cozinheira
+pronome: ela
+grupo: cozinha
+papel: Casal · brigona e apaixonada
+aparencia: Baixinha, avental florido, bochechas vermelhas, colher de pau sempre na mão.
+movimento: Rápida e mandona.
+visual:
+  cor: "#e76f51"
+  cor_secundaria: "#ffb4a2"
+  altura: 0.8
+  corpo: baixinho
+  chapeu: nenhum
+  acessorio: colher de pau
+tracos: [bravo, carinhoso, mandao]
+quer: Alimentar todo mundo.
+medos:
+  - {descricao: Faltar ingrediente., gatilho: falta_comida}
+defeito: Briga aos gritos em público com o marido e faz as pazes cinco minutos depois.
+bordoes:
+  - Come que esfria!
+segredo: Ele queima tudo e ela salva escondido, há anos. Ele nunca soube.
+dia_normal: Café da manhã comunitário, almoço, a briga das três da tarde, jantar e dança na taverna.
+profissao: cozinheiro
+local_trabalho: community_kitchen
+casa: houses
+rotina:
+  - {das: "05:30", ate: "14:30", acao: trabalhar, lugar: community_kitchen, peso: 3}
+  - {das: "14:30", ate: "15:00", acao: comer, lugar: community_kitchen}
+  - {das: "16:00", ate: "19:30", acao: trabalhar, lugar: community_kitchen, peso: 2.5}
+  - {das: "20:00", ate: "22:00", acao: festejar, lugar: tavern}
+  - {das: "22:00", ate: "05:30", acao: dormir, lugar: houses}
+necessidades:
+  raiva: {taxa: 1.2}
+relacoes:
+  - {com: chef_husband, afinidade: 80, tipo: casal, nota: "Briga às três da tarde, pazes às três e cinco."}
+  - {com: teen, afinidade: 75, tipo: mae, nota: "O filho foge, os pais procuram, a cidade inteira participa."}
+  - {com: chief, afinidade: 55, tipo: amigo}
+  - {com: priest, afinidade: 55, tipo: amigo}
+  - {com: blacksmith, afinidade: 55, tipo: amigo}
+  - {com: musician, afinidade: 40, tipo: amigo}
+  - {com: greedy, afinidade: -60, tipo: vitima, nota: Ele rouba comida.}
+afinidade_padrao: 15
+heranca:
+  objetos: [colher de pau, avental florido]
+  herdeiros: [chef_husband, teen]
+se_morrer: O marido entra em luto longo, a cozinha fecha por dias e a comida da cidade piora.

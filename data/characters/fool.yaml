@@ -1,0 +1,44 @@
+id: fool
+nome: O Fool
+pronome: ele
+papel: Engraçado e triste
+aparencia: Bobo da corte com chapéu de guizos torto, roupa remendada meio amarela, meio cinza. Um dos guizos nunca toca.
+movimento: Arrastando os pés. Faz malabarismo e deixa tudo cair.
+visual:
+  cor: "#e9c46a"
+  cor_secundaria: "#8d99ae"
+  altura: 0.95
+  corpo: magro
+  chapeu: chapéu de guizos
+  acessorio: bolinhas de malabarismo
+tracos: [gentil, melancolico, autodepreciativo]
+quer: Ser levado a sério uma única vez.
+medos:
+  - {descricao: Ser esquecido., gatilho: ser_esquecido}
+defeito: Conta a piada certa no momento mais errado, de preferência em funerais.
+bordoes:
+  - "...hehe."
+segredo: Guarda uma lista com o nome de cada morto e de quantas vezes conseguiu fazê-lo rir.
+dia_normal: Senta na escadaria da Catedral, faz truques pras crianças e, à noite, olha a lua sozinho.
+profissao: bobo
+local_trabalho: cathedral
+casa: houses
+rotina:
+  - {das: "07:30", ate: "08:30", acao: comer, lugar: community_kitchen}
+  - {das: "09:00", ate: "12:00", acao: trabalhar, lugar: cathedral}
+  - {das: "12:00", ate: "13:00", acao: comer, lugar: community_kitchen}
+  - {das: "14:00", ate: "17:00", acao: trabalhar, lugar: cathedral}
+  - {das: "20:00", ate: "22:00", acao: encarar_tela, lugar: town_square, peso: 1.5}
+  - {das: "23:00", ate: "07:00", acao: dormir, lugar: houses}
+necessidades:
+  tedio: {taxa: 1.1}
+relacoes:
+  - {com: clown, afinidade: 65, tipo: irmao, nota: Não detesta nem o irmão que zoa ele.}
+  - {com: mike, afinidade: 50, tipo: amigo, nota: Tenta ser amigo do Mike.}
+  - {com: musician, afinidade: 55, tipo: amigo}
+  - {com: florist, afinidade: 60, tipo: amigo, nota: Ela tenta animá-lo; às vezes consegue.}
+afinidade_padrao: 20
+heranca:
+  objetos: [chapéu de guizos (um guizo nunca toca), lista dos mortos]
+  manias: [terminar as frases com "...hehe."]
+se_morrer: A chuva do funeral dura o dia inteiro, e o Palhaço para de fazer piada por uma semana.

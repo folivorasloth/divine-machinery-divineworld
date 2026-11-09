@@ -1,0 +1,151 @@
+# =====================================================================
+# Ações básicas (verbos do dia a dia)
+# =====================================================================
+# Como a nota de uma ação é calculada (detalhes em docs/arquitetura.md):
+#
+#   nota = peso × (fator de cada consideração) × traços × rotina × objetivos
+#          × viagem × repetição
+#
+# Cada "consideração" pega uma ENTRADA e passa por uma CURVA que devolve
+# um fator de 0 a 1. Entradas: necessidade.<id>, alvo_necessidade.<id>,
+# afinidade, hora, presentes, perigo, tensao.
+# Curvas:
+#   {tipo: pontos, pontos: [[x, y], ...]}  ← a mais fácil: liga os pontos
+#   {tipo: linear}                          ← 0 no mínimo da entrada, 1 no máximo
+#   {tipo: potencia, expoente: 2}           ← como linear, mas "acorda" tarde
+#   {tipo: logistica, meio: 70, inclinacao: 0.15}  ← curva em S em torno de 70
+#   {tipo: degrau, limite: 50}              ← 0 abaixo de 50, 1 a partir de 50
+#   inverter: true                          ← troca 1 por 0 (ex.: menos medo = melhor)
+#   minimo: 0.05                            ← nunca deixa o fator cair abaixo disso
+#
+# efeitos.necessidades: variação TOTAL ao longo da ação inteira
+#   (negativo = satisfaz, ex.: fome -60; positivo = custo, ex.: sono +5).
+# fala: situação de falas em data/lines/ (com chance_fala de sair um balão).
+# ativa: false = a ação existe mas a simulação ainda não usa (fase futura).
+# =====================================================================
+
+acoes:
+  # ---------------------------------------------------------------- movimento
+  # Ações de movimento não recebem nota: são os passos de um plano
+  # ("ir até a cozinha e comer"). Geram os eventos de movimento.
+  - id: andar
+    nome: Andar
+    descricao: Atravessa uma conexão do tipo caminho.
+    tipo: movimento
+    duracao_minutos: 1   # a duração real vem dos minutos da conexão
+    tags: [movimento]
+
+  - id: viajar
+    nome: Viajar pelo túnel
+    descricao: Atravessa um túnel de teletransporte (no quarto, uma luz de LED corre pela parede).
+    tipo: movimento
+    duracao_minutos: 1   # idem: vem da conexão
+    tags: [movimento]
+    importancia: 1
+
+  # -------------------------------------------------------------- individuais
+  - id: perambular
+    nome: Perambular
+    descricao: Anda sem destino até um lugar vizinho, para, olha pro nada. O jeito do Mike.
+    tipo: individual
+    peso: 0.4
+    duracao_minutos: [10, 40]
+    em_qualquer_lugar: true
+    consideracoes:
+      - entrada: necessidade.tedio
+        curva: {tipo: linear, minimo: 0.2}
+    efeitos:
+      necessidades: {tedio: -15, sono: 2}
+    fala: perambular
+    chance_fala: 0.1
+    tags: [rotina]
+
+  - id: trabalhar
+    nome: Trabalhar
+    descricao: Faz o trabalho da profissão, no local de trabalho.
+    tipo: individual
+    peso: 1.0
+    duracao_minutos: [60, 180]
+    condicoes:
+      periodos: [manha, tarde]
+      lugar_proprio: trabalho
+    consideracoes:
+      - entrada: necessidade.sono
+        nota: cansado demais não trabalha direito
+        curva: {tipo: pontos, pontos: [[0, 1], [70, 0.7], [100, 0.1]]}
+      - entrada: necessidade.fome
+        curva: {tipo: pontos, pontos: [[0, 1], [70, 0.6], [100, 0.1]]}
+    efeitos:
+      necessidades: {tedio: 10, sono: 8, fome: 5, social: 5}
+    fala: trabalhar
+    chance_fala: 0.3
+    tags: [trabalho]
+
+  - id: comer
+    nome: Comer
+    descricao: Come na cozinha comunitária (ou na taverna). Ninguém paga nada.
+    tipo: individual
+    peso: 1.2
+    duracao_minutos: [20, 45]
+    consideracoes:
+      - entrada: necessidade.fome
+        curva: {tipo: pontos, pontos: [[0, 0], [30, 0.1], [60, 0.6], [85, 1]]}
+    efeitos:
+      necessidades: {fome: -65, social: -10}
+    fala: comer
+    chance_fala: 0.3
+    tags: [rotina]
+
+  - id: dormir
+    nome: Dormir
+    descricao: Dorme em casa.
+    tipo: individual
+    peso: 1.2
+    duracao_minutos: [240, 480]
+    condicoes:
+      lugar_proprio: casa
+    consideracoes:
+      - entrada: necessidade.sono
+        curva: {tipo: logistica, meio: 65, inclinacao: 0.12}
+      - entrada: hora
+        nota: dormir de dia é menos provável
+        curva: {tipo: pontos, pontos: [[0, 1], [6, 1], [8, 0.3], [20, 0.3], [22, 1], [24, 1]]}
+    efeitos:
+      necessidades: {sono: -90, fome: 10}
+    fala: dormir
+    chance_fala: 0.15
+    tags: [rotina]
+
+  - id: cochilar
+    nome: Cochilar
+    descricao: Um cochilo rápido onde der. Especialidade do Chefe na praça.
+    tipo: individual
+    peso: 0.6
+    duracao_minutos: [15, 45]
+    consideracoes:
+      - entrada: necessidade.sono
+        curva: {tipo: pontos, pontos: [[0, 0], [40, 0.2], [70, 0.7], [100, 1]]}
+      - entrada: perigo
+        curva: {tipo: linear, inverter: true, minimo: 0.05}
+    efeitos:
+      necessidades: {sono: -20, tedio: -5}
+    fala: cochilar
+    chance_fala: 0.2
+    tags: [rotina]
+
+  - id: encarar_tela
+    nome: Encarar a tela
+    descricao: Para tudo e encara a tela, sem saber que o Criador está ali. Depois volta ao normal.
+    tipo: individual
+    peso: 0.05
+    duracao_minutos: [1, 3]
+    em_qualquer_lugar: true
+    consideracoes:
+      - entrada: necessidade.tedio
+        curva: {tipo: linear, minimo: 0.3}
+    efeitos:
+      necessidades: {medo: 3, tedio: -5}
+    fala: encarar_tela
+    chance_fala: 0.5
+    tags: [misterio]
+    importancia: 1

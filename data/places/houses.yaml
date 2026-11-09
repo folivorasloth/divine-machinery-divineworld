@@ -1,0 +1,20 @@
+# As casas são um lugar só nesta fase: cada um "mora" aqui (campo casa).
+id: houses
+nome: As Casas
+descricao: Casinhas coloridas e tortas onde a maioria da cidade dorme.
+regiao: city
+ambiente: externo
+perigo: 3
+perigo_noite: 10
+paleta:
+  principal: "#ef476f"
+  secundaria: "#06d6a0"
+  luz: "#ffd166"
+  noite: "#26315e"
+tem: [casas, muros pichados, varais]
+conexoes:
+  - {para: town_square, tipo: caminho, minutos: 4}
+  - {para: community_kitchen, tipo: caminho, minutos: 2}
+  - {para: forge, tipo: caminho, minutos: 3}
+  - {para: cemetery, tipo: caminho, minutos: 6}
+acoes: [cochilar, construir, quebrar, roubar]

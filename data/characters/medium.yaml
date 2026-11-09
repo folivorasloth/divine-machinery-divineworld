@@ -1,0 +1,44 @@
+id: medium
+nome: A Médium
+pronome: ela
+papel: Ocultismo · líder da seita
+aparencia: Manto roxo-escuro, colar de ossinhos, velas acesas presas no cabelo, um olho pintado na testa.
+movimento: Desliza devagar, como se flutuasse (finge). Gestos teatrais.
+visual:
+  cor: "#5a189a"
+  cor_secundaria: "#ffba08"
+  altura: 1.05
+  corpo: normal
+  chapeu: velas no cabelo
+  acessorio: colar de ossinhos
+tracos: [misterioso, carismatico, manipulador]
+quer: Provar que os anjos existem e falar com eles.
+medos:
+  - {descricao: Que as vozes parem., gatilho: silencio_das_vozes}
+defeito: Interpreta as ordens do Criador errado, às vezes do jeito mais desastroso possível.
+bordoes:
+  - As vozes disseram...
+segredo: Metade das visões ela inventa. A outra metade são as mensagens do Criador.
+dia_normal: Dorme de dia. À noite lidera rituais na floresta e no subterrâneo, e recebe visões.
+profissao: medium
+local_trabalho: forest
+casa: houses
+rotina:
+  - {das: "15:00", ate: "16:00", acao: comer, lugar: community_kitchen}
+  - {das: "19:00", ate: "20:00", acao: comer, lugar: tavern}
+  - {das: "21:00", ate: "02:00", acao: ritual, lugar: forest, peso: 3}
+  - {das: "02:00", ate: "04:00", acao: ritual, lugar: underground, peso: 2}
+  - {das: "05:00", ate: "14:00", acao: dormir, lugar: houses, peso: 3}
+necessidades:
+  fe: {inicial: 50, taxa: 1.5}
+relacoes:
+  - {com: priest, afinidade: -65, tipo: rival, nota: "Missa de dia, ritual à noite; disputam fiéis."}
+  - {com: weirdo, afinidade: 60, tipo: aliado, nota: Os objetos sagrados dele viram itens de ritual.}
+  - {com: teen, afinidade: 45, tipo: futuro_membro}
+ligacao_real:
+  canal: voz_do_criador
+  descricao: É o canal das mensagens escritas do Criador. O que ele escreve chega pra ela como uma "voz".
+heranca:
+  objetos: [colar de ossinhos, velas]
+  manias: [dizer que as vozes disseram]
+se_morrer: A seita entra em crise e alguém logo jura ter herdado o dom.

@@ -1,0 +1,40 @@
+id: weirdo
+nome: O Esquisito
+pronome: ele
+papel: Estranho · colecionador
+aparencia: Corcunda, capuz, olhos grandes demais, empurra um carrinho cheio de objetos inúteis.
+movimento: Em zigue-zague. Aparece atrás das pessoas sem fazer barulho.
+visual:
+  cor: "#606c38"
+  cor_secundaria: "#dda15e"
+  altura: 0.85
+  corpo: corcunda
+  chapeu: capuz
+  acessorio: carrinho de objetos
+tracos: [estranho, curioso, inofensivo]
+quer: Encontrar o objeto sagrado.
+medos:
+  - {descricao: Chuva., gatilho: chuva}
+defeito: Encontra coisas comuns e declara que são sagradas. Às vezes a cidade acredita.
+bordoes:
+  - "...isso é importante..."
+segredo: É o único que tem certeza de que o Criador existe.
+dia_normal: Revira o lixo, enterra coisas no deserto e passa muito tempo encarando a tela, olhando pro Criador.
+profissao: colecionador
+local_trabalho: market
+casa: houses
+rotina:
+  - {das: "07:00", ate: "08:00", acao: comer, lugar: community_kitchen}
+  - {das: "08:00", ate: "12:00", acao: trabalhar, lugar: market}
+  - {das: "13:00", ate: "14:00", acao: comer, lugar: community_kitchen}
+  - {das: "14:00", ate: "17:00", acao: perambular, peso: 1.5}
+  - {das: "17:00", ate: "19:00", acao: encarar_tela, peso: 4}
+  - {das: "23:00", ate: "07:00", acao: dormir, lugar: houses}
+relacoes:
+  - {com: mike, afinidade: 50, tipo: amigo, nota: Tenta ser amigo do Mike.}
+  - {com: medium, afinidade: 60, tipo: aliado}
+  - {com: greedy, afinidade: 30, tipo: trocas, nota: Trocas suspeitas.}
+  - {com: inspector, afinidade: -45, tipo: chato_oficial}
+heranca:
+  objetos: [carrinho de objetos inúteis, objetos sagrados]
+se_morrer: Os objetos dele viram relíquias, e alguém funda um culto em torno deles.

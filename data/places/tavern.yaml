@@ -1,0 +1,16 @@
+id: tavern
+nome: A Taverna
+descricao: Cowboys, sinuca, cerveja e modão até de madrugada.
+regiao: city
+ambiente: interno
+perigo: 10
+perigo_noite: 20
+paleta:
+  principal: "#c87f2a"
+  secundaria: "#5c3317"
+  luz: "#ffbf69"
+tem: [balcão, mesa de sinuca, lampiões, palco improvisado]
+conexoes:
+  - {para: town_square, tipo: caminho, minutos: 3}
+  - {para: market, tipo: caminho, minutos: 2}
+acoes: [comer, cochilar, festejar, quebrar, roubar]

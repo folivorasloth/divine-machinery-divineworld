@@ -1,0 +1,15 @@
+id: community_kitchen
+nome: A Cozinha Comunitária
+descricao: Ninguém paga nada. Café, almoço, jantar e a briga das três da tarde.
+regiao: city
+ambiente: interno
+perigo: 5
+paleta:
+  principal: "#ff8c42"
+  secundaria: "#d1495b"
+  luz: "#ffd8a8"
+tem: [fogão a lenha, mesas compridas, despensa]
+conexoes:
+  - {para: town_square, tipo: caminho, minutos: 3}
+  - {para: houses, tipo: caminho, minutos: 2}
+acoes: [comer, roubar, construir, quebrar]

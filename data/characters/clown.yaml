@@ -1,0 +1,51 @@
+id: clown
+nome: O Palhaço
+pronome: ele
+papel: Engraçado · zoa todos
+aparencia: Magro, macacão de bolinhas desbotado, nariz vermelho rachado, sapatos enormes, maquiagem borrada de quem não lava o rosto há dias.
+movimento: Saltitando e dando estrelinhas. Às vezes para no meio do nada e encara alguém por tempo demais.
+visual:
+  cor: "#e63946"
+  cor_secundaria: "#f1faee"
+  altura: 1.05
+  corpo: magro
+  chapeu: nenhum
+  acessorio: nariz vermelho
+tracos: [debochado, imprevisivel, carente]
+quer: Plateia. Qualquer plateia.
+medos:
+  - {descricao: Silêncio. Ninguém rindo., gatilho: silencio}
+defeito: Toda pegadinha dele dá errado nele mesmo.
+bordoes:
+  - "*FOM FOM* (buzina de borracha)"
+  - "*FOOOM*"
+segredo: É irmão do Fool e chora escondido quando o irmão está triste.
+dia_normal: Acorda tarde, apronta na feira, troca as placas da cidade, enche o saco do Padre e fecha a noite na taverna.
+profissao: palhaco
+local_trabalho: market
+casa: houses
+rotina:
+  - {das: "10:30", ate: "11:30", acao: comer, lugar: community_kitchen}
+  - {das: "11:30", ate: "16:00", acao: trabalhar, lugar: market}
+  - {das: "19:00", ate: "20:00", acao: comer, lugar: tavern}
+  - {das: "20:00", ate: "23:59", acao: festejar, lugar: tavern}
+  - {das: "01:00", ate: "10:00", acao: dormir, lugar: houses}
+necessidades:
+  social: {inicial: 50, taxa: 1.3}
+  tedio: {taxa: 1.3}
+relacoes:
+  - {com: fool, afinidade: 70, tipo: irmao, nota: Zoa o irmão em público e protege ele escondido.}
+  - {com: teen, afinidade: 60, tipo: cumplice}
+  - {com: inspector, afinidade: -60, tipo: chato_oficial}
+  - {com: lady, afinidade: -40, tipo: alvo_favorito, nota: Seu alvo favorito de pegadinhas.}
+  - {com: blacksmith, afinidade: -30, tipo: odio, nota: "Pegadinha na ferraria, martelada, perseguição pela praça."}
+  - {com: priest, afinidade: -20, tipo: implicancia, nota: Enche o saco do Padre.}
+ligacao_real:
+  canal: luz_do_quarto
+  opcional: true
+  descricao: Pode trocar a cor da luz real do quarto como pegadinha (ainda não decidido; ver bible, pendências).
+heranca:
+  objetos: [nariz vermelho rachado, buzina de borracha]
+  manias: [encarar alguém por tempo demais]
+  herdeiros: [fool]
+se_morrer: A cidade fica estranhamente quieta. O Fool herda o nariz rachado.

@@ -1,0 +1,53 @@
+id: chief
+nome: O Chefe
+pronome: ele
+papel: Liderança · bonachão
+aparencia: Senhor barrigudo, colete de lã, chapéu de palha, óculos na ponta do nariz e uma prancheta onde não escreve nada.
+movimento: Devagar, mãos nas costas. Para pra conversar com todo mundo no caminho.
+visual:
+  cor: "#a67c52"
+  cor_secundaria: "#e9c46a"
+  altura: 1.0
+  corpo: barrigudo
+  chapeu: chapéu de palha
+  acessorio: prancheta
+tracos: [conciliador, preguicoso, bonachao]
+quer: Que ninguém brigue, pra poder cochilar em paz.
+medos:
+  - {descricao: Tomar decisão difícil., gatilho: decisao_dificil}
+defeito: Aprova tudo que pedem, inclusive dois pedidos que se contradizem.
+bordoes:
+  - Vamo vê isso aí.
+segredo: As ordens que recebe do Criador ele chama de "intuição" e morre de medo delas.
+dia_normal: Abre a prefeitura, ouve reclamações, almoça na cozinha do casal, cochila na praça, preside festas e funerais.
+profissao: lider
+local_trabalho: town_hall
+casa: houses
+rotina:
+  - {das: "07:00", ate: "08:00", acao: comer, lugar: community_kitchen}
+  - {das: "08:00", ate: "11:30", acao: trabalhar, lugar: town_hall}
+  - {das: "12:00", ate: "13:00", acao: comer, lugar: community_kitchen}
+  - {das: "13:00", ate: "15:00", acao: cochilar, lugar: town_square, peso: 3}
+  - {das: "15:00", ate: "17:30", acao: trabalhar, lugar: town_hall}
+  - {das: "19:00", ate: "20:00", acao: comer, lugar: community_kitchen}
+  - {das: "22:00", ate: "06:30", acao: dormir, lugar: houses}
+necessidades:
+  sono: {inicial: 40, taxa: 1.2}
+  fome: {taxa: 1.1}
+relacoes:
+  - {com: chef_wife, afinidade: 60, tipo: amigo, nota: Almoça todo dia na cozinha do casal.}
+  - {com: chef_husband, afinidade: 55, tipo: amigo}
+  - {com: priest, afinidade: 55, tipo: amigo}
+  - {com: inspector, afinidade: -40, tipo: chato_oficial, nota: Vive lembrando ele das regras. Mas aguenta.}
+  - {com: lady, afinidade: 10, tipo: conhecido}
+  - {com: tech_old, afinidade: 30, tipo: conhecido}
+  - {com: tech_apprentice, afinidade: 25, tipo: conhecido}
+  - {com: blacksmith, afinidade: 30, tipo: conhecido}
+afinidade_padrao: 15
+ligacao_real:
+  canal: ordens_civicas
+  descricao: É o canal das ordens cívicas do Criador (reconstruir, organizar festas, mudar regras).
+heranca:
+  objetos: [prancheta em branco, chapéu de palha]
+  manias: [cochilar na praça]
+se_morrer: A cidade fica sem rumo, as obras param e começa uma eleição improvisada.

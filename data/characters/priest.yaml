@@ -1,0 +1,49 @@
+id: priest
+nome: O Padre
+pronome: ele
+papel: Ranzinza · fofoqueiro
+aparencia: Batina preta comprida demais, crucifixo enorme, óculos fundo de garrafa, careca com coroinha.
+movimento: Passinhos curtos e apressados. Tropeça na batina.
+visual:
+  cor: "#1d1d1d"
+  cor_secundaria: "#e9c46a"
+  altura: 0.9
+  corpo: baixinho
+  chapeu: nenhum
+  acessorio: crucifixo enorme
+tracos: [devoto, ranzinza, fofoqueiro]
+quer: Catedral cheia e a seita fechada.
+medos:
+  - {descricao: A seita., gatilho: seita}
+  - {descricao: "A Sala do Servidor, que ele chama de inferno.", gatilho: sala_do_servidor}
+defeito: Conta segredos de confissão sem perceber.
+bordoes:
+  - Deus me livre e guarde!
+segredo: Na juventude foi membro da seita.
+dia_normal: Toca o sino na hora certa (relógio real), celebra a missa, visita doentes e, à noite, espiona a seita.
+profissao: padre
+local_trabalho: cathedral
+casa: cathedral
+rotina:
+  - {das: "05:50", ate: "06:20", acao: tocar_sino, lugar: cathedral, peso: 5}
+  - {das: "06:30", ate: "07:30", acao: comer, lugar: community_kitchen}
+  - {das: "07:30", ate: "11:50", acao: trabalhar, lugar: cathedral}
+  - {das: "11:50", ate: "12:20", acao: tocar_sino, lugar: cathedral, peso: 5}
+  - {das: "12:20", ate: "13:20", acao: comer, lugar: community_kitchen}
+  - {das: "14:00", ate: "17:50", acao: trabalhar, lugar: cathedral}
+  - {das: "17:50", ate: "18:20", acao: tocar_sino, lugar: cathedral, peso: 5}
+  - {das: "19:00", ate: "20:00", acao: comer, lugar: community_kitchen}
+  - {das: "22:30", ate: "05:30", acao: dormir, lugar: cathedral}
+necessidades:
+  fe: {inicial: 40}
+relacoes:
+  - {com: chief, afinidade: 55, tipo: amigo}
+  - {com: chef_wife, afinidade: 55, tipo: amigo}
+  - {com: medium, afinidade: -65, tipo: rival, nota: "Missa de dia, ritual à noite; disputam fiéis."}
+  - {com: clown, afinidade: -50, tipo: implicancia}
+  - {com: tech_old, afinidade: -30, tipo: desconfianca, nota: Acha os Técnicos meio condenados.}
+  - {com: tech_apprentice, afinidade: -30, tipo: desconfianca}
+  - {com: teen, afinidade: -15, tipo: implicancia}
+heranca:
+  objetos: [crucifixo enorme, sino da Catedral]
+se_morrer: O sino para de tocar e a seita cresce sem resistência.

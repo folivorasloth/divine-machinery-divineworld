@@ -1,0 +1,17 @@
+id: mountain
+nome: A Montanha
+descricao: Cinza e branco. Peregrinações e quem quer ficar sozinho.
+regiao: biomes
+ambiente: externo
+perigo: 35
+perigo_noite: 55
+paleta:
+  principal: "#adb5bd"
+  secundaria: "#f8f9fa"
+  luz: "#e9ecef"
+  noite: "#2b2d42"
+tem: [trilha de peregrinação, pico com neve, eco]
+conexoes:
+  - {para: forest, tipo: caminho, minutos: 30}
+  - {para: sky, tipo: tunel, minutos: 10}
+acoes: [rezar, cochilar]

@@ -1,0 +1,28 @@
+# Ambiente Python
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# Dados de execução (SQLite, cache de clima, logs)
+var/*
+!var/.gitkeep
+*.sqlite
+*.sqlite-journal
+*.db
+
+# Configuração local com segredos (o repositório é público)
+.env
+config.local.yaml
+
+# Viewer (Fase 5)
+node_modules/
+viewer/dist/
+
+# Editores / SO
+.vscode/
+.idea/
+.DS_Store

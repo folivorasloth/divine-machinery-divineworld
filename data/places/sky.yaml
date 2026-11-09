@@ -1,0 +1,18 @@
+# Acesso "especial": ninguém sabe se dá pra chegar lá. O caminho pelo
+# grafo ignora este lugar, a não ser que uma regra (Fase 2-3) permita.
+id: sky
+nome: O Céu
+descricao: Rosa e dourado. Ninguém sabe se dá pra chegar lá.
+regiao: beyond
+ambiente: externo
+acesso: especial
+perigo: 60
+paleta:
+  principal: "#ffafcc"
+  secundaria: "#ffd166"
+  luz: "#fff1e6"
+  noite: "#5a189a"
+tem: [nuvens, luz dourada, silêncio]
+conexoes:
+  - {para: mountain, tipo: tunel, minutos: 10}
+acoes: [rezar]

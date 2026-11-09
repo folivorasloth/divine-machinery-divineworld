@@ -1,0 +1,16 @@
+id: town_hall
+nome: A Prefeitura
+descricao: Onde o Chefe ouve reclamações e o Fiscal carimba advertências.
+regiao: city
+ambiente: interno
+perigo: 3
+paleta:
+  principal: "#c9a66b"
+  secundaria: "#7a4e2d"
+  luz: "#fff2cc"
+tem: [mesa do Chefe, carimbos, fila de reclamações]
+conexoes:
+  - {para: town_square, tipo: caminho, minutos: 2}
+  - {para: prison, tipo: caminho, minutos: 2}
+  - {para: server_room, tipo: tunel, minutos: 5}
+acoes: [cochilar, construir]

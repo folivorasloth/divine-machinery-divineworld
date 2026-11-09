@@ -1,0 +1,248 @@
+# =====================================================================
+# world.yaml — configuração geral do Mundo Vivo
+# =====================================================================
+# Tudo aqui pode ser editado à mão. Depois de editar, rode:
+#     python -m tools.validate
+#
+# Endereços e senhas NÃO ficam escritos aqui (o repositório é público):
+# use ${VARIAVEL:-padrão}. O valor vem da variável de ambiente (ou do
+# arquivo .env no docker compose); se ela não existir, vale o padrão.
+# Veja .env.example.
+# =====================================================================
+
+nome: Divine Machinery — o Mundo Vivo
+
+# Semente do sorteio. Vazia = aleatória a cada execução.
+# Um número fixo (ex.: 42) reproduz a mesma sequência de decisões.
+seed: ${DW_SEED:-}
+
+# Lugar de referência do grafo: todo lugar com acesso "normal" precisa
+# ter caminho até aqui.
+lugar_central: town_square
+
+relogio:
+  # 1 = tempo real. 60 = uma hora do mundo por minuto real.
+  # (o comando `python -m tools.run --speed N` sobrescreve, Fase 1)
+  multiplicador: 1
+  fuso: America/Sao_Paulo
+  # quantos minutos do mundo cada passo ("tick") da simulação avança
+  passo_minutos: 1
+  dia_comeca: "06:00"
+  noite_comeca: "18:30"
+  # ao religar depois de um tempo desligado, simula no máximo estas horas
+  # perdidas (rápido); o resto é pulado com um aviso no Chat do Mundo
+  max_recuperacao_horas: 2
+  # períodos do dia, em ordem (usados em condições de ações, falas e eventos)
+  periodos:
+    - {id: madrugada, nome: Madrugada, das: "00:00"}
+    - {id: manha, nome: Manhã, das: "06:00"}
+    - {id: tarde, nome: Tarde, das: "12:00"}
+    - {id: noite, nome: Noite, das: "18:30"}
+
+# Necessidades e humor. Valores de 0 a 100: quanto MAIOR, mais urgente.
+#   modo acumula: sobe sozinha (taxa em pontos por hora do mundo)
+#   modo retorna: volta devagar para a "base" (taxa = velocidade da volta)
+# Cada personagem pode mudar o valor inicial e multiplicar a taxa no
+# próprio arquivo (campo "necessidades"); os traços também multiplicam.
+necessidades:
+  fome:
+    nome: Fome
+    modo: acumula
+    inicial: 30
+    taxa_dia: 6
+    taxa_noite: 3
+  sono:
+    nome: Sono
+    modo: acumula
+    inicial: 20
+    taxa_dia: 4
+    taxa_noite: 7
+  social:
+    nome: Solidão
+    descricao: Vontade de estar com alguém e conversar.
+    modo: acumula
+    inicial: 30
+    taxa_dia: 5
+    taxa_noite: 2
+  fe:
+    nome: Fé
+    descricao: Vontade de rezar, de ritual, de sentir que tem algo maior.
+    modo: acumula
+    inicial: 20
+    taxa_dia: 1.5
+    taxa_noite: 1.5
+  tedio:
+    nome: Tédio
+    modo: acumula
+    inicial: 30
+    taxa_dia: 6
+    taxa_noite: 4
+  raiva:
+    nome: Raiva
+    modo: retorna
+    base: 10
+    inicial: 10
+    taxa_dia: 8
+    taxa_noite: 8
+  medo:
+    nome: Medo
+    modo: retorna
+    base: 5
+    inicial: 5
+    taxa_dia: 10
+    taxa_noite: 6
+
+# Utility AI: como o NPC escolhe entre as ações (docs/arquitetura.md)
+decisao:
+  # sorteia entre as N melhores notas, proporcional à nota
+  top_n: 3
+  # 1 = proporcional; < 1 favorece mais a melhor; > 1 deixa mais caótico
+  temperatura: 1.0
+  # ir até outro lugar: a nota cai pela metade a cada X minutos de viagem
+  meia_vida_viagem_minutos: 20
+  # multiplica a nota da ação que acabou de ser feita (evita repetir)
+  penalidade_repeticao: 0.6
+  # notas abaixo disso são descartadas
+  nota_minima: 0.01
+
+# Limites e chances (fases 2 e 3 usam; ajuste para mudar o ritmo do mundo)
+limites:
+  max_populacao: 40
+  min_populacao: 12
+  max_figurantes: 8
+  max_eventos_diretor_por_hora: 3
+  max_eventos_diretor_por_dia: 20
+  # chance BASE de morte, por personagem, por dia (causas somam por cima)
+  chance_morte_por_dia: 0.004
+  chance_fantasma_por_noite: 0.03
+  chance_ressurreicao_natural_por_ano: 0.05
+  intervalo_nascimento_dias: 10
+  # chance de cada personagem parar e encarar a tela, por hora
+  chance_olhar_por_hora: 0.02
+  cooldown_aparicao_dias: 7
+  horas_de_prisao: 12
+  dias_no_limbo: 3
+  minutos_de_chuva_no_funeral: 90
+
+# Regiões agrupam lugares (só para organizar e para o visual)
+regioes:
+  city: {nome: A Cidade}
+  biomes: {nome: Os Biomas}
+  beyond: {nome: O Além}
+
+# Grupos de personagens (nome editável)
+grupos:
+  cowboys: {nome: Os Cowboys}
+  tecnicos: {nome: Os Técnicos}
+  cozinha: {nome: O Casal da Cozinha}
+
+# Categorias do Chat do Mundo (filtros). As ações e eventos marcam "tags"
+# com estes ids.
+categorias_chat:
+  conversa: {nome: Conversa}
+  briga: {nome: Briga}
+  evento: {nome: Evento}
+  seita: {nome: Seita}
+  igreja: {nome: Igreja}
+  morte: {nome: Morte}
+  nascimento: {nome: Nascimento}
+  trabalho: {nome: Trabalho}
+  rotina: {nome: Rotina}
+  movimento: {nome: Movimento}
+  misterio: {nome: Mistério}
+  clima: {nome: Clima}
+  criador: {nome: Criador}
+  sistema: {nome: Sistema}
+
+# Clima real (Open-Meteo, grátis, sem chave). Fase 3.
+clima:
+  cidade: Botucatu-SP
+  latitude: -22.886
+  longitude: -48.445
+  atualizar_minutos: 30
+  timeout_segundos: 5
+  cache_arquivo: var/clima.json
+  # usado quando não há internet nem cache
+  clima_padrao: nublado
+
+# MQTT do homelab (Mosquitto). Se estiver fora do ar, o mundo continua.
+mqtt:
+  ativo: true
+  host: ${MQTT_HOST:-mqtt.local}
+  porta: ${MQTT_PORT:-1883}
+  usuario: ${MQTT_USER:-}
+  senha: ${MQTT_PASSWORD:-}
+  client_id: divine-world
+  estado_a_cada_minutos: 1
+  reconectar_segundos: 30
+  topicos:
+    # publica
+    eventos: world/events
+    estado: world/state          # retido
+    chat: world/chat
+    tunel_leds: leds/tunnel
+    status: world/status         # online/offline, retido, com Last Will
+    # escuta
+    comandos: world/commands
+    presenca: sala/camera/pessoas
+    homelab: homelab/servicos/#
+    status_telas: telas/+/status # o + é o id da tela
+
+# LLM local opcional (o "Oráculo"). Sem ele, tudo funciona com templates.
+ollama:
+  ativo: true
+  url: ${OLLAMA_URL:-http://oraculo.local:11434}
+  modelo: ${OLLAMA_MODEL:-qwen2.5:7b}
+  timeout_segundos: 4
+  max_por_hora: 30
+
+# API HTTP + WebSocket (Fase 4)
+servidor:
+  host: ${DW_SERVER_HOST:-0.0.0.0}
+  porta: ${DW_SERVER_PORT:-8000}
+
+persistencia:
+  banco: ${DW_DB_PATH:-var/world.sqlite}
+  salvar_a_cada_minutos: 5
+
+# Teletransporte entre telas: a luz de LED percorre a parede (Fase 5)
+tunel:
+  velocidade_led_cm_por_s: 60
+  duracao_minima_s: 2
+
+# Telas físicas na parede. Cada lugar aparece em no máximo UMA tela.
+# Lugares fora de qualquer tela continuam existindo (o mundo vive mesmo
+# sem ninguém olhando). Posição em cm a partir do canto inferior
+# esquerdo da parede. Este é um EXEMPLO com 4 telas: ajuste ao seu quarto.
+telas:
+  - id: parede_centro
+    nome: TV grande do centro
+    lugares: [town_square, cathedral, town_hall, market, community_kitchen, tavern,
+              forge, houses, prison, fields, cemetery]
+    posicao_cm: {x: 150, y: 120}
+    tamanho_cm: {largura: 120, altura: 70}
+    fps_max: 30
+    qualidade: media
+  - id: monitor_esquerda
+    nome: Monitor da esquerda
+    lugares: [forest, mountain]
+    posicao_cm: {x: 40, y: 140}
+    tamanho_cm: {largura: 55, altura: 32}
+    fps_max: 30
+    qualidade: media
+  - id: monitor_direita
+    nome: Monitor da direita
+    lugares: [sea, desert, sky]
+    posicao_cm: {x: 320, y: 140}
+    tamanho_cm: {largura: 55, altura: 32}
+    fps_max: 30
+    qualidade: media
+  - id: tela_homelab
+    nome: Tela transparente perto do homelab
+    lugares: [server_room, underground]
+    posicao_cm: {x: 420, y: 60}
+    tamanho_cm: {largura: 30, altura: 20}
+    fps_max: 20
+    qualidade: baixa
+
+nivel_log: info

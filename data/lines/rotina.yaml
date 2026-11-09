@@ -1,0 +1,75 @@
+# =====================================================================
+# Falas da rotina. Formato:
+#
+# situacoes:
+#   <situacao>:                 ← o id que as ações usam no campo "fala"
+#     - Texto simples, sem filtro.
+#     - texto: "{eu} come em silêncio."
+#       personagens: [mike]     ← só para estes ids (opcional)
+#       tracos: [bravo]         ← só para quem tem um destes traços (opcional)
+#       lugares: [tavern]       ← só nestes lugares (opcional)
+#       periodos: [noite]       ← só nestes períodos (opcional)
+#       climas: [chuva]         ← só com estes climas (opcional, Fase 3)
+#       necessidades_min: {raiva: 60}  ← só se a necessidade estiver acima
+#       peso: 2                 ← chance relativa (padrão 1)
+#
+# Variáveis: {eu} {outro} {lugar} {hora} {periodo} {clima} {bordao}
+#            {bordao_outro} {trabalho} {morto} {objeto}
+# Para citar alguém específico use o id: {@fool}, {@cathedral}.
+# NUNCA escreva o nome por extenso ("O Palhaço"): com {@clown} o texto
+# acompanha se o João renomear o personagem.
+#
+# Esta é a base da Fase 0 (poucos exemplos). A Fase 2 expande para pelo
+# menos 15 variações por situação comum.
+# =====================================================================
+
+situacoes:
+  comer:
+    - "{eu} come um prato fundo de sopa em {lugar}."
+    - "{eu} raspa o prato e pede mais."
+    - texto: "{eu}: \"{bordao}\" — e serve mais uma concha pra todo mundo."
+      personagens: [chef_wife]
+      peso: 3
+    - texto: "{eu} prova a comida dez vezes antes de engolir."
+      personagens: [chef_husband]
+      peso: 2
+    - texto: "{eu} come encostado na parede, de olho em quem está olhando."
+      personagens: [greedy]
+    - texto: "{eu} come. Só isso."
+      personagens: [mike]
+      peso: 3
+
+  trabalhar:
+    - "{eu} {trabalho} em {lugar}."
+    - "{eu} trabalha resmungando."
+    - texto: "{eu} aprova um pedido sem ler. \"{bordao}\""
+      personagens: [chief]
+      peso: 3
+    - texto: "{eu}: \"{bordao}\" *martelada*"
+      personagens: [blacksmith]
+      peso: 2
+    - texto: "{eu} mede a calçada com a régua. \"{bordao}\""
+      personagens: [inspector]
+      peso: 2
+
+  dormir:
+    - "{eu} vai dormir."
+    - "{eu} ronca alto em {lugar}."
+    - texto: "{eu} dorme abraçado na viola."
+      personagens: [musician]
+
+  cochilar:
+    - "{eu} cochila sentado."
+    - texto: "{eu} cochila no banco da praça, com a prancheta no peito."
+      personagens: [chief]
+      lugares: [town_square]
+      peso: 3
+
+  perambular:
+    - "{eu} anda sem rumo por {lugar}."
+    - texto: "{eu} para, olha pro nada e muda de direção."
+      personagens: [mike]
+      peso: 3
+    - texto: "{eu} anda em zigue-zague, empurrando o carrinho."
+      personagens: [weirdo]
+      peso: 2

@@ -1,0 +1,174 @@
+# Ações sociais e de conflito. Formato explicado no topo de basicas.yaml.
+# Ações "social" precisam de um alvo no mesmo lugar (condicoes.alvo) e
+# podem usar as entradas `afinidade` e `alvo_necessidade.<id>`.
+# As marcadas com `ativa: false` são da Fase 2 (sociedade).
+
+acoes:
+  - id: conversar
+    nome: Conversar
+    descricao: Conversa com alguém no mesmo lugar.
+    tipo: social
+    peso: 1.0
+    duracao_minutos: [5, 20]
+    em_qualquer_lugar: true
+    condicoes:
+      alvo: {obrigatorio: true, afinidade_min: -60}
+    consideracoes:
+      - entrada: necessidade.social
+        curva: {tipo: pontos, pontos: [[0, 0.05], [40, 0.4], [80, 1]]}
+      - entrada: afinidade
+        curva: {tipo: pontos, pontos: [[-100, 0.05], [0, 0.5], [100, 1]]}
+    efeitos:
+      necessidades: {social: -25, tedio: -10}
+      alvo_necessidades: {social: -20}
+      afinidade: 1
+      afinidade_do_alvo: 1
+    fala: conversa
+    chance_fala: 0.9
+    tags: [conversa]
+
+  - id: festejar
+    nome: Festejar
+    descricao: Dança, canta, bebe. Melhor à noite e com gente em volta.
+    tipo: individual
+    peso: 0.7
+    duracao_minutos: [30, 120]
+    consideracoes:
+      - entrada: necessidade.tedio
+        curva: {tipo: linear, minimo: 0.1}
+      - entrada: presentes
+        curva: {tipo: pontos, pontos: [[0, 0.1], [3, 0.6], [8, 1]]}
+      - entrada: hora
+        curva: {tipo: pontos, pontos: [[0, 0.8], [3, 0.4], [6, 0.05], [17, 0.2], [20, 1], [24, 1]]}
+    efeitos:
+      necessidades: {tedio: -40, social: -30, sono: 10, fome: 5}
+    fala: festejar
+    chance_fala: 0.5
+    tags: [evento]
+
+  - id: brigar
+    nome: Brigar
+    descricao: Discussão aos gritos ou briga de pastelão.
+    tipo: social
+    ativa: false
+    peso: 0.6
+    duracao_minutos: [3, 15]
+    em_qualquer_lugar: true
+    condicoes:
+      alvo: {obrigatorio: true, afinidade_max: 20}
+    consideracoes:
+      - entrada: necessidade.raiva
+        curva: {tipo: logistica, meio: 70, inclinacao: 0.12}
+      - entrada: afinidade
+        curva: {tipo: pontos, pontos: [[-100, 1], [-30, 0.6], [20, 0.1]]}
+    efeitos:
+      necessidades: {raiva: -40, sono: 5}
+      alvo_necessidades: {raiva: 25, medo: 10}
+      afinidade: -10
+      afinidade_do_alvo: -15
+    falha:
+      chance: 0.25
+      efeitos:
+        necessidades: {raiva: 15}
+      fala: tombo
+    fala: briga
+    chance_fala: 0.9
+    tags: [briga]
+    importancia: 1
+
+  - id: fofocar
+    nome: Fofocar
+    descricao: Conta para alguém o que sabe (ou acha que sabe) sobre um terceiro.
+    tipo: social
+    ativa: false
+    peso: 0.7
+    duracao_minutos: [5, 15]
+    em_qualquer_lugar: true
+    condicoes:
+      alvo: {obrigatorio: true, afinidade_min: -20}
+    consideracoes:
+      - entrada: necessidade.tedio
+        curva: {tipo: linear, minimo: 0.1}
+      - entrada: afinidade
+        curva: {tipo: pontos, pontos: [[-20, 0.2], [50, 1]]}
+    efeitos:
+      necessidades: {tedio: -20, social: -15}
+      afinidade: 2
+    fala: fofoca
+    chance_fala: 0.9
+    tags: [conversa]
+
+  - id: consolar
+    nome: Consolar
+    descricao: Tenta animar alguém triste ou com medo.
+    tipo: social
+    ativa: false
+    peso: 0.8
+    duracao_minutos: [5, 20]
+    em_qualquer_lugar: true
+    condicoes:
+      alvo: {obrigatorio: true, afinidade_min: 0}
+    consideracoes:
+      - entrada: alvo_necessidade.medo
+        curva: {tipo: pontos, pontos: [[0, 0.05], [50, 0.6], [100, 1]]}
+      - entrada: afinidade
+        curva: {tipo: linear}
+    efeitos:
+      necessidades: {social: -10}
+      alvo_necessidades: {medo: -25, social: -15}
+      afinidade: 3
+      afinidade_do_alvo: 6
+    fala: consolar
+    chance_fala: 0.8
+    tags: [conversa]
+
+  - id: roubar
+    nome: Roubar
+    descricao: Pega o que não é seu e esconde. Infração.
+    tipo: individual
+    ativa: false
+    peso: 0.3
+    duracao_minutos: [2, 10]
+    consideracoes:
+      - entrada: presentes
+        nota: melhor sem testemunhas
+        curva: {tipo: pontos, pontos: [[0, 1], [2, 0.4], [6, 0.05]]}
+    efeitos:
+      necessidades: {tedio: -15, medo: 10}
+    fala: roubo
+    chance_fala: 0.4
+    tags: [evento]
+
+  - id: construir
+    nome: Construir ou consertar
+    descricao: Reconstrói o que foi destruído (mutirão do Ferreiro, ordem do Chefe).
+    tipo: individual
+    ativa: false
+    peso: 0.5
+    duracao_minutos: [60, 180]
+    condicoes:
+      periodos: [manha, tarde]
+    consideracoes:
+      - entrada: necessidade.sono
+        curva: {tipo: linear, inverter: true, minimo: 0.1}
+    efeitos:
+      necessidades: {sono: 10, fome: 10, tedio: -10}
+    fala: construir
+    chance_fala: 0.3
+    tags: [trabalho]
+
+  - id: quebrar
+    nome: Quebrar
+    descricao: Quebra alguma coisa, de raiva ou sem querer. Infração.
+    tipo: individual
+    ativa: false
+    peso: 0.3
+    duracao_minutos: [2, 10]
+    consideracoes:
+      - entrada: necessidade.raiva
+        curva: {tipo: potencia, expoente: 2}
+    efeitos:
+      necessidades: {raiva: -30}
+    fala: quebrar
+    chance_fala: 0.6
+    tags: [briga]

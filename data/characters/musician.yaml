@@ -1,0 +1,49 @@
+id: musician
+nome: O Músico
+pronome: ele
+papel: Legal · sonhador
+aparencia: Chapéu de feltro, poncho colorido, viola caipira nas costas.
+movimento: Gingando. Para em qualquer esquina pra tocar.
+visual:
+  cor: "#f4a261"
+  cor_secundaria: "#2a9d8f"
+  altura: 1.0
+  corpo: normal
+  chapeu: chapéu de feltro
+  acessorio: viola caipira
+tracos: [tranquilo, sonhador, distraido]
+quer: Compor a música perfeita.
+medos:
+  - {descricao: Perder a viola., gatilho: perder_viola}
+defeito: Esquece todos os compromissos e toca na hora errada, inclusive no meio do sermão.
+bordoes:
+  - ♪ ♫ ♪
+  - ♫ lá-rá-rá ♫
+segredo: Não sabe ler partitura; aprendeu tudo de ouvido.
+dia_normal: Toca na praça, ensaia modão com os Cowboys, toca na taverna e nas raves, e nos funerais toca sem ninguém pedir.
+profissao: musico
+local_trabalho: town_square
+casa: houses
+rotina:
+  - {das: "08:30", ate: "09:30", acao: comer, lugar: community_kitchen}
+  - {das: "10:00", ate: "12:00", acao: trabalhar, lugar: town_square}
+  - {das: "12:30", ate: "13:30", acao: comer, lugar: community_kitchen}
+  - {das: "15:00", ate: "17:30", acao: trabalhar, lugar: town_square}
+  - {das: "19:30", ate: "23:59", acao: festejar, lugar: tavern, peso: 2.5}
+  - {das: "01:00", ate: "08:30", acao: dormir, lugar: houses}
+relacoes:
+  - {com: cowboy_fat, afinidade: 60, tipo: parceiro, nota: Modão na taverna até de madrugada.}
+  - {com: cowboy_thin, afinidade: 60, tipo: parceiro}
+  - {com: cowboy_old, afinidade: 60, tipo: parceiro}
+  - {com: fool, afinidade: 50, tipo: amigo}
+  - {com: chef_wife, afinidade: 45, tipo: amigo}
+  - {com: inspector, afinidade: -45, tipo: chato_oficial, nota: Reclama do barulho.}
+  - {com: teen, afinidade: 30, tipo: conhecido}
+afinidade_padrao: 10
+ligacao_real:
+  canal: instrumento_real
+  descricao: Quando o Criador toca violão, viola ou piano de verdade, ele para, escuta e tenta imitar.
+heranca:
+  objetos: [viola caipira]
+  manias: [tocar em funeral sem ninguém pedir]
+se_morrer: A música ambiente do mundo muda e a cidade fica mais vazia.

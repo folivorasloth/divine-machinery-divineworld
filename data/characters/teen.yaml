@@ -1,0 +1,44 @@
+id: teen
+nome: O Adolescente
+pronome: ele
+papel: Irritado · filho do casal
+aparencia: Moletom com capuz, fone de ouvido, cabelo pintado de cor vibrante, skate debaixo do braço e cara de tédio permanente.
+movimento: De skate. Cai em toda escada.
+visual:
+  cor: "#3a86ff"
+  cor_secundaria: "#ff006e"
+  altura: 0.95
+  corpo: magro
+  chapeu: capuz
+  acessorio: skate
+tracos: [rebelde, sarcastico, inseguro]
+quer: Sair da cidade e ir para o Mundo de Fora.
+medos:
+  - {descricao: Virar igual aos pais., gatilho: virar_os_pais}
+defeito: Picha os muros da cidade e assina o próprio nome.
+bordoes:
+  - Tanto faz.
+segredo: Quer entrar na seita e está esperando o convite.
+dia_normal: Acorda ao meio-dia, foge da cozinha, apronta com o Palhaço, vai às raves escondidas e ronda a seita.
+profissao: nenhuma
+casa: houses
+rotina:
+  - {das: "12:00", ate: "13:00", acao: comer, lugar: community_kitchen}
+  - {das: "13:00", ate: "18:00", acao: perambular, peso: 1.5}
+  - {das: "22:00", ate: "02:00", acao: festejar, lugar: underground, peso: 2}
+  - {das: "03:00", ate: "12:00", acao: dormir, lugar: houses}
+necessidades:
+  tedio: {inicial: 60, taxa: 1.4}
+  sono: {taxa: 0.9}
+relacoes:
+  - {com: chef_wife, afinidade: 20, tipo: filho, nota: Detesta os pais pelo menos em público.}
+  - {com: chef_husband, afinidade: 20, tipo: filho, nota: Detesta os pais pelo menos em público.}
+  - {com: clown, afinidade: 60, tipo: cumplice}
+  - {com: musician, afinidade: 50, tipo: amigo}
+  - {com: medium, afinidade: 55, tipo: admiracao, nota: Quer entrar na seita.}
+  - {com: inspector, afinidade: -60, tipo: chato_oficial}
+  - {com: priest, afinidade: -45, tipo: implicancia}
+heranca:
+  objetos: [skate, fone de ouvido]
+  manias: [pichar o próprio nome nos muros]
+se_morrer: O casal desmorona. O luto mais pesado que a cidade já viu.

@@ -1,0 +1,15 @@
+# Nunca visitado. Existe para as lendas (os anjos, o Grilo) e para o
+# sonho do Adolescente e do Ganancioso.
+id: outside_world
+nome: O Mundo de Fora
+descricao: Nunca visitado. Lá vivem os anjos. Diz a lenda que o Grilo nasceu nas telas e um dia escapou para lá.
+regiao: beyond
+ambiente: externo
+acesso: nunca
+perigo: 0
+paleta:
+  principal: "#ffffff"
+  secundaria: "#dddddd"
+  luz: "#ffffff"
+tem: [os anjos]
+acoes: []

@@ -1,0 +1,18 @@
+id: server_room
+nome: A Sala do Servidor
+descricao: Azul elétrico, faíscas e terror. Perigo de choque e de descobrir os segredos do universo.
+regiao: biomes
+ambiente: interno
+perigo: 70
+perigo_noite: 85
+sinistro: true
+paleta:
+  principal: "#00f5ff"
+  secundaria: "#0b132b"
+  luz: "#7df9ff"
+  noite: "#000814"
+tem: [racks piscando, cabos soltos, um fundo que ninguém olha]
+conexoes:
+  - {para: town_hall, tipo: tunel, minutos: 5}
+  - {para: underground, tipo: caminho, minutos: 15}
+acoes: [quebrar, construir]

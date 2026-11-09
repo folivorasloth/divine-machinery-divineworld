@@ -1,0 +1,68 @@
+# =====================================================================
+# Eventos do diretor (storyteller) — EXEMPLOS da Fase 0
+# =====================================================================
+# O diretor (Fase 3) mede a tensão do mundo e injeta eventos daqui para
+# manter o ritmo. Ele NUNCA decide o resultado: só cria uma situação
+# (muda necessidades de quem está no lugar, ou cria um "objetivo"
+# temporário que aumenta a vontade de fazer certa ação).
+#
+# Campos:
+#   tipo: ritmo | social | clima | criatura | raro | lendario
+#   tensao: acalma | agita | neutro   ← o diretor escolhe pelo que precisa
+#   peso: chance relativa entre os eventos possíveis
+#   cooldown_horas: tempo mínimo até repetir
+#   lugares: sorteia um destes (vazio = qualquer)
+#   condicoes: periodos, horarios, tensao_min, tensao_max, populacao_min, climas
+#   efeitos:
+#     necessidades: {tedio: -20}       ← para quem estiver no lugar
+#     objetivo: {acao: festejar, lugar: tavern, bonus: 2.5, duracao_horas: 4, para: todos}
+#     clima: chuva                      ← força um clima (ex.: funeral)
+#   texto: o que aparece no Chat do Mundo ({lugar} e {@id} valem)
+#   importancia: 0 a 3 (3 = vai pra linha do tempo dos grandes acontecimentos)
+# =====================================================================
+
+eventos:
+  - id: noite_animada
+    nome: Noite animada na taverna
+    tipo: ritmo
+    tensao: acalma
+    peso: 1.0
+    cooldown_horas: 24
+    lugares: [tavern]
+    condicoes:
+      periodos: [noite]
+      tensao_max: 40
+    efeitos:
+      objetivo: {acao: festejar, lugar: tavern, bonus: 2.5, duracao_horas: 4, para: todos}
+    texto: "Corre pela cidade que hoje a noite em {lugar} vai ser boa."
+    importancia: 1
+    tags: [evento]
+
+  - id: mare_estranha
+    nome: A maré trouxe uma coisa
+    tipo: ritmo
+    tensao: agita
+    peso: 0.5
+    cooldown_horas: 48
+    lugares: [sea]
+    efeitos:
+      necessidades: {tedio: -20, medo: 10}
+    texto: "A maré trouxe uma coisa estranha para {lugar}. Ninguém sabe o que é."
+    importancia: 1
+    tags: [misterio]
+
+  - id: vento_frio_na_floresta
+    nome: Vento frio na floresta
+    tipo: criatura
+    ativo: false        # Fase 3 liga as criaturas
+    tensao: agita
+    peso: 0.7
+    cooldown_horas: 12
+    lugares: [forest]
+    condicoes:
+      periodos: [noite, madrugada]
+    efeitos:
+      necessidades: {medo: 30}
+    texto: "Algo se mexe entre as árvores de {lugar}. Os olhos no escuro piscam."
+    importancia: 2
+    tags: [misterio]

@@ -1,0 +1,39 @@
+id: greedy
+nome: O Ganancioso
+pronome: ele
+papel: Greed NPC
+aparencia: Casaco enorme cheio de bolsos, olhos que brilham quando vê alguma coisa.
+movimento: Furtivo, encostado nas paredes.
+visual:
+  cor: "#2b2d42"
+  cor_secundaria: "#d4af37"
+  altura: 1.0
+  corpo: normal
+  chapeu: nenhum
+  acessorio: casaco cheio de bolsos
+tracos: [ganancioso, desconfiado, astuto]
+quer: Ter mais coisas que todo mundo.
+medos:
+  - {descricao: Que descubram o esconderijo., gatilho: esconderijo_descoberto}
+defeito: Esconde coisas e esquece onde escondeu.
+bordoes:
+  - É meu.
+segredo: Está juntando tudo pra um dia "comprar" o Mundo de Fora.
+dia_normal: Recolhe tudo que encontra e faz trocas suspeitas com o Esquisito.
+profissao: nenhuma
+casa: houses
+rotina:
+  - {das: "07:30", ate: "08:30", acao: comer, lugar: community_kitchen}
+  - {das: "09:00", ate: "12:00", acao: perambular, peso: 1.5}
+  - {das: "12:30", ate: "13:30", acao: comer, lugar: community_kitchen}
+  - {das: "14:00", ate: "18:00", acao: perambular, peso: 1.5}
+  - {das: "19:30", ate: "20:30", acao: comer, lugar: tavern}
+  - {das: "23:00", ate: "07:00", acao: dormir, lugar: houses}
+relacoes:
+  - {com: chef_wife, afinidade: -40, tipo: ladrao, nota: Contam a comida.}
+  - {com: chef_husband, afinidade: -40, tipo: ladrao, nota: Contam a comida.}
+  - {com: weirdo, afinidade: 10, tipo: trocas}
+afinidade_padrao: -5
+heranca:
+  objetos: [casaco cheio de bolsos, o esconderijo]
+se_morrer: Acham o esconderijo e a cidade briga pela partilha.
