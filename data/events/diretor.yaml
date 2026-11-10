@@ -1,37 +1,47 @@
 # =====================================================================
-# Eventos do diretor (storyteller) — EXEMPLOS da Fase 0
+# Eventos do diretor (storyteller) — Fase 3
 # =====================================================================
-# O diretor (Fase 3) mede a tensão do mundo e injeta eventos daqui para
-# manter o ritmo. Ele NUNCA decide o resultado: só cria uma situação
-# (muda necessidades de quem está no lugar, ou cria um "objetivo"
-# temporário que aumenta a vontade de fazer certa ação).
+# O diretor mede a tensão do mundo (world.yaml > diretor) e, quando ela está
+# longe do alvo do período, injeta UM evento daqui para puxar o ritmo:
+#   tensão baixa demais (cidade parada)  -> escolhe um evento "tensao: agita"
+#   tensão alta demais (brigas, mortes)  -> escolhe um evento "tensao: acalma"
+# Ele NUNCA decide o resultado: só cria uma situação (muda necessidades de
+# quem está no lugar, cria um "objetivo" temporário que aumenta a vontade de
+# fazer certa ação, força um clima, faz aparecer uma criatura).
 #
 # Campos:
 #   tipo: ritmo | social | clima | criatura | raro | lendario
 #   tensao: acalma | agita | neutro   ← o diretor escolhe pelo que precisa
 #   peso: chance relativa entre os eventos possíveis
 #   cooldown_horas: tempo mínimo até repetir
-#   lugares: sorteia um destes (vazio = qualquer)
+#   lugares: sorteia um destes (vazio = a cidade toda)
 #   condicoes: periodos, horarios, tensao_min, tensao_max, populacao_min, climas
 #   efeitos:
 #     necessidades: {tedio: -20}       ← para quem estiver no lugar
+#     necessidades_para: todos         ← (ou a cidade inteira)
 #     objetivo: {acao: festejar, lugar: tavern, bonus: 2.5, duracao_horas: 4, para: todos}
-#     clima: chuva                      ← força um clima (ex.: funeral)
-#   texto: o que aparece no Chat do Mundo ({lugar} e {@id} valem)
+#     clima: chuva  + clima_minutos: 120   ← força um clima por um tempo
+#     criatura: olhos_no_escuro         ← faz aparecer uma criatura (creatures.yaml)
+#     memoria: <tipo>                   ← quem sentiu lembra
+#     especial: fantasma | ressurreicao ← regras raras (ver lifecycle.py)
+#   texto: o que aparece no Chat do Mundo ({lugar}, {clima}, {hora} e {@id} valem)
 #   importancia: 0 a 3 (3 = vai pra linha do tempo dos grandes acontecimentos)
+#   chance_por_dia: (raro/lendario) chance por dia de acontecer sozinho, fora da
+#                   conta da tensão. Fantasma e ressurreição usam os limites
+#                   do world.yaml (chance_fantasma_por_noite, ..._por_ano).
 # =====================================================================
 
 eventos:
+  # ------------------------------------------------------------ agita (calmo demais)
   - id: noite_animada
     nome: Noite animada na taverna
     tipo: ritmo
-    tensao: acalma
-    peso: 1.0
-    cooldown_horas: 24
+    tensao: agita
+    peso: 1.2
+    cooldown_horas: 30
     lugares: [tavern]
     condicoes:
       periodos: [noite]
-      tensao_max: 40
     efeitos:
       objetivo: {acao: festejar, lugar: tavern, bonus: 2.5, duracao_horas: 4, para: todos}
     texto: "Corre pela cidade que hoje a noite em {lugar} vai ser boa."
@@ -42,11 +52,12 @@ eventos:
     nome: A maré trouxe uma coisa
     tipo: ritmo
     tensao: agita
-    peso: 0.5
+    peso: 0.6
     cooldown_horas: 48
     lugares: [sea]
     efeitos:
       necessidades: {tedio: -20, medo: 10}
+      objetivo: {acao: perambular, bonus: 1.5, duracao_horas: 3, para: todos}
     texto: "A maré trouxe uma coisa estranha para {lugar}. Ninguém sabe o que é."
     importancia: 1
     tags: [misterio]
@@ -54,15 +65,231 @@ eventos:
   - id: vento_frio_na_floresta
     nome: Vento frio na floresta
     tipo: criatura
-    ativo: false        # Fase 3 liga as criaturas
     tensao: agita
     peso: 0.7
-    cooldown_horas: 12
+    cooldown_horas: 30
     lugares: [forest]
     condicoes:
       periodos: [noite, madrugada]
     efeitos:
-      necessidades: {medo: 30}
-    texto: "Algo se mexe entre as árvores de {lugar}. Os olhos no escuro piscam."
+      criatura: olhos_no_escuro
+    texto: "Um vento frio sopra de {lugar}. As lamparinas da cidade tremem."
     importancia: 2
+    tags: [misterio]
+
+  - id: boato_na_feira
+    nome: Boato na feira
+    tipo: social
+    tensao: agita
+    peso: 1.0
+    cooldown_horas: 20
+    lugares: [market]
+    condicoes:
+      periodos: [manha, tarde]
+    efeitos:
+      necessidades: {tedio: -15, raiva: 10}
+      objetivo: {acao: fofocar, bonus: 2, duracao_horas: 3, para: todos}
+    texto: "Um boato sem dono começa em {lugar}. Cada um que conta, aumenta."
+    importancia: 1
+    tags: [evento]
+
+  - id: calor_de_rachar
+    nome: Calor de rachar
+    tipo: clima
+    tensao: agita
+    peso: 0.5
+    cooldown_horas: 48
+    condicoes:
+      periodos: [tarde]
+    efeitos:
+      necessidades: {raiva: 12, tedio: 10}
+      necessidades_para: todos
+      clima: limpo
+      clima_minutos: 240
+    texto: "O sol racha a cidade às {hora}. Todo mundo fica de pavio curto."
+    importancia: 1
+    tags: [clima]
+
+  - id: sino_sozinho
+    nome: O sino tocou sozinho
+    tipo: ritmo
+    tensao: agita
+    peso: 0.4
+    cooldown_horas: 72
+    lugares: [cathedral]
+    condicoes:
+      periodos: [madrugada, noite]
+    efeitos:
+      necessidades: {medo: 25, fe: 20}
+      necessidades_para: todos
+    texto: "O sino de {lugar} bate três vezes no meio da noite. Não tinha ninguém lá."
+    importancia: 2
+    tags: [misterio]
+
+  - id: mercadoria_nova
+    nome: Chegou coisa nova na feira
+    tipo: ritmo
+    tensao: agita
+    peso: 0.8
+    cooldown_horas: 36
+    lugares: [market]
+    condicoes:
+      periodos: [manha]
+    efeitos:
+      necessidades: {tedio: -25}
+      objetivo: {acao: conversar, lugar: market, bonus: 2, duracao_horas: 3, para: todos}
+    texto: "Apareceu uma carroça cheia de coisas esquisitas em {lugar}. Ninguém viu quem trouxe."
+    importancia: 1
+    tags: [evento]
+
+  - id: tempestade_chegando
+    nome: Tempestade chegando
+    tipo: clima
+    tensao: agita
+    peso: 0.5
+    cooldown_horas: 60
+    efeitos:
+      necessidades: {medo: 10}
+      necessidades_para: todos
+      clima: tempestade
+      clima_minutos: 150
+    texto: "O céu fica roxo de repente. Vem tempestade."
+    importancia: 1
+    tags: [clima]
+
+  # ---------------------------------------------------------- acalma (caótico demais)
+  - id: sopa_quentinha
+    nome: Sopa quentinha
+    tipo: social
+    tensao: acalma
+    peso: 1.2
+    cooldown_horas: 18
+    lugares: [community_kitchen]
+    condicoes:
+      horarios: [{das: "11:00", ate: "20:30"}]
+    efeitos:
+      objetivo: {acao: comer, lugar: community_kitchen, bonus: 2.5, duracao_horas: 2, para: todos}
+    texto: "Um cheiro de sopa quentinha sai de {lugar} e se espalha pela cidade inteira."
+    importancia: 1
+    tags: [evento]
+
+  - id: tarde_mansa
+    nome: Uma tarde mansa
+    tipo: ritmo
+    tensao: acalma
+    peso: 1.0
+    cooldown_horas: 20
+    condicoes:
+      periodos: [manha, tarde]
+    efeitos:
+      necessidades: {raiva: -20, medo: -10}
+      necessidades_para: todos
+      clima: limpo
+      clima_minutos: 180
+    texto: "O vento muda, o sol sai e a cidade inteira respira fundo."
+    importancia: 1
+    tags: [clima]
+
+  - id: tregua
+    nome: Trégua
+    tipo: social
+    tensao: acalma
+    peso: 1.0
+    cooldown_horas: 30
+    lugares: [town_square]
+    efeitos:
+      necessidades: {raiva: -25}
+      necessidades_para: todos
+      objetivo: {acao: pedir_desculpas, bonus: 2.5, duracao_horas: 4, para: todos}
+    texto: "Alguém pendura um pano branco em {lugar}. Ninguém sabe quem foi, mas todo mundo entende."
+    importancia: 2
+    tags: [evento]
+
+  - id: musica_na_praca
+    nome: Música na praça
+    tipo: ritmo
+    tensao: acalma
+    peso: 0.8
+    cooldown_horas: 24
+    lugares: [town_square]
+    condicoes:
+      periodos: [tarde, noite]
+    efeitos:
+      necessidades: {raiva: -15, tedio: -10}
+      objetivo: {acao: conversar, lugar: town_square, bonus: 2, duracao_horas: 2, para: todos}
+    texto: "Uma música que ninguém está tocando sai de {lugar}. É bonita. Ninguém pergunta de onde vem."
+    importancia: 1
+    tags: [misterio]
+
+  - id: chuva_mansa
+    nome: Chuva mansa
+    tipo: clima
+    tensao: acalma
+    peso: 0.6
+    cooldown_horas: 30
+    condicoes:
+      periodos: [tarde, noite, madrugada]
+    efeitos:
+      necessidades: {raiva: -15}
+      necessidades_para: todos
+      clima: garoa
+      clima_minutos: 180
+    texto: "Começa uma garoa fina. A cidade abaixa a voz."
+    importancia: 1
+    tags: [clima]
+
+  - id: missa_de_consolo
+    nome: Missa de consolo
+    tipo: social
+    tensao: acalma
+    peso: 0.8
+    cooldown_horas: 30
+    lugares: [cathedral]
+    condicoes:
+      periodos: [manha, tarde]
+    efeitos:
+      objetivo: {acao: missa, lugar: cathedral, bonus: 2.5, duracao_horas: 3, para: todos}
+    texto: "As portas de {lugar} ficam abertas a tarde toda. Dá vontade de entrar."
+    importancia: 1
+    tags: [igreja]
+
+  # ----------------------------------------------------------- raros e lendários
+  - id: fantasma
+    nome: Um fantasma
+    tipo: raro
+    cooldown_horas: 48
+    condicoes:
+      periodos: [noite, madrugada]
+    efeitos:
+      especial: fantasma
+    texto: "Um morto aparece."
+    importancia: 2
+    tags: [misterio]
+
+  - id: ressurreicao_natural
+    nome: Ressurreição natural
+    tipo: lendario
+    cooldown_horas: 2160
+    efeitos:
+      especial: ressurreicao
+    texto: "Alguém volta do cemitério."
+    importancia: 3
+    tags: [misterio]
+
+  - id: desenho_do_criador
+    nome: A figura desenhada
+    descricao: O personagem raro desenhado pelo João. Ficha em branco até o desenho existir.
+    tipo: lendario
+    cooldown_horas: 720
+    chance_por_dia: 0.01
+    lugares: [town_square, market, cathedral, fields]
+    condicoes:
+      periodos: [manha, tarde]
+    efeitos:
+      necessidades: {medo: 20, fe: 30, tedio: -40}
+      necessidades_para: todos
+      objetivo: {acao: encarar_tela, bonus: 6, duracao_horas: 1, para: todos}
+      memoria: aparicao_rara
+    texto: "Em {lugar} aparece uma figura que parece desenhada à mão, com traços tremidos. A cidade inteira para e olha. Depois de um minuto, ela some."
+    importancia: 3
     tags: [misterio]

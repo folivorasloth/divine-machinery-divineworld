@@ -94,6 +94,32 @@ class ClockConfig(DataModel):
     periods: list[Period] = Field(alias="periodos", min_length=1)
 
 
+class WeatherKind(DataModel):
+    """Um tipo de clima (limpo, chuva...). `codigos`: códigos WMO do Open-Meteo que viram este tipo."""
+
+    name: str = Field(alias="nome", min_length=1)  # vira a variável {clima} das falas
+    codes: list[int] = Field(default_factory=list, alias="codigos")
+    rain: bool = Field(False, alias="chuva")  # conta como chuva (efeitos, medo de chuva)
+
+
+class WeatherEffect(DataModel):
+    """O que um clima (ou o frio/calor) faz: multiplica taxas de necessidades e notas de ações."""
+
+    needs: dict[Id, Multiplier] = Field(default_factory=dict, alias="necessidades")
+    actions: dict[Id, Multiplier] = Field(default_factory=dict, alias="acoes")
+    # multiplica a nota de QUALQUER ação em lugar com ambiente: externo
+    outdoor: Multiplier = Field(1.0, alias="acoes_externas")
+
+
+class SimulatedWeather(DataModel):
+    """Clima sorteado (quando o mundo não está no tempo real ou sem internet)."""
+
+    change_hours: tuple[float, float] = Field((2, 6), alias="troca_a_cada_horas")
+    weights: dict[Id, float] = Field(default_factory=dict, alias="pesos")
+    temp_day: tuple[float, float] = Field((20, 30), alias="temperatura_dia")
+    temp_night: tuple[float, float] = Field((14, 20), alias="temperatura_noite")
+
+
 class WeatherConfig(DataModel):
     city: str = Field(alias="cidade")
     latitude: float = Field(ge=-90, le=90)
@@ -101,7 +127,23 @@ class WeatherConfig(DataModel):
     refresh_minutes: int = Field(30, alias="atualizar_minutos", ge=5)
     cache_file: str = Field(alias="cache_arquivo")
     timeout_seconds: float = Field(5, alias="timeout_segundos", gt=0)
+    # tipo de clima (id em `tipos`) quando não há internet, nem cache, nem sorteio
     fallback: str = Field("nublado", alias="clima_padrao")
+    # Fase 3 ------------------------------------------------------------------
+    # auto: clima real (Open-Meteo) quando o mundo segue o relógio real; sorteado
+    #       quando o tempo está acelerado (testes, --fast). real | simulado | fixo
+    mode: Literal["auto", "real", "simulado", "fixo"] = Field("auto", alias="modo")
+    url: str = Field("https://api.open-meteo.com/v1/forecast", alias="url")
+    kinds: dict[Id, WeatherKind] = Field(default_factory=dict, alias="tipos")
+    simulated: SimulatedWeather = Field(default_factory=SimulatedWeather, alias="simulado")
+    cold_below: float = Field(14, alias="frio_abaixo")
+    hot_above: float = Field(30, alias="calor_acima")
+    # efeitos por tipo de clima e também "frio" / "calor"
+    effects: dict[Id, WeatherEffect] = Field(default_factory=dict, alias="efeitos")
+    # quem tem medo (medos.gatilho) do clima atual ganha isso de medo por hora
+    fear_per_hour: float = Field(12, alias="medo_por_hora_com_gatilho", ge=0)
+    # o clima do funeral (sempre chove)
+    funeral_kind: Id = Field("chuva", alias="clima_do_funeral")
 
 
 class MqttTopics(DataModel):
@@ -326,6 +368,129 @@ class StructuresConfig(DataModel):
     damaged_below: float = Field(70, alias="danificado_abaixo", ge=0, le=100)
 
 
+# --------------------------------------------------------------------------
+# Fase 3: vida, morte, criaturas, diretor
+# --------------------------------------------------------------------------
+
+
+class DeathCause(DataModel):
+    """Uma causa de morte. `quando` diz em que momento o mundo sorteia:
+
+    diario   — uma vez por dia, para cada vivo (chance vazia = limites.chance_morte_por_dia)
+    briga    — quando uma briga termina, para o alvo (e, com metade da chance, para quem bateu)
+    falha    — quando uma das `acoes` dá errado (pastelão)
+    criatura — por hora, para quem está no lugar de uma criatura (e ao perder um enfrentamento)
+    limbo    — uma vez por ida ao Limbo (não volta)
+    """
+
+    name: str = Field(alias="nome", min_length=1)
+    when: Literal["diario", "briga", "falha", "criatura", "limbo"] = Field(alias="quando")
+    chance: float | None = Field(None, ge=0, le=1)
+    actions: list[Id] = Field(default_factory=list, alias="acoes")
+    places: list[Id] = Field(default_factory=list, alias="lugares")
+    by_trait: dict[Id, Multiplier] = Field(default_factory=dict, alias="por_traco")
+    situation: Id | None = Field(None, alias="fala")  # situação de data/lines da notícia (padrão: morte_<id>)
+
+
+class DeathConfig(DataModel):
+    causes: dict[Id, DeathCause] = Field(default_factory=dict, alias="causas")
+    memory: Id = Field("morte", alias="memoria")  # memória permanente de todos os vivos
+    # para onde o corpo vai (o cemitério)
+    body_place: Id = Field("cemetery", alias="lugar_do_corpo")
+
+
+class FuneralConfig(DataModel):
+    delay_hours: tuple[float, float] = Field((2, 5), alias="depois_horas")
+    window: TimeWindow = Field(default_factory=lambda: TimeWindow(das="07:00", ate="19:00"), alias="comeca_entre")
+    wake_place: Id = Field("cathedral", alias="local_velorio")
+    wake_minutes: int = Field(40, alias="velorio_minutos", ge=0)
+    burial_place: Id = Field("cemetery", alias="local_enterro")
+    duration_minutes: tuple[int, int] = Field((60, 90), alias="duracao_minutos")
+    action: Id = Field("velar", alias="acao")
+    # vontade de ir: bonus = base + afinidade_com_o_morto × por_afinidade (mínimo `bonus_min`)
+    bonus_base: float = Field(3, alias="bonus_base", gt=0)
+    bonus_per_affinity: float = Field(0.05, alias="bonus_por_afinidade", ge=0)
+    bonus_min: float = Field(0.4, alias="bonus_min", gt=0)
+    memory: Id | None = Field("funeral", alias="memoria")
+    # quem conduz (o primeiro vivo com uma destas profissões)
+    leaders: list[Id] = Field(default_factory=lambda: ["padre", "lider"], alias="quem_conduz")
+
+
+class GriefConfig(DataModel):
+    affinity_min: float = Field(20, alias="afinidade_min")  # abaixo disso não entra em luto
+    days: float = Field(5, alias="dias", gt=0)  # duração com intensidade 1 (afinidade 100)
+    kind_factor: dict[str, float] = Field(default_factory=dict, alias="fator_por_tipo")
+    shock: dict[Id, float] = Field(default_factory=dict, alias="choque")  # somado na hora × intensidade
+    rates: dict[Id, Multiplier] = Field(default_factory=dict, alias="taxas")  # taxas × (1 + (m-1)×int.)
+    actions: dict[Id, Multiplier] = Field(default_factory=dict, alias="acoes")  # notas × (1 + (m-1)×int.)
+
+
+class DeathConsequence(DataModel):
+    """O que a morte de um personagem específico muda (bible: "Se morrer")."""
+
+    rain_minutes: int | None = Field(None, alias="chuva_minutos", ge=0)
+    funeral_delay_hours: float | None = Field(None, alias="funeral_depois_horas", ge=0)
+    text: str | None = Field(None, alias="texto")  # narração logo depois do funeral (ou da morte)
+    actions: dict[Id, Multiplier] = Field(default_factory=dict, alias="acoes")
+    who: list[Id] = Field(default_factory=list, alias="para")  # vazio = todos
+    days: float = Field(7, alias="dias", gt=0)
+    goal: "Goal | None" = Field(None, alias="objetivo")
+    grief_factor: dict[Id, float] = Field(default_factory=dict, alias="luto_fator")
+    importance: int = Field(2, alias="importancia", ge=0, le=3)
+
+
+class SuccessionRole(DataModel):
+    mode: Literal["eleicao", "vocacao", "sucessao"] = Field(alias="modo")
+    after_hours: tuple[float, float] = Field((12, 36), alias="depois_horas")
+    traits: list[Id] = Field(default_factory=list, alias="tracos")  # vocação: quem tem estes traços
+    place: Id | None = Field(None, alias="lugar")  # eleição: onde a cidade se junta
+    duration_minutes: int = Field(60, alias="duracao_minutos", gt=0)  # eleição: assembleia
+
+
+class SuccessionConfig(DataModel):
+    roles: dict[Id, SuccessionRole] = Field(default_factory=dict, alias="papeis")
+    heir_bonus: float = Field(4, alias="bonus_herdeiro", ge=0)
+    kind_bonus: dict[str, float] = Field(default_factory=dict, alias="bonus_por_tipo")
+    assembly_action: Id = Field("assembleia", alias="acao_assembleia")
+    assembly_bonus: float = Field(4, alias="bonus_assembleia", gt=0)
+
+
+class LifeConfig(DataModel):
+    # pasta dos nascidos, relativa a data/ (a variável DW_BORN_DIR tem prioridade)
+    born_dir: str = Field("characters/born", alias="pasta_nascidos")
+    # cada vaga aberta (mortes - nascimentos nos últimos 30 dias) aumenta a chance de nascer
+    vacancy_bonus: float = Field(1.0, alias="bonus_por_vaga", ge=0)
+    # luto, fantasmas e herança olham para os mortos destes últimos dias
+    recent_dead_days: float = Field(20, alias="dias_morto_recente", gt=0)
+    ghost_memory: Id = Field("fantasma", alias="memoria_fantasma")
+    resurrection_memory: Id = Field("ressurreicao", alias="memoria_ressurreicao")
+
+
+class CreaturesConfig(DataModel):
+    max_active: int = Field(3, alias="max_ao_mesmo_tempo", ge=0)
+    fight_action: Id = Field("enfrentar", alias="acao_enfrentar")
+    memory: Id = Field("criatura", alias="memoria")
+    win_memory: Id = Field("criatura_vencida", alias="memoria_vitoria")
+
+
+class DirectorConfig(DataModel):
+    every_minutes: int = Field(10, alias="a_cada_minutos", ge=1)
+    window_hours: float = Field(6, alias="janela_horas", gt=0)
+    # tensão = Σ peso × contagem na janela (tipos de evento) + medo/raiva médios × peso + ...
+    event_weights: dict[str, float] = Field(default_factory=dict, alias="pesos_eventos")
+    fear_weight: float = Field(0.3, alias="peso_medo_medio")
+    anger_weight: float = Field(0.3, alias="peso_raiva_media")
+    death_weight: float = Field(15, alias="peso_morte_recente")
+    death_window_hours: float = Field(48, alias="janela_morte_horas", gt=0)
+    creature_weight: float = Field(8, alias="peso_criatura")
+    # tensão que o diretor persegue em cada período do dia
+    target: dict[Id, float] = Field(default_factory=dict, alias="alvo")
+    margin: float = Field(10, alias="margem", ge=0)
+    # chance de agir numa checagem = min(1, distância/50) × isto
+    act_chance: float = Field(0.25, alias="chance_de_agir", ge=0, le=1)
+    log_every_minutes: int = Field(60, alias="registrar_tensao_a_cada_minutos", ge=1)
+
+
 class WorldConfig(DataModel):
     name: str = Field(alias="nome")
     seed: int | None = None
@@ -355,6 +520,15 @@ class WorldConfig(DataModel):
     factions: dict[Id, Faction] = Field(default_factory=dict, alias="faccoes")
     structures: StructuresConfig = Field(default_factory=StructuresConfig, alias="estruturas")
     theft: TheftConfig = Field(default_factory=TheftConfig, alias="roubos")
+    # Fase 3
+    life: LifeConfig = Field(default_factory=LifeConfig, alias="vida")
+    death: DeathConfig = Field(default_factory=DeathConfig, alias="morte")
+    funeral: FuneralConfig = Field(default_factory=FuneralConfig, alias="funeral")
+    grief: GriefConfig = Field(default_factory=GriefConfig, alias="luto")
+    consequences: dict[Id, DeathConsequence] = Field(default_factory=dict, alias="se_morrer")
+    succession: SuccessionConfig = Field(default_factory=SuccessionConfig, alias="sucessao")
+    creatures: CreaturesConfig = Field(default_factory=CreaturesConfig, alias="criaturas")
+    director: DirectorConfig = Field(default_factory=DirectorConfig, alias="diretor")
 
     @field_validator("seed", mode="before")
     @classmethod
@@ -473,6 +647,14 @@ class Inheritance(DataModel):
     heirs: list[Id] = Field(default_factory=list, alias="herdeiros")
 
 
+class Inherited_(DataModel):
+    """O que um nascido herdou de um morto recente."""
+
+    from_: Id = Field(alias="de")
+    object: str | None = Field(None, alias="objeto")
+    quirk: str | None = Field(None, alias="mania")
+
+
 class Character(DataModel):
     id: Id
     name: str = Field(alias="nome", min_length=1)
@@ -501,6 +683,9 @@ class Character(DataModel):
     inheritance: Inheritance = Field(default_factory=Inheritance, alias="heranca")
     on_death: str = Field("", alias="se_morrer")
     faction: Id | None = Field(None, alias="faccao")  # Fase 2: igreja, seita... (world.yaml > faccoes)
+    # Fase 3: só nos nascidos (data/characters/born/)
+    born_at: str | None = Field(None, alias="nascido_em")  # data/hora do mundo do nascimento
+    inherited: "Inherited_ | None" = Field(None, alias="herdou")
 
 
 # --------------------------------------------------------------------------
@@ -545,7 +730,14 @@ class BirthRules(DataModel):
     min_traits: int = Field(2, alias="tracos_min", ge=1)
     max_traits: int = Field(3, alias="tracos_max", ge=1)
     inherit_chance: float = Field(0.5, alias="chance_herdar_do_morto", ge=0, le=1)
-    default_name: str = Field("Recém-chegado", alias="nome_padrao")
+    # nome de quem nasce ({n} = número do nascimento); o João renomeia depois no YAML
+    default_name: str = Field("O Recém-chegado nº {n}", alias="nome_padrao")
+    default_name_she: str = Field("A Recém-chegada nº {n}", alias="nome_padrao_ela")
+    home: Id = Field("houses", alias="casa")
+    appears_at: Id = Field("town_square", alias="aparece_em")
+    default_affinity: Affinity = Field(10, alias="afinidade_padrao")
+    # rotina-base de quem nasce (trabalhar sem lugar = no local de trabalho da profissão)
+    routine: list[RoutineBlock] = Field(default_factory=list, alias="rotina")
 
     @model_validator(mode="after")
     def _range(self) -> "BirthRules":
@@ -725,7 +917,8 @@ class Action(DataModel):
     # deixa assinatura numa estrutura do lugar (pichação): o Fiscal descobre depois
     signs: bool = Field(False, alias="assina")
     # comportamentos especiais (regra no código, documentada em docs/arquitetura.md)
-    special: Literal["fofoca", "confissao", "denuncia", "prender", "roubar", "recrutar", "ordem_reconstruir"] | None = Field(
+    special: Literal["fofoca", "confissao", "denuncia", "prender", "roubar", "recrutar", "ordem_reconstruir",
+                     "funeral", "tumulo", "criatura", "assembleia"] | None = Field(
         None, alias="especial")
     # recrutar: para qual facção
     faction: Id | None = Field(None, alias="faccao")
@@ -779,8 +972,15 @@ class Goal(DataModel):
 
 class EventEffects(DataModel):
     needs: dict[Id, float] = Field(default_factory=dict, alias="necessidades")
+    # quem sente as `necessidades`: quem está no lugar, ou a cidade inteira
+    needs_for: Literal["lugar", "todos"] = Field("lugar", alias="necessidades_para")
     goal: Goal | None = Field(None, alias="objetivo")
-    weather: str | None = Field(None, alias="clima")
+    weather: str | None = Field(None, alias="clima")  # força um tipo de clima (world.yaml > clima.tipos)
+    weather_minutes: int = Field(120, alias="clima_minutos", gt=0)
+    creature: Id | None = Field(None, alias="criatura")  # faz aparecer uma criatura (creatures.yaml)
+    # regras raras com código próprio: fantasma, ressurreição natural
+    special: Literal["fantasma", "ressurreicao"] | None = Field(None, alias="especial")
+    memory: Id | None = Field(None, alias="memoria")  # quem sentiu o evento lembra (tipo de memória)
 
 
 class WorldEvent(DataModel):
@@ -799,6 +999,38 @@ class WorldEvent(DataModel):
     text: str = Field(alias="texto")  # template do Chat do Mundo
     importance: int = Field(1, alias="importancia", ge=0, le=3)
     tags: list[Id] = Field(default_factory=list)
+    # eventos raros/lendários não entram na conta da tensão: são sorteados sozinhos
+    # com esta chance por dia (fantasma e ressurreição usam os `limites` do world.yaml)
+    chance_per_day: float | None = Field(None, alias="chance_por_dia", ge=0, le=1)
+
+
+class CreatureTexts(DataModel):
+    appears: list[str] = Field(alias="aparece", min_length=1)
+    leaves: list[str] = Field(alias="some", min_length=1)
+    beaten: list[str] = Field(default_factory=list, alias="vencida")
+    attack: list[str] = Field(default_factory=list, alias="ataque")
+
+
+class CreatureDef(DataModel):
+    """Uma criatura do bestiário (data/events/creatures.yaml)."""
+
+    id: Id
+    name: str = Field(alias="nome", min_length=1)
+    description: str = Field("", alias="descricao")
+    places: list[Id] = Field(alias="lugares", min_length=1)
+    periods: list[Id] = Field(default_factory=list, alias="periodos")
+    chance_per_hour: float = Field(0, alias="chance_por_hora", ge=0, le=1)  # nos períodos acima
+    duration_minutes: tuple[int, int] = Field((60, 180), alias="duracao_minutos")
+    fear: float = Field(30, alias="medo", ge=0)  # medo de quem está lá quando aparece (metade por hora)
+    danger: float = Field(30, alias="perigo", ge=0)  # soma ao perigo do lugar enquanto está lá
+    win_chance: float = Field(0.4, alias="chance_vencer", ge=0, le=1)
+    experts: list[Id] = Field(default_factory=list, alias="especialistas")  # profissões que vencem mais
+    # homelab: só aparece quando um serviço real cai (homelab/servicos/#) e só some quando volta
+    homelab: bool = Field(False, alias="homelab")
+    goal_professions: list[Id] = Field(default_factory=list, alias="chama_profissoes")
+    goal_bonus: float = Field(6, alias="bonus_objetivo", gt=0)
+    texts: CreatureTexts = Field(alias="textos")
+    importance: int = Field(2, alias="importancia", ge=0, le=3)
 
 
 class OrganizerRule(DataModel):
@@ -865,6 +1097,7 @@ class SocialEventDef(DataModel):
 class EventsFile(DataModel):
     events: list[dict] = Field(default_factory=list, alias="eventos")
     social_events: list[dict] = Field(default_factory=list, alias="eventos_sociais")
+    creatures: list[dict] = Field(default_factory=list, alias="criaturas")
 
 
 # --------------------------------------------------------------------------
@@ -884,6 +1117,10 @@ class LineTemplate(DataModel):
     # Fase 2: só se quem fala lembra de algo deste tipo envolvendo o alvo (ou
     # qualquer um, se não houver alvo). A memória vira a variável {lembranca}.
     memory: list[Id] = Field(default_factory=list, alias="memoria")
+    # Fase 3: só quando o morto da situação (funeral, luto, fantasma) é um destes
+    dead: list[Id] = Field(default_factory=list, alias="mortos")
+    # Fase 3: só para quem tem uma destas profissões (vale para quem assumir o papel)
+    professions: list[Id] = Field(default_factory=list, alias="profissoes")
 
     @model_validator(mode="before")
     @classmethod
@@ -899,3 +1136,7 @@ class LineTemplate(DataModel):
 
 class LinesFile(DataModel):
     situations: dict[Id, list[LineTemplate]] = Field(alias="situacoes")
+
+
+DeathConsequence.model_rebuild()
+Character.model_rebuild()

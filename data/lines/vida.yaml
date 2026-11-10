@@ -1,0 +1,604 @@
+# =====================================================================
+# Falas da Fase 3: morte, funeral, luto, herança, fantasmas, ressurreição,
+# nascimentos, sucessão, criaturas e clima.
+#
+# Variáveis novas nestas situações:
+#   {morto}   quem morreu (funeral, luto, túmulo, fantasma, herança)
+#   {objeto}  a causa da morte / o objeto herdado / a profissão assumida /
+#             a criatura ou o serviço do homelab / a apuração da eleição
+#   {traco}   os traços de quem nasceu, ou o traço novo de quem voltou
+# Filtros novos:
+#   mortos: [fool]       só quando o morto da situação é um destes
+#   profissoes: [padre]  só para quem tem a profissão AGORA (vale para quem assumir o papel)
+# Nas situações morte_*, {eu} é QUEM MORREU e {outro} é quem estava junto
+# (na briga). Na "epitafio", {eu} também é o morto.
+# =====================================================================
+
+situacoes:
+  # -------------------------------------------------------------- mortes
+  morte_velhice:
+    - "{eu} senta num banco de {lugar}, fecha os olhos e não abre mais."
+    - "{eu} dorme em {lugar} e não acorda. Parecia em paz."
+    - "{eu} suspira fundo em {lugar}, como quem lembra de alguma coisa boa, e morre."
+    - "{eu} morre em {lugar}, de repente, no meio de uma frase. A frase fica para sempre sem fim."
+    - "O coração de {eu} para em {lugar}. Assim, sem aviso."
+    - "{eu} deita na grama de {lugar} para ver as nuvens. Não levanta mais."
+    - "{eu} morre de velhice em {lugar}, com o chapéu ainda na cabeça."
+    - texto: "{eu} morre em {lugar} com um último \"{bordao}\" que ninguém ouviu."
+    - "{eu} se encosta na parede de {lugar}, diz que está cansad{o|a} e escorrega devagar. Acabou."
+  morte_briga:
+    - "A briga entre {eu} e {outro} passa do ponto. {eu} cai em {lugar} e não levanta mais."
+    - "{outro} empurra, {eu} bate a cabeça em {lugar}. Silêncio. Não era para ser assim."
+    - "No meio do tapa com {outro}, {eu} tropeça, cai mal e morre ali mesmo, em {lugar}."
+    - "{eu} leva um tombo feio na briga com {outro}. O pastelão acabou sem graça nenhuma."
+    - "{outro} fica de pé olhando {eu} no chão de {lugar}. Ninguém ri. Ninguém respira."
+    - "Uma briga boba em {lugar}, uma queda errada, e {eu} morre. {outro} não acredita."
+  morte_acidente:
+    - "{eu} escorrega em {lugar}, bate a cabeça e não levanta. O tombo de sempre, só que não."
+    - "O acidente mais bobo da história da cidade: {eu} tropeça no próprio pé em {lugar} e morre."
+    - "{eu} cai do jeito errado em {lugar}. Quem viu jura que foi engraçado por meio segundo."
+    - "Uma coisa pesada despenca em {lugar}. Debaixo dela, {eu}."
+    - "{eu} tenta de novo aquela trapalhada em {lugar}. Desta vez não tem graça: morreu."
+    - "Em {lugar}, {eu} se distrai um segundo. Foi o último."
+  morte_choque:
+    - "Um estalo azul em {lugar}. {eu} encostou onde não devia, pela última vez."
+    - "{eu} leva o choque de sempre em {lugar}, só que mais forte. O cabelo fica em pé para sempre."
+    - "Os racks de {lugar} piscam todos juntos. {eu} cai no chão, soltando fumaça."
+    - "{eu} queria descobrir os segredos do universo em {lugar}. Descobriu."
+    - "Um raio sai do fundo de {lugar} e acha {eu}. Ninguém mais encosta naquele cabo."
+  morte_criatura:
+    - "{objeto} pega {eu} no escuro de {lugar}. Só sobra o chapéu."
+    - "Um grito em {lugar}. Quando chegam, só encontram {eu} caíd{o|a} e marcas no chão. Foi {objeto}."
+    - "{eu} vai olhar o que era aquele barulho em {lugar}. Era {objeto}."
+    - "Em {lugar}, {objeto} chega perto demais de {eu}. De manhã, encontram o corpo."
+    - "{eu} não volta da noite em {lugar}. Dizem que foi {objeto}. Ninguém duvida."
+  morte_limbo:
+    - "{eu} não volta do Limbo. Fica lá, no branco, para sempre."
+    - "O Limbo engole {eu} de vez. Na cidade, só sobra o silêncio onde a voz de {eu} ficava."
+    - "Do Limbo vem um clarão, e depois nada. {eu} não vai voltar."
+    - "Dizem que {eu} se perdeu no branco do Limbo. Ninguém sabe se dói."
+
+  # --------------------------------------------------------------- luto
+  luto:
+    - "{eu} fica em silêncio quando ouve que {morto} morreu. Depois sai andando sem rumo."
+    - "{eu} não chora na frente de ninguém. Chora escondid{o|a}, por {morto}."
+    - "{eu} senta no chão e não consegue levantar: {morto} morreu."
+    - "{eu} repete o nome de {morto} baixinho, como se fosse fazer voltar."
+    - "{eu} perde a fome quando sabe de {morto}. O prato esfria inteiro."
+    - "{eu} jura que viu {morto} ainda hoje cedo. Viu mesmo."
+    - "{eu} guarda um lugar vazio na mesa para {morto}, por costume."
+    - "{eu}: \"Não pode ser. {morto}? Não pode ser.\""
+    - "{eu} vai até a janela, olha pro nada e diz: \"Logo {morto}...\""
+    - "{eu} abraça a primeira pessoa que passa e não explica nada. É por {morto}."
+    - "{eu} fica {humor} o dia inteiro. Ninguém pergunta: todo mundo sabe que é por {morto}."
+    - "{eu} acha uma coisa esquecida de {morto} e não consegue jogar fora."
+    - texto: "{eu} sobe no balcão, joga o pano de prato no chão e grita o nome de {morto}."
+      personagens: [chef_husband, chef_wife]
+    - texto: "{eu} esquece a panela no fogo. Pela primeira vez não liga se queimou. É por {morto}."
+      personagens: [chef_husband, chef_wife]
+      peso: 2
+    - texto: "{eu} aperta a buzina uma vez, bem baixinho, e guarda no bolso. Por {morto}."
+      personagens: [clown]
+      peso: 2
+    - texto: "{eu} escreve o nome de {morto} na lista dos mortos e não consegue terminar a piada ...hehe."
+      personagens: [fool]
+      peso: 2
+    - texto: "{eu} sorri, porque o sorriso não desliga. Mas chora por {morto} ao mesmo tempo."
+      personagens: [florist]
+      peso: 2
+    - texto: "{eu} toca uma música que ninguém conhecia para {morto}. Erra de propósito no final."
+      personagens: [musician]
+      peso: 2
+    - texto: "{eu} dá uma martelada na bigorna que se ouve na cidade inteira. GRRR. Por {morto}."
+      personagens: [blacksmith]
+      peso: 2
+    - texto: "{eu} tira o chapéu e não fala nada o dia inteiro. Nem \"ô loco\". Por {morto}."
+      tracos: [contador_de_causo]
+      peso: 2
+    - texto: "{eu} diz \"tanto faz\" quando contam de {morto}, e se tranca no quarto."
+      personagens: [teen]
+      peso: 2
+    - texto: "{eu} anota no bloquinho: \"{morto} — falecimento — sem infração\". A mão treme."
+      personagens: [inspector]
+      peso: 2
+
+  heranca:
+    - "{eu} fica com {objeto}, que era de {morto}. Segura com as duas mãos."
+    - "{objeto} de {morto} vai parar com {eu}. Ninguém discute."
+    - "{eu} herda {objeto} de {morto} e passa o dia mostrando pra todo mundo."
+    - "{eu} recebe {objeto}, de {morto}, e não sabe se ri ou se chora."
+    - "{eu} esconde {objeto} de {morto} debaixo do travesseiro."
+    - "Agora {objeto} é de {eu}. Era de {morto}. Ainda tem o cheiro."
+    - texto: "{eu} herda {objeto} de {morto} e jura que vai cuidar melhor do que ele cuidava."
+      tracos: [vaidoso, soberbo]
+    - texto: "{eu} recebe {objeto} de {morto}: \"É meu. Sempre foi meu.\""
+      personagens: [greedy]
+      peso: 2
+
+  # ------------------------------------------------------------ funeral
+  funeral_anuncio:
+    - "{eu} passa de casa em casa: o velório de {morto} é às {hora}, na Catedral."
+    - "{eu} avisa a cidade, de chapéu na mão: velório de {morto} às {hora}."
+    - "{eu} prende um papel na porta da Catedral: \"Velório de {morto}, às {hora}\"."
+    - "{eu} sobe na escadaria e anuncia: às {hora}, a gente se despede de {morto}."
+    - "{eu} toca o sino devagar e avisa quem passa: às {hora}, o velório de {morto}."
+    - texto: "{eu}: \"Deus me livre e guarde. Às {hora}, o velório de {morto}. Todo mundo de preto.\""
+      profissoes: [padre]
+      peso: 2
+    - texto: "{eu}: \"Vamo vê isso aí... o velório de {morto} é às {hora}. Avisa os outros.\""
+      profissoes: [lider]
+      peso: 2
+
+  funeral_comeca:
+    - "Começa o velório de {morto} na Catedral. Lá fora, começa a chover."
+    - "{eu} abre as portas da Catedral para o velório de {morto}. O céu escurece na hora."
+    - "As velas acendem em volta de {morto}. Na primeira gota de chuva, {eu} começa a falar."
+    - "{eu} pede silêncio: o velório de {morto} começou. A chuva não pede licença."
+    - "O caixão de {morto} chega na Catedral. A chuva chega junto, como sempre."
+    - texto: "{eu} sobe no púlpito, tropeça na batina e começa: \"Estamos aqui por {morto}...\" Lá fora, chove."
+      profissoes: [padre]
+      peso: 2
+    - texto: "{eu} tira o chapéu de palha: \"Bom... {morto}... vamo vê.\" Começa a chover."
+      profissoes: [lider]
+      peso: 2
+
+  funeral_cortejo:
+    - "O cortejo de {morto} sai da Catedral rumo ao Cemitério, debaixo de chuva. Vão {eu} e {convidados}."
+    - "{eu} vai na frente do cortejo de {morto}. Atrás, {convidados}, com os pés na lama."
+    - "Debaixo da chuva, {eu} e {convidados} levam {morto} até o Cemitério."
+    - "A procissão de {morto} atravessa a cidade molhada: {eu} na frente, {convidados} atrás."
+    - "{eu} puxa o cortejo de {morto} pela rua de terra. {convidados} seguem calados."
+
+  funeral_personalidade:
+    # The Fool: a piada certa no momento mais errado
+    - texto: "{eu} conta uma piada no funeral de {morto}. É boa. Ninguém ri ...hehe."
+      personagens: [fool]
+      peso: 3
+    - texto: "{eu}: \"Pelo menos agora {morto} não precisa mais acordar cedo ...hehe.\" Silêncio total."
+      personagens: [fool]
+      peso: 3
+    - texto: "{eu} faz malabarismo com três flores do funeral de {morto}. Deixa todas caírem na cova."
+      personagens: [fool]
+      peso: 3
+    - texto: "{eu} cochicha: \"Quantas vezes eu fiz {morto} rir? Onze. Doze, se contar a de hoje\" ...hehe."
+      personagens: [fool]
+      peso: 3
+    - texto: "{eu} chora no funeral do irmão e, no meio do choro, conta a piada favorita dele ...hehe."
+      personagens: [fool]
+      mortos: [clown]
+      peso: 8
+    # A Florista: canta e distribui flores
+    - texto: "{eu} distribui flores cantando no meio do funeral de {morto}: \"Que dia LINDO!\" Está chovendo."
+      personagens: [florist]
+      peso: 3
+    - texto: "{eu} canta uma música alegre demais para o funeral de {morto}. Ninguém tem coragem de mandar parar."
+      personagens: [florist]
+      peso: 3
+    - texto: "{eu} cobre a lápide de {morto} de margaridas, sorrindo. O sorriso não desliga nem agora."
+      personagens: [florist]
+      peso: 3
+    # O Músico: toca sem ninguém pedir
+    - texto: "{eu} tira a viola das costas e toca para {morto} sem ninguém pedir. É a música mais bonita do dia."
+      personagens: [musician]
+      peso: 3
+    - texto: "{eu} toca um modão no funeral de {morto}. Erra um acorde e todo mundo finge que foi de propósito."
+      personagens: [musician]
+      peso: 3
+    - texto: "{eu} responde ao padre com notas no balão: ♪ ♫ ♪. Para {morto}."
+      personagens: [musician]
+      peso: 3
+    # A Dama: só vai pra ser vista
+    - texto: "{eu} chega atrasada ao funeral de {morto} para todo mundo ver o vestido. \"Que gentalha.\""
+      personagens: [lady]
+      peso: 3
+    - texto: "{eu} se abana com o leque no funeral de {morto} e pergunta se alguém reparou nas joias."
+      personagens: [lady]
+      peso: 3
+    - texto: "{eu} chora alto no funeral de {morto}, de olho em quem está olhando. Lágrima nenhuma."
+      personagens: [lady]
+      peso: 3
+    # O Palhaço
+    - texto: "{eu} aperta a buzina uma vez no funeral de {morto}. Não é piada. É despedida."
+      personagens: [clown]
+      peso: 3
+    - texto: "{eu} fica no fundo do funeral de {morto}, encarando a cova por tempo demais."
+      personagens: [clown]
+      peso: 3
+    - texto: "{eu} não aperta a buzina nem uma vez. Pela primeira vez na vida, não tem piada. É o irmão."
+      personagens: [clown]
+      mortos: [fool]
+      peso: 8
+    # Os Cowboys
+    - texto: "{eu} tira o chapéu, cospe de lado e diz: \"Vai com Deus, {morto}. Ô loco, sô.\""
+      tracos: [contador_de_causo]
+      peso: 2
+    - texto: "{eu} derrama um gole de cerveja na terra de {morto}: \"Essa é sua.\""
+      tracos: [contador_de_causo]
+      peso: 2
+    - texto: "{eu} começa um causo sobre {morto} no meio do enterro. Ninguém sabe se é verdade."
+      tracos: [contador_de_causo]
+      peso: 2
+    # O Padre
+    - texto: "{eu} reza pela alma de {morto} e, no meio da reza, conta um segredo de confissão sem perceber."
+      personagens: [priest]
+      peso: 3
+    - texto: "{eu} joga água benta na cova de {morto}, nos sapatos de quem está perto e em si mesmo."
+      profissoes: [padre]
+      peso: 2
+    # A Médium
+    - texto: "{eu} fecha os olhos no funeral de {morto}: \"As vozes disseram que {morto} mandou um recado.\""
+      profissoes: [medium]
+      peso: 3
+    - texto: "{eu} acende uma vela preta escondida no funeral de {morto}. {@priest} finge que não viu."
+      personagens: [medium]
+      peso: 3
+    # O Esquisito
+    - texto: "{eu} pega uma pedrinha da cova de {morto} e sussurra: \"...isso é importante...\""
+      personagens: [weirdo]
+      peso: 3
+    - texto: "{eu} anota tudo do funeral de {morto} num caderninho, inclusive o formato das nuvens."
+      personagens: [weirdo]
+      peso: 3
+    # O Fiscal
+    - texto: "{eu} mede a cova de {morto} com a régua: \"Dois centímetros fora do padrão. Vou relevar.\""
+      personagens: [inspector]
+      peso: 3
+    - texto: "{eu} apita baixinho no funeral de {morto}. Não era infração. Era tristeza."
+      personagens: [inspector]
+      peso: 3
+    # O Ganancioso
+    - texto: "{eu} vai ao funeral de {morto} e passa o tempo todo de olho nas coisas que sobraram."
+      personagens: [greedy]
+      peso: 3
+    - texto: "{eu} pergunta, no meio do enterro de {morto}, quem fica com as botas. \"É meu.\""
+      personagens: [greedy]
+      peso: 3
+    # O Chefe
+    - texto: "{eu} faz um discurso sobre {morto}, aprova tudo que pedem e cochila em pé."
+      personagens: [chief]
+      peso: 3
+    - texto: "{eu}: \"Vamo vê isso aí... {morto} vai fazer falta.\" Assina uma prancheta em branco."
+      personagens: [chief]
+      peso: 3
+    # O Ferreiro
+    - texto: "{eu} carrega o caixão de {morto} sozinho. Bufa fumaça de raiva da morte."
+      personagens: [blacksmith]
+      peso: 3
+    # O casal da cozinha
+    - texto: "{eu} trouxe comida para o funeral de {morto}: \"Come que esfria!\" Ninguém consegue."
+      personagens: [chef_wife]
+      peso: 3
+    - texto: "{eu} chora mais alto que todo mundo no funeral de {morto}: \"Faltou... faltou {morto}!\""
+      personagens: [chef_husband]
+      peso: 3
+    # O Adolescente
+    - texto: "{eu} fica de capuz no funeral de {morto}, fone no ouvido. Tira o fone só na hora de jogar a terra."
+      personagens: [teen]
+      peso: 3
+    # Os Técnicos
+    - texto: "{eu} murmura no funeral de {morto}: \"Não encosta nisso...\" e não explica para ninguém."
+      personagens: [tech_old]
+      peso: 3
+    - texto: "{eu} pergunta alto, no meio do enterro de {morto}, se dá para ligar alguém de volta na tomada."
+      personagens: [tech_apprentice]
+      peso: 3
+    # traços
+    - texto: "{eu} chega ao funeral de {morto} com a roupa mais cara, para ser vist{o|a}."
+      tracos: [vaidoso]
+    - texto: "{eu} cochicha no funeral de {morto} o que ouviu dizer sobre como foi a morte."
+      tracos: [fofoqueiro]
+    - texto: "{eu} comenta no funeral de {morto}: \"Pelo menos não choveu... ah, choveu.\""
+      tracos: [sarcastico]
+    - texto: "{eu} olha a chuva cair na cova de {morto} e pensa que todo mundo um dia vai ser esquecido."
+      tracos: [melancolico]
+
+  funeral_amigo:
+    - "{eu} segura a terra na mão e não consegue jogar na cova de {morto}."
+    - "{eu} chora no funeral de {morto} sem tentar esconder."
+    - "{eu} conta, com a voz falhando, a primeira vez que encontrou {morto}."
+    - "{eu} põe a mão na lápide de {morto}: \"Até logo.\""
+    - "{eu} fica até o fim do enterro de {morto}, mesmo encharcad{o|a}."
+    - "{eu} abraça quem estiver do lado no funeral de {morto}. Não importa quem."
+    - "{eu} deixa uma coisa pequena na cova de {morto}. Ninguém vê o que é."
+    - "{eu} diz baixinho no funeral: \"{morto} merecia mais tempo.\""
+    - "{eu} canta junto, desafinad{o|a}, a música que {morto} gostava."
+    - "{eu} não fala nada no funeral de {morto}. Só fica, debaixo da chuva."
+    - "{eu} ri chorando de uma lembrança de {morto}."
+    - "{eu} joga a primeira pá de terra em {morto} e pede desculpas por tudo."
+    - "{eu} fica de mãos dadas com a lápide molhada de {morto}."
+    - "{eu}: \"{bordao}... era o que {morto} mais ouvia de mim.\""
+    - "{eu} lembra de {morto} rindo, e por um segundo a chuva parece mais fraca."
+    - "{eu} promete a {morto}, olhando a cova, que vai cuidar de quem ficou."
+
+  funeral:
+    - "{eu} vai ao funeral de {morto} porque todo mundo foi."
+    - "{eu} fica em pé no funeral de {morto}, sem saber o que fazer com as mãos."
+    - "{eu} acompanha o enterro de {morto} de longe, com o chapéu no peito."
+    - "{eu} olha a cova de {morto} e pensa que a vida é curta."
+    - "{eu} reza um pouco por {morto}, meio sem jeito."
+    - "{eu} cochicha com quem está do lado sobre como {morto} morreu."
+    - "{eu} fica no funeral de {morto} só o tempo de ser educad{o|a}."
+    - "{eu} se protege da chuva embaixo de uma árvore no funeral de {morto}."
+    - "{eu} assina o livro do velório de {morto} com letra caprichada."
+    - "{eu} joga um punhado de terra na cova de {morto} e limpa a mão na calça."
+    - "{eu} observa todo mundo chorando por {morto} e se pergunta quem chorará por si."
+    - "{eu}, molhad{o|a} até os ossos, fica até o fim do enterro de {morto}."
+    - "{eu} pensa numa coisa que nunca disse a {morto}. Agora não dá mais."
+    - "{eu} tira o chapéu para {morto}. A chuva entra no cabelo."
+    - "{eu} conta pra ninguém em especial que {morto} uma vez lhe deu bom dia."
+    - "{eu} fica {humor} no funeral de {morto}, olhando a lama."
+
+  funeral_inimigo:
+    - "{eu} vai ao funeral de {morto} só para ter certeza."
+    - "{eu} fica no fundo do funeral de {morto}, de braços cruzados."
+    - "{eu} não chora no funeral de {morto}. Nem finge."
+    - "{eu} murmura no enterro de {morto}: \"Que descanse. Longe de mim.\""
+    - "{eu} olha a cova de {morto} e sente uma coisa que não sabe o nome. Não é saudade."
+    - "{eu} aparece no funeral de {morto}, fica dois minutos e vai embora."
+    - "{eu} sussurra: \"A gente nunca resolveu aquilo, {morto}.\""
+    - "{eu} sente culpa por não sentir nada no funeral de {morto}."
+    - "{eu} joga terra na cova de {morto} com mais força do que precisava."
+    - "{eu} vai ao funeral de {morto} e, no fim, chora. Ninguém entende, nem {eu}."
+    - "{eu} fica olhando a lápide de {morto}: \"Ganhei.\" Não parece vitória."
+    - "{eu} lembra de cada briga com {morto} enquanto a chuva cai."
+
+  funeral_passante:
+    - texto: "{eu} atravessa o meio do funeral de {morto} sem perceber. Ninguém tem coragem de dizer nada."
+      personagens: [mike]
+      peso: 6
+    - texto: "{eu} para do lado da cova de {morto}, olha pro nada e muda de direção."
+      personagens: [mike]
+      peso: 6
+    - texto: "{eu} passa pelo enterro de {morto} e o balão aparece: \"...\""
+      personagens: [mike]
+      peso: 6
+    - "{eu} passa pelo Cemitério bem na hora do enterro de {morto}. Tira o chapéu e segue."
+    - "{eu} chega no Cemitério, vê o enterro de {morto} e fica parad{o|a}, sem saber se entra."
+    - "{eu} passa correndo pelo funeral de {morto}, com vergonha de não ter ido."
+    - "{eu} assiste ao enterro de {morto} do portão do Cemitério."
+    - "{eu} esbarra no cortejo de {morto} por acaso e acaba ficando um pouco."
+
+  epitafio:
+    - "Aqui jaz {eu}. Fez o que pôde."
+    - "Saudade de quem fica."
+    - "Foi cedo. Ou na hora. Ninguém sabe."
+    - "Descansa em paz, que aqui em cima a gente se vira."
+    - "Volta quando puder."
+    - "Esteve aqui."
+    - "A cidade era maior com {eu}."
+    - texto: "...hehe."
+      personagens: [fool]
+      peso: 6
+    - texto: "Fez todo mundo rir, menos a si mesmo."
+      personagens: [fool, clown]
+      peso: 4
+    - texto: "Uma buzina de borracha. Mais nada."
+      personagens: [clown]
+      peso: 6
+    - texto: "Que dia LINDO."
+      personagens: [florist]
+      peso: 6
+    - texto: "♪ ♫ ♪"
+      personagens: [musician]
+      peso: 6
+    - texto: "Deus me livre e guarde."
+      personagens: [priest]
+      peso: 6
+    - texto: "As vozes continuam."
+      personagens: [medium]
+      peso: 6
+    - texto: "Come que esfria."
+      personagens: [chef_wife]
+      peso: 6
+    - texto: "Faltou sal."
+      personagens: [chef_husband]
+      peso: 6
+    - texto: "Tanto faz."
+      personagens: [teen]
+      peso: 6
+    - texto: "Ê trem bão."
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+      peso: 6
+    - texto: "...isso é importante..."
+      personagens: [weirdo]
+      peso: 6
+    - texto: "..."
+      personagens: [mike]
+      peso: 6
+    - texto: "Que gentalha."
+      personagens: [lady]
+      peso: 6
+    - texto: "Infração: falecimento."
+      personagens: [inspector]
+      peso: 6
+    - texto: "GRRR."
+      personagens: [blacksmith]
+      peso: 6
+    - texto: "É meu."
+      personagens: [greedy]
+      peso: 6
+    - texto: "Vamo vê isso aí."
+      personagens: [chief]
+      peso: 6
+    - texto: "Não encosta nisso."
+      personagens: [tech_old]
+      peso: 6
+    - texto: "Encostou."
+      personagens: [tech_apprentice]
+      peso: 6
+
+  tumulo:
+    - "{eu} conversa com a lápide de {morto} como se fosse uma visita."
+    - "{eu} limpa o musgo da lápide de {morto} com a manga."
+    - "{eu} leva flores para {morto} e conta as novidades da cidade."
+    - "{eu} senta do lado do túmulo de {morto} e não diz nada."
+    - "{eu} lê o nome de {morto} na lápide, duas vezes, para ter certeza."
+    - "{eu} deixa um pedaço de pão no túmulo de {morto}. Por via das dúvidas."
+    - "{eu} pergunta para a lápide de {morto} o que fazer. A lápide não responde."
+    - "{eu} visita {morto} no Cemitério e volta mais leve."
+    - "{eu} chora um pouquinho no túmulo de {morto} e depois ri de alguma lembrança."
+    - "{eu} conta pra {morto}, baixinho, uma fofoca nova. {morto} sempre gostava."
+    - "{eu} acende uma vela para {morto}. O vento apaga. Acende de novo."
+    - "{eu} fica {humor} na frente da lápide de {morto}."
+    - texto: "{eu} canta no túmulo de {morto}, sorrindo. Nem a chuva tira o sorriso."
+      personagens: [florist]
+      peso: 2
+    - texto: "{eu} conta uma piada para o túmulo de {morto}. Ninguém ri, como sempre ...hehe."
+      personagens: [fool]
+      peso: 2
+
+  # ----------------------------------------------------------- fantasmas
+  fantasma_amor:
+    - "No meio da noite, {morto} aparece do lado de {eu}, translúcido, e sorri."
+    - "{eu} sente uma mão gelada no ombro. É {morto}, que some antes de {eu} virar."
+    - "{morto} aparece sentado na beira da cama de {eu}, como fazia antes."
+    - "Uma luz fraca toma a forma de {morto} na frente de {eu}. Parece querer dizer alguma coisa."
+    - "{eu} ouve o assobio de {morto} no escuro. Quando olha, {morto} acena e se apaga."
+    - "{morto} volta por um instante só para olhar {eu}. Depois vira névoa."
+    - "{eu} acorda com cheiro de {morto} no quarto e vê a silhueta na porta."
+  fantasma_odio:
+    - "{morto} aparece no escuro e fica encarando {eu}, sem piscar."
+    - "{eu} vê {morto} no fim da rua, apontando. A luz do poste apaga."
+    - "Um vulto com a cara de {morto} grita sem som na frente de {eu}."
+    - "{morto} volta à noite só para derrubar as coisas de {eu}, uma por uma."
+    - "{eu} ouve a risada de {morto} atrás de si. Quando vira, não tem ninguém."
+    - "{morto} aparece em cima do telhado, olhando {eu} lá de cima. A noite gela."
+    - "{eu} sente um bafo frio na nuca e a voz de {morto}: \"Lembra?\""
+  fantasma_sonho:
+    - "{eu} sonha com {morto}. No sonho, {morto} diz uma coisa importante, que some quando {eu} acorda."
+    - "{eu} se mexe dormindo e diz o nome de {morto}. No quarto, a temperatura cai."
+    - "Enquanto {eu} dorme, {morto} fica na janela, olhando."
+    - "{eu} acorda suad{o|a}: {morto} estava lá, juraria."
+
+  # -------------------------------------------------------- ressurreição
+  ressurreicao_natural:
+    - "A terra do Cemitério se mexe. {eu} sai da cova, cuspindo barro. Voltou. Está mais {traco}."
+    - "{eu} se levanta da própria cova, olha em volta e pergunta que dia é hoje. Voltou diferente: mais {traco}."
+    - "No meio da névoa do Cemitério, {eu} aparece andando, vivo. Ninguém sabe explicar."
+    - "{eu} volta dos mortos sem aviso, com medo de tudo e um jeito {traco} que não tinha."
+  ressurreicao_criador:
+    - "Um clarão desce do céu sobre o Cemitério. {eu} abre os olhos. Voltou, mais {traco}."
+    - "A lápide de {eu} racha ao meio e {eu} sai, tossindo, vivo. Alguém lá de fora quis assim."
+  ressurreicao_padre:
+    - "{eu} cai de joelhos: \"MILAGRE! {morto} voltou! Deus me livre e guarde!\""
+    - "{eu} toca o sino sem parar: {morto} voltou dos mortos. É milagre, e quem duvidar vai pro inferno."
+    - "{eu} chora na escadaria da Catedral: {morto} ressuscitou. Promete missa por uma semana."
+  ressurreicao_medium:
+    - "{eu} abre os braços: \"Fui EU. As vozes me ensinaram como trazer {morto} de volta.\""
+    - "{eu} jura para a seita que trouxe {morto} do outro lado com um ritual secreto."
+    - "{eu} sorri devagar: \"Eu avisei que {morto} voltaria. As vozes nunca mentem.\""
+
+  # --------------------------------------------------------- nascimentos
+  nascimento:
+    - "Nasce alguém na cidade: {eu}. Tem jeito {traco} e já quer ser {objeto}."
+    - "Ninguém sabe de onde veio, mas agora tem {eu} na cidade: {traco}, futur{o|a} {objeto}."
+    - "Um choro novo na cidade. É {eu}, que nasceu {traco} e com cara de {objeto}."
+    - "{eu} aparece na Praça de manhã, como se sempre tivesse estado lá. Parece {traco}. Diz que vai ser {objeto}."
+    - "A cidade ganha {eu}: {traco}. O destino diz {objeto}."
+    - "{eu} nasce numa noite qualquer. Vai ser {objeto}, dizem. É {traco}, dá pra ver."
+    - "Chegou {eu}. Olhos curiosos, jeito {traco}. Já pegou as ferramentas de {objeto}."
+  nascimento_heranca:
+    - "{eu} chegou com {objeto}. Era de {morto}. Ninguém sabe como."
+    - "Quem olha {eu} jura que lembra {morto}: tem {objeto}."
+    - "{eu} nasceu com uma mania esquisita: {objeto}. Igualzinho a {morto}."
+    - "A cidade se arrepia: {eu} tem {objeto}, coisa de {morto}."
+  boas_vindas:
+    - "{eu} vê {outro} pela primeira vez e estende a mão: \"Bem-vind{outro:o|a}!\""
+    - "{eu} dá um pão para {outro}: \"Recém-chegad{outro:o|a}? Come, que aqui a gente se vira.\""
+    - "{eu} mostra a cidade para {outro}, apontando cada lugar errado."
+    - "{eu} olha {outro} de cima a baixo: \"{bordao}\""
+    - "{eu} explica para {outro} que aqui ninguém tem dinheiro, mas todo mundo tem opinião."
+    - "{eu} avisa {outro}: \"Cuidado com o Fiscal, com o Palhaço e com a Sala do Servidor.\""
+
+  # ------------------------------------------------------------ sucessão
+  sucessao_eleicao:
+    - "{eu} é eleit{o|a} para o lugar de {morto}. Agora é {objeto}. Ninguém sabe se foi uma boa ideia."
+    - "A cidade escolheu: {eu} é {objeto}. {eu} pega a prancheta de {morto} e não escreve nada."
+    - "{eu} vence a eleição improvisada e vira {objeto}. Promete que ninguém vai brigar."
+  sucessao_vocacao:
+    - "{eu} acorda sentindo um chamado: vai ser {objeto}, no lugar de {morto}."
+    - "{eu} veste as roupas de {morto} e assume como {objeto}. Diz que foi chamad{o|a}."
+    - "Ninguém pediu, mas {eu} decide: a partir de hoje é {objeto}. {morto} ia querer."
+    - "{eu} jura que herdou o dom de {morto}. Agora é {objeto}."
+  sucessao_sucessao:
+    - "{eu} assume o trabalho de {morto}: agora é {objeto}. As mãos ainda tremem."
+    - "{eu} pega as ferramentas de {morto} e continua de onde parou. Agora é {objeto}."
+    - "Sem {morto}, alguém tinha que ser {objeto}. Foi {eu}."
+  eleicao_convocada:
+    - "{eu} sobe num caixote na Praça: sem {morto}, a cidade precisa de {objeto}. Eleição às {hora}! Candidatos: {convidados}."
+    - "Corre pela cidade: eleição improvisada às {hora}, na Praça. Disputam {convidados}."
+    - "{eu} pendura um cartaz: \"Precisa-se de {objeto}. Votação às {hora}.\" Candidatos: {convidados}."
+  eleicao_resultado:
+    - "Apuração na Praça, com voto na mão levantada: {objeto}. {eu} venceu."
+    - "Contados os votos de {convidados}: {objeto}. {eu} leva."
+    - "A eleição acaba em gritaria, mas acaba: {objeto}. {eu} é quem manda agora."
+  assembleia:
+    - "{eu} chega na assembleia e já quer falar primeiro."
+    - "{eu} grita da última fila da assembleia: \"E a obra da ferraria?\""
+    - "{eu} levanta a mão para votar antes de saberem em quê."
+    - "{eu} vai à assembleia só para ver a confusão."
+    - "{eu} faz campanha na assembleia, de improviso."
+    - "{eu} cochicha na assembleia em quem vai votar. Muda de ideia duas vezes."
+
+  # ------------------------------------------------------------ criaturas
+  enfrentar:
+    - "{eu} pega um pedaço de pau e vai pra cima de {objeto}."
+    - "{eu} grita para {objeto}: \"Sai daqui!\""
+    - "{eu} enfrenta {objeto} com uma lanterna e muita coragem fingida."
+    - "{eu} bate o pé no chão e encara {objeto}."
+    - "{eu} chega perto de {objeto} devagar, segurando o crucifixo de alguém."
+    - texto: "{eu}: \"Não encosta nisso.\" E encosta, para resolver {objeto}."
+      personagens: [tech_old]
+      peso: 3
+    - texto: "{eu} abre o rack de {objeto} com os olhos brilhando: \"Que demais!\""
+      personagens: [tech_apprentice]
+      peso: 3
+    - texto: "{eu} bufa fumaça e ergue o martelo contra {objeto}. GRRR."
+      personagens: [blacksmith]
+      peso: 3
+
+  nevoa_barra:
+    - "{eu} dá de cara com a névoa e desiste do caminho."
+    - "{eu} tenta passar, mas a névoa não deixa. Volta resmungando."
+    - "{eu} estende a mão na névoa e não vê os dedos. Melhor não."
+    - "{eu} encosta na névoa, sente um frio estranho e muda de ideia."
+
+  # ---------------------------------------------------------------- clima
+  clima_limpo:
+    - "O céu abre de vez. Sol na cidade inteira."
+    - "As nuvens vão embora. Céu limpo."
+    - "Um sol bonito aparece sobre a cidade."
+  clima_nublado:
+    - "O céu fica cinza e baixo."
+    - "Nuvens grossas cobrem o sol."
+    - "O tempo fecha. Nublado."
+  clima_neblina:
+    - "Uma neblina baixa entra pela cidade e apaga as cores."
+    - "A neblina sobe do chão. Não dá pra ver a Catedral da Praça."
+  clima_garoa:
+    - "Começa uma garoa fina, daquelas que molham sem a gente perceber."
+    - "Cai uma garoa miúda sobre a cidade."
+  clima_chuva:
+    - "Começa a chover forte. Todo mundo corre para debaixo do telhado."
+    - "A chuva chega de uma vez, batendo nas telhas."
+    - "Chove. O cheiro de terra molhada toma conta da cidade."
+  clima_tempestade:
+    - "Um trovão sacode a cidade. Tempestade."
+    - "Relâmpagos riscam o céu. A tempestade chegou."
+  clima_funeral:
+    - "Começa a chover. Como em todo funeral."
+    - "O céu escurece e chove. É dia de enterro."
+    - "A chuva vem, pontual como só ela sabe ser em dia de funeral."
+
+  # ---------------------------------------------- conversas com o clima (somam)
+  conversa:
+    - texto: "{eu} reclama da chuva com {outro}. \"Eu avisei que ia chover.\""
+      climas: [chuva, garoa]
+    - texto: "{eu} e {outro} dividem o mesmo pedaço de telhado enquanto chove."
+      climas: [chuva, tempestade]
+    - texto: "{eu} comenta com {outro} que esse sol todo não é normal."
+      climas: [limpo]
+    - texto: "{eu} pergunta para {outro} se a tempestade é castigo. {outro} não sabe."
+      climas: [tempestade]
+    - texto: "{eu} sussurra para {outro} que na neblina é que as coisas aparecem."
+      climas: [neblina]

@@ -9,12 +9,19 @@
 
 O estado fica no SQLite (`persistencia.banco` do world.yaml, ou --banco). Ao
 religar, o mundo continua de onde parou. Ctrl+C salva e sai.
+
+Nascimentos (Fase 3) viram YAML. Para testes não sujarem data/characters/born:
+    --nascidos PASTA   grava (e lê) os nascidos nesta pasta
+Sem --nascidos, se for uma simulação de teste (--fast ou --banco), a pasta é
+`var/nascidos/<nome do banco>/` (e é esvaziada com --novo). No uso normal
+(tempo real, banco padrão), vale `vida.pasta_nascidos` do world.yaml.
 """
 
 from __future__ import annotations
 
 import argparse
 import logging
+import os
 import signal
 import sys
 from collections import Counter, defaultdict
@@ -69,6 +76,29 @@ STYLES = {
     "relation_changed": "italic",
     "found": "yellow",
     "missed": "dim",
+    # Fase 3
+    "death": "bold white on red",
+    "grief": "italic red",
+    "inheritance": "yellow",
+    "funeral_planned": "bold blue",
+    "funeral_started": "bold white on blue",
+    "funeral_procession": "bold blue",
+    "funeral_ended": "bold white on blue",
+    "grave": "bold blue",
+    "death_consequence": "italic blue",
+    "ghost": "bold white on magenta",
+    "resurrection": "bold black on yellow",
+    "birth": "bold black on green",
+    "succession": "bold green",
+    "election": "bold green",
+    "creature_spawned": "bold magenta",
+    "creature_gone": "magenta",
+    "creature_fight": "bold magenta",
+    "weather_changed": "blue",
+    "fog_on": "bold white",
+    "fog_off": "white",
+    "director_event": "bold cyan",
+    "tension": "dim",
 }
 
 LOG_LEVELS = {"debug": logging.DEBUG, "info": logging.INFO, "aviso": logging.WARNING, "erro": logging.ERROR}
@@ -96,7 +126,20 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--resumo", action="store_true", help="no fim, mostra um resumo do dia de cada personagem")
     p.add_argument("--saida", default=None, help="também grava o Chat do Mundo (sem cores) neste arquivo")
     p.add_argument("--dados", default="data", help="pasta de dados (padrão: data)")
+    p.add_argument("--nascidos", default=None,
+                   help="pasta onde os nascidos viram YAML (padrão em teste: var/nascidos/<banco>/)")
     return p
+
+
+def born_dir_for_run(args) -> Path | None:
+    """Pasta dos nascidos desta execução (None = a do world.yaml / DW_BORN_DIR)."""
+    if args.nascidos:
+        return Path(args.nascidos)
+    if os.environ.get("DW_BORN_DIR"):
+        return None
+    if args.fast or args.banco:
+        return Path("var") / "nascidos" / Path(args.banco or "world").stem
+    return None
 
 
 class ChatPrinter:
@@ -112,7 +155,7 @@ class ChatPrinter:
         self.debug = debug
 
     def wanted(self, ev: Event) -> bool:
-        if ev.type == "decision" and not self.debug:
+        if ev.type in ("decision", "tension") and not self.debug:
             return False
         if ev.type in MOVE_TYPES and not self.show_moves:
             return False
@@ -191,6 +234,72 @@ class DayStats:
                       others, str(len(self.places[cid])))
         t.caption = (f"* conversar: puxou papo + foi chamado. Sino tocado às: {', '.join(self.bells) or '—'}. "
                      f"Viagens por túnel: {self.teleports}.")
+        return t
+
+
+class LifeStats:
+    """Vida e morte (Fase 3) para o --resumo: mortes (com causa), nascimentos,
+    funerais, sucessões, fantasmas, criaturas, eventos do diretor e clima."""
+
+    def __init__(self) -> None:
+        self.deaths: list[tuple[str, str, str]] = []  # (ts, quem, causa)
+        self.births: list[tuple[str, str, str]] = []  # (ts, quem, arquivo)
+        self.successions: list[tuple[str, str, str]] = []
+        self.funerals: list[tuple[str, str, int]] = []
+        self.counts: Counter = Counter()
+        self.director: Counter = Counter()
+        self.weather: Counter = Counter()
+
+    def __call__(self, ev: Event) -> None:
+        t = ev.type
+        when = f"{ev.ts[8:10]}/{ev.ts[5:7]} {ev.ts[11:16]}"
+        if t == "death":
+            self.deaths.append((when, ev.actors[0], ev.data.get("cause_name", "")))
+        elif t == "birth":
+            self.births.append((when, ev.actors[0], ev.data.get("file", "")))
+        elif t == "succession":
+            self.successions.append((when, ev.actors[0], ev.data.get("profession", "")))
+        elif t == "funeral_ended":
+            self.funerals.append((when, ev.data.get("dead", ""), len(ev.data.get("attendees", []))))
+        elif t == "director_event":
+            self.director[ev.data.get("event", "?")] += 1
+        elif t == "weather_changed":
+            self.weather[ev.data.get("kind", "?")] += 1
+        if t in ("ghost", "resurrection", "creature_spawned", "creature_gone", "grief", "inheritance",
+                 "election", "fog_on", "death_consequence"):
+            self.counts[t] += 1
+
+    def table(self, world: World) -> Table:
+        names = world.names()
+        t = Table(title="Resumo da vida e da morte (Fase 3)")
+        t.add_column("acontecimento")
+        t.add_column("quantos", justify="right")
+        t.add_column("detalhe")
+        alive = sum(1 for st in world.states.values() if st.alive and not st.frozen)
+        t.add_row("população viva no fim", str(alive), f"de {len(world.states)} que já existiram")
+        t.add_row("mortes", str(len(self.deaths)), "")
+        for when, who, cause in self.deaths:
+            t.add_row("", "", f"{when} — {names.get(who, who)}: {cause}")
+        t.add_row("funerais", str(len(self.funerals)), "")
+        for when, who, n in self.funerals:
+            t.add_row("", "", f"{when} — {names.get(who, who)} ({n} pessoas)")
+        t.add_row("nascimentos", str(len(self.births)), "")
+        for when, who, file in self.births:
+            t.add_row("", "", f"{when} — {names.get(who, who)} ({file})")
+        t.add_row("sucessões", str(len(self.successions)), "")
+        for when, who, prof in self.successions:
+            pname = world.data.professions[prof].name if prof in world.data.professions else prof
+            t.add_row("", "", f"{when} — {names.get(who, who)} virou {pname}")
+        labels = {"grief": "lutos anunciados", "inheritance": "heranças", "ghost": "fantasmas",
+                  "resurrection": "ressurreições", "creature_spawned": "criaturas que apareceram",
+                  "creature_gone": "criaturas que foram embora", "election": "eleições (convocação + resultado)",
+                  "fog_on": "lugares que entraram na névoa", "death_consequence": "consequências de mortes"}
+        for key, label in labels.items():
+            t.add_row(label, str(self.counts[key]), "")
+        t.add_row("eventos do diretor", str(sum(self.director.values())),
+                  ", ".join(f"{k} {n}" for k, n in self.director.most_common()))
+        t.add_row("mudanças de clima", str(sum(self.weather.values())),
+                  ", ".join(f"{k} {n}" for k, n in self.weather.most_common()))
         return t
 
 
@@ -291,6 +400,15 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
     db_path = Path(args.banco or data.world.storage.database)
+    born = born_dir_for_run(args)
+    if born is not None:
+        # recarrega com a pasta de nascidos desta execução (para ler os já nascidos)
+        os.environ["DW_BORN_DIR"] = str(born)
+        inside_data = Path(args.dados).resolve() in born.resolve().parents
+        if args.novo and born.is_dir() and not inside_data:  # nunca apaga nascidos de data/
+            for old in born.glob("born_*.yaml"):
+                old.unlink()
+        data = load_data_or_raise(args.dados)
     if args.novo:
         for suffix in ("", "-wal", "-shm"):
             Path(str(db_path) + suffix).unlink(missing_ok=True)
@@ -306,9 +424,11 @@ def main(argv: list[str] | None = None) -> int:
     printer = ChatPrinter(world, consoles, args.personagem, args.lugar, args.movimento, args.debug)
     stats = DayStats()
     society = SocietyStats()
+    life = LifeStats()
     world.bus.subscribe(printer)
     world.bus.subscribe(stats)
     world.bus.subscribe(society)
+    world.bus.subscribe(life)
 
     def on_sigterm(_signum, _frame):
         world.request_stop()
@@ -317,7 +437,8 @@ def main(argv: list[str] | None = None) -> int:
 
     console.print(f"[bold]{escape(data.world.name)}[/] — hora do mundo {world.clock.iso()}, seed {world.seed}, "
                   f"velocidade {'máxima (--fast)' if args.fast else f'{world.speed:g}×'}, banco {db_path}"
-                  + (" (continuando)" if world.resumed else " (mundo novo)"))
+                  + (" (continuando)" if world.resumed else " (mundo novo)")
+                  + f", nascidos em {world.data.born_dir}")
 
     until = None
     total_hours = (args.horas or 0) + (args.dias or 0) * 24
@@ -335,6 +456,7 @@ def main(argv: list[str] | None = None) -> int:
             for c in consoles:
                 c.print(stats.table(world))
                 c.print(society.table(world))
+                c.print(life.table(world))
         console.print(f"Mundo salvo em {db_path} — hora do mundo {world.clock.iso()}, {world.ticks} ticks.")
         if out_file:
             out_file.close()

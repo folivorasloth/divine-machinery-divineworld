@@ -121,7 +121,12 @@ _CONTRACTIONS = {
 for _prep in ("da", "do", "das", "dos", "na", "no", "nas", "nos", "pela", "pelo", "à", "ao"):
     for _art in ("O", "A", "Os", "As"):
         _CONTRACTIONS[(_prep, _art)] = _prep
-_CONTRACT = re.compile(r"(?<!\w)(em|de|por|a|pra|da|do|das|dos|na|no|nas|nos|pela|pelo|à|ao) (Os|As|O|A) (?=\w)")
+# começo de frase ("Em A Floresta..." -> "Na Floresta...")
+for (_prep, _art), _out in list(_CONTRACTIONS.items()):
+    if _prep in ("em", "de", "por", "pra"):
+        _CONTRACTIONS[(_prep.capitalize(), _art)] = _out.capitalize()
+_CONTRACT = re.compile(r"(?<!\w)(em|de|por|a|pra|da|do|das|dos|na|no|nas|nos|pela|pelo|à|ao|Em|De|Por|Pra) "
+                       r"(Os|As|O|A) (?=\w)")
 # artigo maiúsculo de um nome no MEIO da frase vira minúsculo ("com O Músico" -> "com o Músico")
 _MID_ARTICLE = re.compile(r"(?<=[a-zà-ú,] )(Os|As|O|A)(?= \w)")
 

@@ -13,6 +13,11 @@ fazer. Erros impedem o mundo de rodar; avisos só chamam a atenção.
 Regras de leitura:
 - Arquivos que começam com `_` (ex.: `_MODELO.yaml`) são ignorados.
 - `data/characters/` é lido com subpastas (os nascidos vão para `born/`).
+- Fase 3: a pasta dos nascidos é `vida.pasta_nascidos` do world.yaml (relativa
+  a `data/`), ou a variável de ambiente `DW_BORN_DIR` (lida SEMPRE do ambiente
+  real, mesmo nos testes: é assim que testes e simulações de teste gravam os
+  nascidos numa pasta temporária sem sujar o repositório). Se ela estiver fora
+  de `data/characters/`, também é lida.
 - No `world.yaml`, textos como `${MQTT_HOST:-mqtt.local}` são trocados pela
   variável de ambiente (ou pelo padrão depois de `:-`). Assim nenhum IP ou
   senha precisa ficar no repositório.
@@ -49,6 +54,7 @@ from sim.schemas import (
     WorldConfig,
     WorldEvent,
     SocialEventDef,
+    CreatureDef,
 )
 
 # --------------------------------------------------------------------------
@@ -127,6 +133,9 @@ class WorldData:
     graph: dict[str, list[Edge]]  # grafo NÃO direcionado dos lugares
     source_files: dict[str, str] = field(default_factory=dict)  # id -> arquivo de origem
     social_events: dict[str, SocialEventDef] = field(default_factory=dict)  # Fase 2
+    creatures: dict[str, CreatureDef] = field(default_factory=dict)  # Fase 3
+    # Fase 3: onde os nascidos são gravados (data/characters/born, ou DW_BORN_DIR)
+    born_dir: Path | None = None
 
     def names(self) -> dict[str, str]:
         """id -> nome atual, para personagens, lugares e estruturas (usado por sim.text.render)."""
@@ -377,7 +386,13 @@ def load_data(data_dir: str | Path = "data", environ: dict[str, str] | None = No
 
     # characters/ (com subpastas) -------------------------------------------
     characters: dict[str, Character] = {}
-    for path in _yaml_files(root / "characters", recursive=True):
+    born_dir = born_dir_for(root, world)
+    char_files = _yaml_files(root / "characters", recursive=True)
+    try:
+        born_dir.resolve().relative_to((root / "characters").resolve())
+    except ValueError:  # a pasta dos nascidos está fora de data/characters: lê também
+        char_files += _yaml_files(born_dir)
+    for path in char_files:
         raw = read_yaml(path, report, rel(path))
         if raw is None:
             continue
@@ -439,6 +454,7 @@ def load_data(data_dir: str | Path = "data", environ: dict[str, str] | None = No
     # events/ ------------------------------------------------------------------
     events: dict[str, WorldEvent] = {}
     social_events: dict[str, SocialEventDef] = {}
+    creatures: dict[str, CreatureDef] = {}
     for path in _yaml_files(root / "events"):
         raw = read_yaml(path, report, rel(path))
         if raw is None:
@@ -460,6 +476,13 @@ def load_data(data_dir: str | Path = "data", environ: dict[str, str] | None = No
                 mark_broken(item)
             if sev:
                 register("evento social", social_events, sev, rel(path))
+        for index, item in enumerate(container.creatures):
+            label = f"criatura '{item.get('id', index)}': " if isinstance(item, dict) else f"criaturas[{index}]: "
+            cre = validate_model(CreatureDef, item, report, rel(path), prefix=label)
+            if not cre:
+                mark_broken(item)
+            if cre:
+                register("criatura", creatures, cre, rel(path))
 
     if world is None or traits_file is None:
         return None, report
@@ -478,9 +501,21 @@ def load_data(data_dir: str | Path = "data", environ: dict[str, str] | None = No
         graph={},
         source_files={k: v for k, v in source.items()},
         social_events=social_events,
+        creatures=creatures,
+        born_dir=born_dir,
     )
     _cross_check(data, report, source, line_sources, rel(world_path), rel(traits_path), broken)
     return data, report
+
+
+def born_dir_for(root: Path, world: WorldConfig | None) -> Path:
+    """Pasta onde os nascidos são gravados: DW_BORN_DIR > vida.pasta_nascidos (relativa a data/)."""
+    env = os.environ.get("DW_BORN_DIR", "").strip()
+    if env:
+        return Path(env)
+    sub = world.life.born_dir if world is not None else "characters/born"
+    path = Path(sub)
+    return path if path.is_absolute() else root / path
 
 
 def load_data_or_raise(data_dir: str | Path = "data", environ: dict[str, str] | None = None) -> WorldData:
@@ -834,6 +869,10 @@ def _cross_check(
             report.error(file, f"{where}.texto: {problem}")
         _warn_literal_names(report, file, f"{where}.texto", event.text, char_names)
 
+    # Fase 3: vida, morte, clima, criaturas, diretor -------------------------
+    _check_phase3(data, report, source, line_sources, world_file, traits_file, ref, needs, periods, memory_kinds,
+                  known_ids)
+
     # tags usadas em ações e eventos devem ser categorias do chat conhecidas
     categories = set(w.chat_categories)
     for sid, sev in data.social_events.items():
@@ -848,6 +887,111 @@ def _cross_check(
         for tag in event.tags:
             if tag not in categories:
                 report.warn(source["evento" + eid], f"evento '{eid}'.tags: '{tag}' não está em world.yaml > categorias_chat")
+
+
+def _check_phase3(data, report, source, line_sources, world_file, traits_file, ref, needs, periods,
+                  memory_kinds, known_ids) -> None:
+    w = data.world
+    wk = w.weather.kinds
+    if wk:
+        ref(world_file, "clima.clima_padrao", "tipo de clima (clima.tipos)", w.weather.fallback, wk)
+        ref(world_file, "clima.clima_do_funeral", "tipo de clima (clima.tipos)", w.weather.funeral_kind, wk)
+        for k in w.weather.simulated.weights:
+            ref(world_file, "clima.simulado.pesos", "tipo de clima (clima.tipos)", k, wk)
+    for k, eff in w.weather.effects.items():
+        ref(world_file, "clima.efeitos", "tipo de clima (clima.tipos, frio ou calor)", k, set(wk) | {"frio", "calor"})
+        for n in eff.needs:
+            ref(world_file, f"clima.efeitos.{k}.necessidades", "necessidade", n, needs)
+        for a in eff.actions:
+            ref(world_file, f"clima.efeitos.{k}.acoes", "ação", a, data.actions)
+    for cid_, cause in w.death.causes.items():
+        where = f"morte.causas.{cid_}"
+        for a in cause.actions:
+            ref(world_file, f"{where}.acoes", "ação", a, data.actions)
+        for p in cause.places:
+            ref(world_file, f"{where}.lugares", "lugar", p, data.places)
+        for t in cause.by_trait:
+            ref(world_file, f"{where}.por_traco", "traço", t, data.traits)
+        situation = cause.situation or f"morte_{cid_}"
+        if situation not in data.lines:
+            report.warn(world_file, f"{where}: não há falas para a situação '{situation}' em data/lines/")
+    for key, value in (("morte.memoria", w.death.memory), ("vida.memoria_fantasma", w.life.ghost_memory),
+                       ("vida.memoria_ressurreicao", w.life.resurrection_memory),
+                       ("criaturas.memoria", w.creatures.memory), ("criaturas.memoria_vitoria", w.creatures.win_memory),
+                       ("funeral.memoria", w.funeral.memory)):
+        ref(world_file, key, "tipo de memória (memoria.tipos)", value, memory_kinds, True)
+    for key, value in (("morte.lugar_do_corpo", w.death.body_place), ("funeral.local_velorio", w.funeral.wake_place),
+                       ("funeral.local_enterro", w.funeral.burial_place)):
+        ref(world_file, key, "lugar", value, data.places)
+    for key, value in (("funeral.acao", w.funeral.action), ("sucessao.acao_assembleia", w.succession.assembly_action),
+                       ("criaturas.acao_enfrentar", w.creatures.fight_action)):
+        ref(world_file, key, "ação", value, data.actions)
+    for p in w.funeral.leaders:
+        ref(world_file, "funeral.quem_conduz", "profissão", p, data.professions)
+    for n in list(w.grief.shock) + list(w.grief.rates):
+        ref(world_file, "luto", "necessidade", n, needs)
+    for a in w.grief.actions:
+        ref(world_file, "luto.acoes", "ação", a, data.actions)
+    for cid, cons in w.consequences.items():
+        where = f"se_morrer.{cid}"
+        ref(world_file, where, "personagem", cid, data.characters)
+        for a in cons.actions:
+            ref(world_file, f"{where}.acoes", "ação", a, data.actions)
+        for c in list(cons.who) + list(cons.grief_factor):
+            ref(world_file, f"{where}", "personagem", c, data.characters)
+        if cons.goal:
+            ref(world_file, f"{where}.objetivo.acao", "ação", cons.goal.action, data.actions)
+            ref(world_file, f"{where}.objetivo.lugar", "lugar", cons.goal.place, data.places, True)
+        if cons.text:
+            for problem in text.check_template(cons.text, known_ids):
+                report.error(world_file, f"{where}.texto: {problem}")
+    for prof, role in w.succession.roles.items():
+        where = f"sucessao.papeis.{prof}"
+        ref(world_file, where, "profissão", prof, data.professions)
+        for t in role.traits:
+            ref(world_file, f"{where}.tracos", "traço", t, data.traits)
+        ref(world_file, f"{where}.lugar", "lugar", role.place, data.places, True)
+        if role.mode == "eleicao" and not role.place:
+            report.error(world_file, f"{where}: modo eleicao precisa de 'lugar'")
+    for p in w.director.target:
+        ref(world_file, "diretor.alvo", "período", p, periods)
+    birth = data.traits_file.birth
+    for key, value in (("nascimento.casa", birth.home), ("nascimento.aparece_em", birth.appears_at)):
+        ref(traits_file, key, "lugar", value, data.places)
+    for i, block in enumerate(birth.routine):
+        ref(traits_file, f"nascimento.rotina[{i}].acao", "ação", block.action, data.actions)
+        ref(traits_file, f"nascimento.rotina[{i}].lugar", "lugar", block.place, data.places, True)
+    for cid, char in data.characters.items():
+        if char.inherited:
+            ref(source["personagem" + cid], "herdou.de", "personagem", char.inherited.from_, data.characters)
+    for crid, cre in data.creatures.items():
+        file = source["criatura" + crid]
+        where = f"criatura '{crid}'"
+        for p in cre.places:
+            ref(file, f"{where}.lugares", "lugar", p, data.places)
+        for p in cre.periods:
+            ref(file, f"{where}.periodos", "período", p, periods)
+        for p in list(cre.experts) + list(cre.goal_professions):
+            ref(file, f"{where}", "profissão", p, data.professions)
+        for key, templates in cre.texts.model_dump().items():
+            for template in templates:
+                for problem in text.check_template(template, known_ids):
+                    report.error(file, f"{where}.textos: {problem}")
+    for eid, event in data.events.items():
+        file = source["evento" + eid]
+        where = f"evento '{eid}'"
+        if event.effects.weather and wk:
+            ref(file, f"{where}.efeitos.clima", "tipo de clima (world.yaml > clima.tipos)", event.effects.weather, wk)
+        ref(file, f"{where}.efeitos.criatura", "criatura (data/events/creatures.yaml)", event.effects.creature,
+            data.creatures, True)
+        ref(file, f"{where}.efeitos.memoria", "tipo de memória", event.effects.memory, memory_kinds, True)
+        if event.kind in ("raro", "lendario") and event.chance_per_day is None and not event.effects.special:
+            report.error(file, f"{where}: evento raro/lendário precisa de 'chance_por_dia'")
+    for file, situation, line in line_sources:
+        for c in line.dead:
+            ref(file, f"situação '{situation}': mortos", "personagem", c, data.characters)
+        for p in line.professions:
+            ref(file, f"situação '{situation}': profissoes", "profissão", p, data.professions)
 
 
 def _check_input(entry: str, valid: dict[str, set[str]], has_target: bool) -> str | None:

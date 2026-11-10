@@ -33,6 +33,13 @@ EVENT_TYPES = {
     "teleport_finished",
     "bell",
 }
+# Fase 3 (lista completa na seção 8 de docs/arquitetura.md)
+EVENT_TYPES |= {
+    "death", "grief", "inheritance", "funeral_planned", "funeral_started", "funeral_procession", "funeral_ended",
+    "grave", "death_consequence", "ghost", "resurrection", "birth", "succession", "election",
+    "creature_spawned", "creature_gone", "creature_fight", "weather_changed", "fog_on", "fog_off",
+    "director_event", "tension",
+}
 
 # tipos que não são gravados no banco (muito volume, só para depuração)
 NOT_PERSISTED = {"decision"}

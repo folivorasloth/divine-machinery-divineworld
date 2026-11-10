@@ -21,13 +21,15 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 def init_membership(world: "World") -> None:
-    for fid, fac in world.data.world.factions.items():
-        if fac.leader in world.states:
-            world.states[fac.leader].faction = fid
+    for fid in world.data.world.factions:
+        leader = world.leader_of(fid)
+        if leader in world.states:
+            world.states[leader].faction = fid
 
 
 def leaders(world: "World") -> set[str]:
-    return {f.leader for f in world.data.world.factions.values()}
+    """Líderes ATUAIS (Fase 3: se o Padre morre, quem assume o papel lidera a Igreja)."""
+    return {world.leader_of(fid) for fid in world.data.world.factions} - {None}
 
 
 def check(world: "World", cid: str) -> None:
@@ -35,8 +37,9 @@ def check(world: "World", cid: str) -> None:
     st = world.states[cid]
     if not factions or cid in leaders(world) or not st.alive or st.frozen or st.away:
         return
-    aff = {fid: world.affinity(cid, f.leader) for fid, f in factions.items() if f.leader in world.states
-           and world.states[f.leader].alive}
+    current_leaders = {fid: world.leader_of(fid) for fid in factions}
+    aff = {fid: world.affinity(cid, lid) for fid, lid in current_leaders.items() if lid in world.states
+           and world.states[lid].alive}
     current = st.faction
     if current and current in aff and aff[current] < factions[current].leave_affinity:
         st.faction = None
@@ -55,7 +58,7 @@ def check(world: "World", cid: str) -> None:
     if best and (current is None or aff[best] > aff[current]):
         old = current
         st.faction = best
-        leader = factions[best].leader
+        leader = current_leaders[best]
         world.narrate(cid, "entra_na_faccao", place=st.place, event_type="faction", tags=["seita", "igreja"],
                       importance=2, extra={"faccao": factions[best].name}, target=leader,
                       data={"faction": best, "change": "join", "from": old},

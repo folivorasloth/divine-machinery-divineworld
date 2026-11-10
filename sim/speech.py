@@ -42,6 +42,10 @@ class SpeechContext:
     # recall(tipos) -> frase {lembranca} da memória mais forte desses tipos
     # envolvendo o alvo (ou qualquer um, sem alvo); None se não lembra
     recall: Callable[[list[str]], str | None] | None = None
+    # Fase 3: tipo do clima (id de clima.tipos: chuva, limpo...) e o morto da situação
+    weather_kind: str = ""
+    dead: str | None = None
+    profession: str | None = None  # profissão ATUAL de quem fala (sucessão)
 
 
 # variáveis que só existem em algumas situações: fala que usa e não tem é pulada
@@ -75,7 +79,11 @@ def matches(line: LineTemplate, ctx: SpeechContext, data: WorldData) -> bool:
         return False
     if line.periods and ctx.period not in line.periods:
         return False
-    if line.weather and ctx.weather not in line.weather:
+    if line.weather and ctx.weather not in line.weather and ctx.weather_kind not in line.weather:
+        return False
+    if line.dead and ctx.dead not in line.dead:
+        return False
+    if line.professions and (ctx.profession or speaker.profession) not in line.professions:
         return False
     for nid, minimum in line.min_needs.items():
         if ctx.needs.get(nid, 0) < minimum:

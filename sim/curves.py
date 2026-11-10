@@ -42,6 +42,10 @@ INPUT_RANGES: dict[str, tuple[float, float]] = {
     "dano": (0, 100),  # quanto o lugar candidato está estragado (100 - menor resistência)
     "dano_cidade": (0, 100),  # o pior estrago do mundo inteiro
     "mandado": (0, 1),  # 1 se o alvo tem mandado de prisão (para o Fiscal)
+    # Fase 3 ------------------------------------------------------------------
+    "luto": (0, 100),  # meu luto mais forte agora (0 = nenhum; 100 = perdi quem eu mais amava)
+    "criatura": (0, 1),  # 1 se há uma criatura no lugar candidato
+    "chuva": (0, 1),  # 1 se está chovendo (clima com chuva: true)
 }
 
 # entradas que precisam de ".<algo>" e o que é o algo

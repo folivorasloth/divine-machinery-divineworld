@@ -69,6 +69,21 @@ MIGRATIONS: list[str] = [
       updated_at TEXT
     );
     """,
+    # versão 3 (Fase 3: vida, morte, diretor, clima)
+    """
+    CREATE TABLE IF NOT EXISTS graves (
+      char_id TEXT PRIMARY KEY,
+      born_ts TEXT, died_ts TEXT, cause TEXT, epitaph TEXT,
+      data TEXT NOT NULL DEFAULT '{}'
+    );
+    CREATE TABLE IF NOT EXISTS director_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ts TEXT, tension REAL, chosen TEXT, reason TEXT
+    );
+    CREATE TABLE IF NOT EXISTS weather_log (
+      ts TEXT PRIMARY KEY, kind TEXT, label TEXT, temp REAL, source TEXT, forced TEXT
+    );
+    """,
 ]
 
 
@@ -230,6 +245,37 @@ class Storage:
 
     def count_events(self) -> int:
         return self.conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+
+    # ------------------------------------------------------ vida e morte (F3)
+    def save_graves(self, graves: list[dict]) -> None:
+        """Lápides (uma por morto; a mais recente vale, se alguém morreu duas vezes)."""
+        for g in graves:
+            self.conn.execute(
+                """INSERT INTO graves (char_id, born_ts, died_ts, cause, epitaph, data) VALUES (?, ?, ?, ?, ?, ?)
+                   ON CONFLICT(char_id) DO UPDATE SET born_ts=excluded.born_ts, died_ts=excluded.died_ts,
+                     cause=excluded.cause, epitaph=excluded.epitaph, data=excluded.data""",
+                (g["cid"], g["born"], g["died"], g["cause"], g.get("epitaph", ""),
+                 json.dumps({"cause_name": g.get("cause_name"), "resurrected": g.get("resurrected", False)},
+                            ensure_ascii=False)),
+            )
+
+    def load_graves(self) -> list[dict]:
+        out = []
+        for r in self.conn.execute("SELECT * FROM graves ORDER BY died_ts"):
+            extra = json.loads(r["data"] or "{}")
+            out.append({"cid": r["char_id"], "born": r["born_ts"], "died": r["died_ts"], "cause": r["cause"],
+                        "epitaph": r["epitaph"] or "", **extra})
+        return out
+
+    def log_director(self, entry: dict) -> None:
+        self.conn.execute("INSERT INTO director_log (ts, tension, chosen, reason) VALUES (?, ?, ?, ?)",
+                          (entry["ts"], entry["tension"], entry["chosen"], entry["reason"]))
+        self._dirty = True
+
+    def log_weather(self, ts: str, kind: str, label: str, temp, source: str, forced) -> None:
+        self.conn.execute("INSERT OR REPLACE INTO weather_log (ts, kind, label, temp, source, forced) "
+                          "VALUES (?, ?, ?, ?, ?, ?)", (ts, kind, label, temp, source, forced))
+        self._dirty = True
 
     # --------------------------------------------------------------- geral
     def commit(self) -> None:

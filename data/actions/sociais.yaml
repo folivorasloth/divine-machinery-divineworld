@@ -637,7 +637,7 @@ acoes:
     especial: ordem_reconstruir
     cooldown_minutos: 480
     condicoes:
-      personagens: [chief]
+      profissoes: [lider]
       periodos: [manha, tarde]
       lugar_proprio: trabalho
     consideracoes:

@@ -15,6 +15,6 @@ tem: [túneis esquecidos, caixas de som improvisadas, pichações antigas]
 conexoes:
   - {para: cemetery, tipo: tunel, minutos: 5}
   - {para: server_room, tipo: caminho, minutos: 15}
-acoes: [festejar, ritual, participar_ritual, espiar_seita, quebrar, pichar]
+acoes: [festejar, ritual, participar_ritual, espiar_seita, quebrar, pichar, enfrentar]
 estruturas:
   - {id: underground_speakers, nome: as caixas de som da rave}

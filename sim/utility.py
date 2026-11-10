@@ -102,6 +102,8 @@ def read_input(entry: str, ctx: DecisionContext, me: CharacterState, place: str,
     if kind == "presentes":
         return float(len([c for c in ctx.present.get(place, []) if c != me.id]))
     if kind == "perigo":
+        if ctx.world is not None:
+            return ctx.world.danger_at(place, ctx.is_night)  # Fase 3: criaturas somam perigo
         p = ctx.data.places[place]
         return p.danger_night if (ctx.is_night and p.danger_night is not None) else p.danger
     if kind == "tensao":
@@ -134,6 +136,15 @@ def read_input(entry: str, ctx: DecisionContext, me: CharacterState, place: str,
         return w.structures.worst()[1]
     if kind == "mandado":
         return 1.0 if target and target in w.law.warrants else 0.0
+    # Fase 3
+    if kind == "luto":
+        from sim.lifecycle import grief_level
+
+        return min(100.0, grief_level(w, me.id) * 100)
+    if kind == "criatura":
+        return 1.0 if w.creatures.at(place) else 0.0
+    if kind == "chuva":
+        return 1.0 if w.weather.is_rain() else 0.0
     return 0.0  # pragma: no cover - o validador impede entradas desconhecidas
 
 
@@ -276,6 +287,10 @@ def score(
     if goal != 1.0:
         factors.append(Factor(f"objetivo {source}", goal))
         value *= goal
+    if ctx.world is not None:  # Fase 3: luto, consequências de mortes, clima
+        for label, mult in ctx.world.score_multiplier(me.id, action, place):
+            factors.append(Factor(label, mult))
+            value *= mult
     if travel_minutes > 0:
         travel = 0.5 ** (travel_minutes / data.world.decision.travel_half_life_minutes)
         factors.append(Factor(f"viagem {travel_minutes:.0f}min", travel))
@@ -302,9 +317,19 @@ def goal_bonus(ctx: DecisionContext, cid: str, action_id: str, place: str) -> tu
     return best, source
 
 
+def blocked_for(ctx: DecisionContext, me: CharacterState) -> frozenset[str]:
+    if ctx.world is not None:
+        return ctx.world.blocked_for(me.id)
+    return ctx.blocked
+
+
 def candidates(char: Character, me: CharacterState, ctx: DecisionContext) -> list[Candidate]:
     data = ctx.data
-    dist, _came = shortest_paths(data, me.place, ctx.blocked)
+    blocked = blocked_for(ctx, me)
+    if me.place in blocked:
+        dist = {me.place: 0.0}  # preso na névoa: só dá para fazer coisas aqui mesmo
+    else:
+        dist, _came = shortest_paths(data, me.place, blocked)
     out: list[Candidate] = []
     for action in data.actions.values():
         if not action.active or action.kind == "movimento" or action.automatic:

@@ -14,4 +14,4 @@ tem: [trilha de peregrinação, pico com neve, eco]
 conexoes:
   - {para: forest, tipo: caminho, minutos: 30}
   - {para: sky, tipo: tunel, minutos: 10}
-acoes: [rezar, cochilar]
+acoes: [rezar, cochilar, enfrentar]

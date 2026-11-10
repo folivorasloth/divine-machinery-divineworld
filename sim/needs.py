@@ -49,13 +49,17 @@ def natural_change(
     dt_minutes: float,
     sleeping: bool = False,
     extra_traits: list[str] = (),
+    extra_mult: dict[str, float] | None = None,
 ) -> None:
-    """Aplica a variação natural (taxas) em `needs`, no lugar."""
+    """Aplica a variação natural (taxas) em `needs`, no lugar.
+    `extra_mult` (Fase 3): multiplicadores de clima e luto por necessidade."""
     dt_hours = dt_minutes / 60.0
     for nid, need in data.world.needs.items():
         if sleeping and nid == "sono":
             continue
         rate = (need.rate_night if is_night else need.rate_day) * rate_multiplier(data, char, nid, extra_traits)
+        if extra_mult and nid in extra_mult:
+            rate *= extra_mult[nid]
         value = needs.get(nid, need.initial)
         if need.mode == "acumula":
             value += rate * dt_hours

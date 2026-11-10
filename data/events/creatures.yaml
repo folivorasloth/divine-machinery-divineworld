@@ -1,0 +1,160 @@
+# =====================================================================
+# Bestiário inicial — as criaturas medonhas da noite (Fase 3)
+# =====================================================================
+# Esboço para o João redesenhar: troque nomes, lugares, textos e números à
+# vontade. As regras (docs/arquitetura.md, seção 12):
+#
+#   lugares / periodos   onde e quando pode aparecer (à noite, nos lugares perigosos)
+#   chance_por_hora      chance de aparecer, por hora, nesses períodos
+#   duracao_minutos      quanto tempo fica (também some quando o período acaba)
+#   medo                 medo de quem está no lugar quando aparece (metade a cada hora)
+#   perigo               soma ao perigo do lugar enquanto ela está lá (os NPCs evitam)
+#   chance_vencer        chance de quem "enfrenta" espantar a criatura
+#   especialistas        profissões que vencem mais (×1.5)
+#   homelab: true        só aparece quando um serviço REAL do homelab cai
+#                        (MQTT homelab/servicos/<nome> = down; ou o comando
+#                        "homelab <nome> down"); só some quando ele volta (up).
+#                        {objeto} nos textos = nome do serviço.
+#   chama_profissoes     quem ganha o objetivo de ir enfrentá-la (os Técnicos)
+#   textos               aparece, some, vencida, ataque (sorteia um de cada).
+#                        Variáveis: {eu} (quem está lá / quem enfrentou), {lugar}, {objeto}
+# A chance de MORRER perto de uma criatura está em world.yaml > morte.causas.criatura.
+# =====================================================================
+
+criaturas:
+  - id: olhos_no_escuro
+    nome: os Olhos no Escuro
+    descricao: Pares de olhos amarelos entre as árvores. Piscam fora de ritmo.
+    lugares: [forest]
+    periodos: [noite, madrugada]
+    chance_por_hora: 0.05
+    duracao_minutos: [40, 150]
+    medo: 35
+    perigo: 35
+    chance_vencer: 0.45
+    textos:
+      aparece:
+        - "Entre as árvores de {lugar}, dezenas de olhos amarelos se acendem ao mesmo tempo."
+        - "Alguma coisa pisca no escuro de {lugar}. E pisca de novo, mais perto."
+        - "{eu} jura que viu olhos no meio do mato em {lugar}. Ninguém ri."
+      some:
+        - "Os olhos de {lugar} se apagam um por um, como se alguém desligasse."
+        - "O mato de {lugar} volta a ser só mato."
+      vencida:
+        - "{eu} bate duas panelas no meio de {lugar} e os olhos fogem para longe."
+        - "{eu} grita tão alto que até os olhos no escuro se assustam e somem."
+      ataque:
+        - "Os olhos cercam {eu}, que sai correndo e cai de cara num tronco."
+        - "{eu} encara os olhos, os olhos encaram de volta. {eu} perde."
+
+  - id: coisa_da_mare
+    nome: a Coisa da Maré
+    descricao: Uma forma molhada que sobe da água de madrugada e cheira a peixe velho.
+    lugares: [sea]
+    periodos: [madrugada]
+    chance_por_hora: 0.04
+    duracao_minutos: [30, 120]
+    medo: 40
+    perigo: 40
+    chance_vencer: 0.35
+    textos:
+      aparece:
+        - "Uma coisa comprida e molhada sai da água em {lugar} e fica parada na areia."
+        - "A maré sobe em {lugar} trazendo uma forma que ninguém quer olhar de perto."
+      some:
+        - "A Coisa da Maré volta para a água de {lugar} sem fazer barulho."
+        - "Em {lugar} só sobrou um rastro molhado na areia."
+      vencida:
+        - "{eu} joga sal na Coisa da Maré, que afunda resmungando."
+      ataque:
+        - "A Coisa da Maré arrasta {eu} até a canela na água gelada de {lugar}."
+
+  - id: sombra_do_tunel
+    nome: a Sombra do Túnel
+    descricao: Uma sombra sem dono que anda pelos túneis esquecidos do Subterrâneo.
+    lugares: [underground]
+    periodos: [noite, madrugada]
+    chance_por_hora: 0.04
+    duracao_minutos: [60, 180]
+    medo: 30
+    perigo: 30
+    chance_vencer: 0.4
+    textos:
+      aparece:
+        - "Em {lugar}, uma sombra anda pela parede sem ninguém para fazer a sombra."
+        - "A música para em {lugar}: tem uma sombra a mais dançando."
+      some:
+        - "A sombra de {lugar} entra numa rachadura e some."
+      vencida:
+        - "{eu} acende todas as lanternas de {lugar} e a sombra não tem onde ficar."
+      ataque:
+        - "A sombra passa por cima de {eu}, que fica gelad{o|a} até os ossos."
+
+  - id: vulto_do_cemiterio
+    nome: o Vulto do Portão
+    descricao: Um vulto alto que fica encostado no portão do cemitério nas noites úmidas.
+    lugares: [cemetery]
+    periodos: [madrugada]
+    chance_por_hora: 0.03
+    duracao_minutos: [30, 90]
+    medo: 30
+    perigo: 25
+    chance_vencer: 0.5
+    textos:
+      aparece:
+        - "Um vulto alto se encosta no portão de {lugar}. O portão range sozinho."
+        - "A névoa baixa de {lugar} toma a forma de alguém. E fica."
+      some:
+        - "O vulto de {lugar} se desfaz na névoa."
+      vencida:
+        - "{eu} reza alto em {lugar} e o vulto vai embora, meio ofendido."
+      ataque:
+        - "O vulto sopra no pescoço de {eu}. {eu} não dorme mais esta noite."
+
+  - id: bicho_do_deserto
+    nome: o Bicho das Ruínas
+    descricao: Algo que mora debaixo das ruínas do deserto e sai quando a areia esfria.
+    lugares: [desert, mountain]
+    periodos: [noite]
+    chance_por_hora: 0.03
+    duracao_minutos: [40, 120]
+    medo: 30
+    perigo: 30
+    chance_vencer: 0.4
+    textos:
+      aparece:
+        - "A areia de {lugar} se mexe sozinha. Tem alguma coisa respirando lá embaixo."
+        - "Um uivo que não é de bicho nenhum corta {lugar}."
+      some:
+        - "A areia de {lugar} para de se mexer."
+      vencida:
+        - "{eu} enfia um pedaço de pau na areia de {lugar} e a coisa foge para o fundo."
+      ataque:
+        - "Alguma coisa puxa a bota de {eu} para dentro da areia de {lugar}."
+
+  # --- Sala do Servidor: só aparecem quando um serviço real do homelab cai
+  - id: gremlin_do_rack
+    nome: o Gremlin do Rack
+    descricao: Bichinho de faísca que roe cabos quando um serviço de verdade cai.
+    lugares: [server_room]
+    homelab: true
+    medo: 25
+    perigo: 30
+    chance_vencer: 0.5
+    especialistas: [tecnico]
+    chama_profissoes: [tecnico]
+    bonus_objetivo: 8
+    textos:
+      aparece:
+        - "Os racks de {lugar} piscam vermelho: {objeto} caiu. Uma coisa de faísca roe os cabos."
+        - "Um guincho elétrico em {lugar}. {objeto} parou e alguma coisa pequena ri no escuro."
+        - "Em {lugar}, a luz de {objeto} apaga. Do fundo da sala, dois olhinhos de LED."
+      some:
+        - "As luzes de {lugar} voltam ao verde: {objeto} está de pé. O gremlin some num estalo."
+        - "{objeto} volta a funcionar e a coisa de faísca de {lugar} evapora."
+      vencida:
+        - "{eu} encurrala o gremlin atrás do rack de {objeto}. Ele foge, mas volta se a luz piscar."
+        - "{eu} isola o cabo certo e o gremlin de {objeto} sai chiando."
+      ataque:
+        - "O gremlin de {objeto} morde a luva de {eu} e solta uma faísca azul."
+        - "{eu} encosta onde não devia. Um estalo, cabelo em pé, e o gremlin de {objeto} gargalha."

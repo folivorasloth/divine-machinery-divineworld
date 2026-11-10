@@ -50,7 +50,7 @@ acoes:
     peso: 0.8
     duracao_minutos: [45, 120]
     condicoes:
-      personagens: [medium]
+      profissoes: [medium]
       periodos: [noite, madrugada]
     consideracoes:
       - entrada: necessidade.fe
@@ -125,7 +125,7 @@ acoes:
     peso: 1.5
     duracao_minutos: [15, 40]
     condicoes:
-      personagens: [priest]
+      profissoes: [padre]
       periodos: [noite, madrugada]
     consideracoes:
       - entrada: presenca.medium
@@ -151,7 +151,7 @@ acoes:
     especial: confissao
     cooldown_minutos: 600
     condicoes:
-      alvo: {obrigatorio: true, personagens: [priest]}
+      alvo: {obrigatorio: true, profissoes: [padre]}
     consideracoes:
       - entrada: necessidade.fe
         curva: {tipo: pontos, pontos: [[0, 0.15], [40, 0.5], [80, 1]]}
@@ -178,7 +178,7 @@ acoes:
     faccao: seita
     cooldown_minutos: 120
     condicoes:
-      personagens: [medium]
+      profissoes: [medium]
       alvo: {obrigatorio: true, afinidade_min: 15}
     consideracoes:
       - entrada: afinidade
@@ -208,7 +208,7 @@ acoes:
     faccao: igreja
     cooldown_minutos: 120
     condicoes:
-      personagens: [priest]
+      profissoes: [padre]
       periodos: [manha, tarde]
       alvo: {obrigatorio: true, afinidade_min: 0}
     consideracoes:

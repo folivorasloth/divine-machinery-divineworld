@@ -131,6 +131,8 @@ def arrest(world: "World", fiscal: str, offender: str, infraction: str | None = 
         st.place = cfg.law.limbo
         st.plan, st.activity = None, None
         world.remember_scene("limbo", subject=fiscal, object=offender, place=origin)
+        # Fase 3: às vezes quem vai para o Limbo não volta (morte.causas com quando: limbo)
+        world.lifecycle_roll("limbo", offender, place=cfg.law.limbo)
         return
     st.jailed_until = world.now_minutes() + cfg.limits.prison_hours * 60
     world.say(fiscal, "prisao", target=offender, place=st.place, event_type="arrest", extra=extra,

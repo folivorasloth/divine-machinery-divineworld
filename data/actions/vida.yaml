@@ -1,0 +1,94 @@
+# =====================================================================
+# Ações da Fase 3: vida, morte, criaturas e eleição
+# =====================================================================
+# Todas têm um "especial" (regra no código, ver docs/arquitetura.md, seção 12):
+#   funeral    — só vale onde um funeral está acontecendo AGORA (velório na
+#                Catedral, enterro no Cemitério). A fala sai pela personalidade
+#                (funeral_personalidade) ou pela afinidade com o morto
+#                (funeral_amigo / funeral / funeral_inimigo).
+#   tumulo     — no Cemitério, para quem tem um morto enterrado de quem sente falta.
+#   criatura   — só onde há uma criatura; no fim, espanta ou leva a pior.
+#   assembleia — só durante uma eleição marcada (sucessão do Chefe).
+# A vontade de ir a um funeral/assembleia vem principalmente do OBJETIVO que
+# o mundo cria (bonus pela afinidade com o morto, world.yaml > funeral).
+# =====================================================================
+
+acoes:
+  - id: velar
+    nome: Ir ao funeral
+    descricao: Vai ao velório na Catedral e acompanha o enterro no Cemitério.
+    tipo: individual
+    especial: funeral
+    peso: 1.2
+    duracao_minutos: [40, 80]
+    consideracoes:
+      - entrada: necessidade.sono
+        curva: {tipo: pontos, pontos: [[0, 1], [80, 0.6], [100, 0.1]]}
+      - entrada: necessidade.fome
+        curva: {tipo: pontos, pontos: [[0, 1], [80, 0.6], [100, 0.2]]}
+    efeitos:
+      necessidades: {fe: -15, social: -20, tedio: -10}
+    narracao: "{eu} fica em pé, molhad{o|a} de chuva, no funeral de {morto}."
+    fala: funeral
+    chance_fala: 1.0
+    tags: [morte]
+    importancia: 1
+
+  - id: visitar_tumulo
+    nome: Visitar um túmulo
+    descricao: Leva flores (ou só fica parado) diante da lápide de quem morreu.
+    tipo: individual
+    especial: tumulo
+    peso: 0.25
+    duracao_minutos: [15, 40]
+    cooldown_minutos: 600
+    condicoes:
+      periodos: [manha, tarde, noite]
+    consideracoes:
+      - entrada: luto
+        curva: {tipo: pontos, pontos: [[0, 0.08], [30, 0.5], [80, 1]]}
+      - entrada: necessidade.fe
+        curva: {tipo: pontos, pontos: [[0, 0.4], [60, 1]]}
+    efeitos:
+      necessidades: {fe: -20, social: 5, tedio: -5}
+    narracao: "{eu} para diante da lápide de {morto} e fica um tempo ali."
+    fala: tumulo
+    chance_fala: 0.8
+    tags: [morte]
+    importancia: 1
+
+  - id: enfrentar
+    nome: Enfrentar a criatura
+    descricao: Encara a coisa da noite (ou o monstro do servidor) para espantá-la.
+    tipo: individual
+    especial: criatura
+    peso: 0.6
+    duracao_minutos: [10, 30]
+    cooldown_minutos: 60
+    consideracoes:
+      - entrada: necessidade.medo
+        nota: com muito medo ninguém enfrenta nada
+        curva: {tipo: pontos, pontos: [[0, 1], [50, 0.5], [90, 0.05]]}
+      - entrada: necessidade.raiva
+        curva: {tipo: pontos, pontos: [[0, 0.5], [60, 1]]}
+    efeitos:
+      necessidades: {medo: 10, tedio: -30, raiva: -15}
+    narracao: "{eu} respira fundo e vai pra cima de {objeto}."
+    fala: enfrentar
+    chance_fala: 0.6
+    tags: [misterio]
+    importancia: 1
+
+  - id: assembleia
+    nome: Ir à assembleia
+    descricao: Junta-se à eleição improvisada na Praça.
+    tipo: individual
+    especial: assembleia
+    peso: 1.0
+    duracao_minutos: [30, 60]
+    efeitos:
+      necessidades: {social: -20, tedio: -15}
+    narracao: "{eu} entra no meio do povo reunido em {lugar} para a eleição."
+    fala: assembleia
+    chance_fala: 0.5
+    tags: [evento]

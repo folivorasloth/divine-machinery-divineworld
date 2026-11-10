@@ -55,13 +55,13 @@ tracos:
   - id: gentil
     nome: Gentil
     efeitos:
-      acoes: {consolar: 1.5, brigar: 0.4}
+      acoes: {consolar: 1.5, brigar: 0.4, velar: 1.3, visitar_tumulo: 1.3}
   - id: melancolico
     nome: Melancólico
     opostos: [alegre, otimista]
     efeitos:
       necessidades: {tedio: 1.2}
-      acoes: {festejar: 0.7, encarar_tela: 1.5}
+      acoes: {festejar: 0.7, encarar_tela: 1.5, visitar_tumulo: 1.6, velar: 1.3}
   - id: autodepreciativo
     nome: Autodepreciativo
     opostos: [soberbo, vaidoso]
@@ -89,7 +89,7 @@ tracos:
     nome: Devoto
     efeitos:
       necessidades: {fe: 1.8}
-      acoes: {rezar: 1.6, ritual: 0.2}
+      acoes: {rezar: 1.6, ritual: 0.2, velar: 1.4}
   - id: ranzinza
     nome: Ranzinza
     opostos: [alegre]
@@ -107,7 +107,7 @@ tracos:
     opostos: [tranquilo, calmo]
     efeitos:
       necessidades: {raiva: 0.8}   # (raiva "retorna": menor = demora mais a passar)
-      acoes: {brigar: 1.4, discutir: 1.6}
+      acoes: {brigar: 1.4, discutir: 1.6, enfrentar: 2.0}
   - id: carinhoso
     nome: Carinhoso
     efeitos:
@@ -145,6 +145,7 @@ tracos:
   - id: inseguro
     nome: Inseguro
     efeitos:
+      acoes: {enfrentar: 0.4}
       necessidades: {medo: 0.8}   # o medo demora a passar
 
   # --- Os Cowboys
@@ -184,7 +185,7 @@ tracos:
   - id: curioso
     nome: Curioso
     efeitos:
-      acoes: {perambular: 1.4}
+      acoes: {perambular: 1.4, enfrentar: 1.3}
   - id: inofensivo
     nome: Inofensivo
     efeitos:
@@ -196,7 +197,7 @@ tracos:
     sorteavel: false
     efeitos:
       necessidades: {social: 0.2, tedio: 0.3}
-      acoes: {perambular: 3.0, conversar: 0.3, festejar: 0.2, rezar: 0.2, missa: 0.2, fofocar: 0, discutir: 0.1}
+      acoes: {perambular: 3.0, conversar: 0.3, festejar: 0.2, rezar: 0.2, missa: 0.2, fofocar: 0, discutir: 0.1, velar: 0.15, visitar_tumulo: 0.1, enfrentar: 0}
   - id: calmo
     nome: Calmo
     opostos: [bravo, irritado]
@@ -213,11 +214,11 @@ tracos:
     nome: Soberbo
     opostos: [autodepreciativo]
     efeitos:
-      acoes: {conversar: 0.8, consolar: 0.4, construir: 0.2}   # nunca se abaixa
+      acoes: {conversar: 0.8, consolar: 0.4, construir: 0.2, velar: 1.5}   # nunca se abaixa
   - id: vaidoso
     nome: Vaidoso
     efeitos:
-      acoes: {festejar: 1.1}
+      acoes: {festejar: 1.1, velar: 3}
 
   # --- O Fiscal
   - id: chato
@@ -250,7 +251,7 @@ tracos:
   - id: protetor
     nome: Protetor
     efeitos:
-      acoes: {consolar: 1.3}
+      acoes: {consolar: 1.3, enfrentar: 2.0}
 
   # --- A Florista
   - id: alegre
@@ -289,7 +290,7 @@ tracos:
   - id: experiente
     nome: Experiente
     efeitos:
-      acoes: {trabalhar: 1.2}
+      acoes: {trabalhar: 1.2, enfrentar: 1.5}
   - id: cansado
     nome: Cansado
     efeitos:
@@ -304,6 +305,7 @@ tracos:
     nome: Empolgado
     opostos: [preguicoso, cansado]
     efeitos:
+      acoes: {enfrentar: 1.5}
       necessidades: {tedio: 1.3}
 
 # =====================================================================
@@ -342,7 +344,25 @@ aparencias:
     - Olhos fundos, casaco remendado e um jeito de quem chegou de longe.
 
 nascimento:
+  # quantos traços (sorteados entre os "sorteavel", respeitando "opostos")
   tracos_min: 2
   tracos_max: 3
-  chance_herdar_do_morto: 0.5
-  nome_padrao: Recém-chegado
+  # chance de herdar um objeto ou mania de alguém que morreu há pouco
+  # (world.yaml > vida.dias_morto_recente). Mania com um texto entre aspas
+  # (ex.: terminar as frases com "...hehe.") vira bordão do recém-nascido.
+  chance_herdar_do_morto: 0.6
+  # nome provisório ({n} = número do nascimento). O João renomeia no YAML.
+  nome_padrao: O Recém-chegado nº {n}
+  nome_padrao_ela: A Recém-chegada nº {n}
+  casa: houses
+  aparece_em: town_square
+  afinidade_padrao: 10
+  # rotina-base de quem nasce (puxa, não obriga). "trabalhar" sem lugar =
+  # no local de trabalho da profissão sorteada.
+  rotina:
+    - {das: "07:00", ate: "08:00", acao: comer, lugar: community_kitchen}
+    - {das: "08:30", ate: "12:00", acao: trabalhar}
+    - {das: "12:00", ate: "13:00", acao: comer, lugar: community_kitchen}
+    - {das: "14:00", ate: "17:30", acao: trabalhar}
+    - {das: "19:00", ate: "20:00", acao: comer, lugar: community_kitchen}
+    - {das: "23:00", ate: "06:30", acao: dormir, lugar: houses, peso: 2.5}

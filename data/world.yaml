@@ -135,11 +135,17 @@ limites:
   max_figurantes: 8
   max_eventos_diretor_por_hora: 3
   max_eventos_diretor_por_dia: 20
-  # chance BASE de morte, por personagem, por dia (causas somam por cima)
-  chance_morte_por_dia: 0.004
-  chance_fantasma_por_noite: 0.03
+  # chance BASE de morte "de velhice / de repente", por personagem, por dia
+  # (é a causa morte.causas.velhice; as outras causas têm chance própria).
+  # Ninguém morre por acaso se a cidade estiver com min_populacao vivos.
+  chance_morte_por_dia: 0.002
+  # chance de UM fantasma aparecer, por noite (se houver mortos que amavam ou
+  # odiavam alguém vivo)
+  chance_fantasma_por_noite: 0.12
   chance_ressurreicao_natural_por_ano: 0.05
-  intervalo_nascimento_dias: 10
+  # em média, um nascimento a cada N dias (mais rápido quando há vagas abertas
+  # por mortes recentes: vida.bonus_por_vaga; nunca acima de max_populacao)
+  intervalo_nascimento_dias: 9
   # chance de cada personagem parar e encarar a tela, por hora
   chance_olhar_por_hora: 0.02
   cooldown_aparicao_dias: 7
@@ -177,16 +183,70 @@ categorias_chat:
   criador: {nome: Criador}
   sistema: {nome: Sistema}
 
-# Clima real (Open-Meteo, grátis, sem chave). Fase 3.
+# Clima (Fase 3). De onde vem:
+#   auto     = clima REAL de Botucatu (Open-Meteo) quando o mundo está no relógio
+#              real; SORTEADO quando o tempo está acelerado (--fast, --speed, testes)
+#   real     = sempre pergunta ao Open-Meteo (sem internet: cache, depois clima_padrao)
+#   simulado = sempre sorteado (com a seed do mundo)
+#   fixo     = sempre o clima_padrao
+# No funeral SEMPRE chove (clima_do_funeral), seja qual for o clima de verdade.
 clima:
+  modo: auto
   cidade: Botucatu-SP
   latitude: -22.886
   longitude: -48.445
+  url: https://api.open-meteo.com/v1/forecast
   atualizar_minutos: 30
   timeout_segundos: 5
-  cache_arquivo: var/clima.json
-  # usado quando não há internet nem cache
+  cache_arquivo: ${DW_WEATHER_CACHE:-var/clima.json}
+  # usado quando não há internet nem cache (id de "tipos" abaixo)
   clima_padrao: nublado
+  clima_do_funeral: chuva
+  # tipos de clima: nome (vira {clima} nas falas) e códigos WMO do Open-Meteo
+  tipos:
+    limpo: {nome: céu limpo, codigos: [0, 1]}
+    nublado: {nome: nublado, codigos: [2, 3]}
+    neblina: {nome: neblina, codigos: [45, 48]}
+    garoa: {nome: garoa, codigos: [51, 53, 55, 56, 57], chuva: true}
+    chuva: {nome: chuva, codigos: [61, 63, 65, 66, 67, 80, 81, 82], chuva: true}
+    tempestade: {nome: tempestade, codigos: [95, 96, 99], chuva: true}
+  # clima sorteado (tempo acelerado): troca a cada X horas, com estes pesos
+  # (um pouco de primavera de Botucatu: sol, nuvem e pancada de chuva)
+  simulado:
+    troca_a_cada_horas: [2, 7]
+    pesos: {limpo: 4, nublado: 4, neblina: 0.6, garoa: 1, chuva: 1.4, tempestade: 0.4}
+    temperatura_dia: [19, 32]
+    temperatura_noite: [12, 21]
+  frio_abaixo: 14
+  calor_acima: 30
+  # o que cada clima faz. necessidades: multiplica a taxa; acoes: multiplica a
+  # nota; acoes_externas: multiplica a nota de QUALQUER ação em lugar externo
+  efeitos:
+    chuva:
+      necessidades: {tedio: 1.2, social: 1.1}
+      acoes: {perambular: 0.5, festejar: 0.8, rezar: 1.2}
+      acoes_externas: 0.55
+    garoa:
+      acoes: {perambular: 0.8}
+      acoes_externas: 0.8
+    tempestade:
+      necessidades: {tedio: 1.3}
+      acoes: {perambular: 0.2, rezar: 1.5}
+      acoes_externas: 0.3
+    neblina:
+      acoes: {encarar_tela: 1.4}
+      acoes_externas: 0.85
+    limpo:
+      acoes: {perambular: 1.2, festejar: 1.1}
+    frio:
+      necessidades: {fome: 1.2, sono: 1.1}
+      acoes_externas: 0.8
+    calor:
+      necessidades: {sono: 1.15, tedio: 1.1}
+      acoes: {festejar: 1.2, cochilar: 1.3}
+  # quem tem medo do clima (medos.gatilho: chuva, como o Esquisito) ganha
+  # este tanto de medo por hora enquanto ele dura
+  medo_por_hora_com_gatilho: 12
 
 # MQTT do homelab (Mosquitto). Se estiver fora do ar, o mundo continua.
 mqtt:
@@ -474,6 +534,57 @@ memoria:
       decai_por_dia: 5
       fato: "{quem} achou {objeto} em {lugar} e jura que é sagrado"
       lembranca: "aquele achado sagrado em {lugar}"
+    # --- Fase 3: vida e morte
+    morte:
+      nome: Morte
+      intensidade: 85
+      sentimento: -1
+      permanente: true
+      fato: "{quem} morreu em {lugar} ({objeto})"
+      lembranca: "aquele dia em que {quem} morreu"
+    funeral:
+      nome: Funeral
+      intensidade: 60
+      sentimento: -0.6
+      decai_por_dia: 4
+      fato: "enterraram {quem} debaixo de chuva"
+      lembranca: "aquele enterro de {quem}, debaixo de chuva"
+    fantasma:
+      nome: Fantasma
+      intensidade: 80
+      sentimento: -0.4
+      decai_por_dia: 3
+      fato: "{quem} apareceu de noite para {alvo}, já morto"
+      lembranca: "aquela noite em que {quem} apareceu"
+    ressurreicao:
+      nome: Ressurreição
+      intensidade: 95
+      sentimento: 0.3
+      permanente: true
+      fato: "{quem} voltou dos mortos"
+      lembranca: "aquele dia em que {quem} voltou do cemitério"
+    criatura:
+      nome: Criatura
+      intensidade: 55
+      sentimento: -0.7
+      decai_por_dia: 8
+      fato: "apareceu {objeto} em {lugar}"
+      lembranca: "aquela coisa em {lugar}"
+    criatura_vencida:
+      nome: Criatura espantada
+      intensidade: 60
+      sentimento: 0.6
+      decai_por_dia: 6
+      afinidade: 8
+      fato: "{quem} espantou {objeto} de {lugar}"
+      lembranca: "aquela noite em que {quem} enfrentou {objeto}"
+    aparicao_rara:
+      nome: A figura desenhada
+      intensidade: 90
+      sentimento: 0.1
+      permanente: true
+      fato: "apareceu em {lugar} uma figura que parecia desenhada à mão"
+      lembranca: "aquela figura desenhada em {lugar}"
     mutirao:
       nome: Mutirão
       intensidade: 40
@@ -549,3 +660,228 @@ roubos:
   chance_achar: 0.3
   tracos_que_acham_sagrado: [estranho]
   raiva_ao_perceber: 30
+
+# =====================================================================
+# Fase 3 — vida, morte, criaturas e o diretor
+# =====================================================================
+
+vida:
+  # onde os nascidos viram YAML (relativo a data/). A variável de ambiente
+  # DW_BORN_DIR tem prioridade: testes e simulações de teste usam uma pasta
+  # temporária, para não encher data/characters/born de gente de mentira.
+  pasta_nascidos: characters/born
+  # cada vaga aberta nos últimos 30 dias (mortes − nascimentos) soma isto à
+  # chance de nascer (1 = uma vaga dobra a chance)
+  bonus_por_vaga: 1.0
+  # quem nasce pode herdar um objeto/mania de quem morreu nestes últimos dias
+  dias_morto_recente: 20
+  memoria_fantasma: fantasma
+  memoria_ressurreicao: ressurreicao
+
+# Causas de morte. "quando" diz em que momento o mundo sorteia:
+#   diario   = de hora em hora (chance por DIA; vazio = limites.chance_morte_por_dia)
+#   briga    = no fim de cada briga, para quem apanhou (metade para quem bateu)
+#   falha    = quando uma das "acoes" dá errado (pastelão que acaba mal)
+#   criatura = por hora, para quem está perto de uma criatura (×3 ao perder um enfrentamento)
+#   limbo    = cada ida ao Limbo (não volta)
+# por_traco multiplica a chance. A notícia sai das falas "morte_<causa>"
+# (data/lines/vida.yaml). Probabilidades BAIXAS de propósito: ~3 a 5 mortes por mês.
+morte:
+  memoria: morte
+  lugar_do_corpo: cemetery
+  causas:
+    velhice:
+      nome: velhice
+      quando: diario
+      por_traco: {experiente: 3, cansado: 2, contador_de_causo: 1.5, preguicoso: 1.2}
+    briga:
+      nome: briga que passou do ponto
+      quando: briga
+      chance: 0.04
+      por_traco: {briguento: 1.3}
+    acidente:
+      nome: acidente bobo
+      quando: falha
+      acoes: [andar_de_skate, fazer_malabarismo, pregar_peca, construir, quebrar]
+      chance: 0.008
+      por_traco: {desastrado: 1.5}
+    choque:
+      nome: choque na Sala do Servidor
+      quando: falha
+      acoes: [fucar]
+      chance: 0.03
+      lugares: [server_room]
+    criatura:
+      nome: coisa da noite
+      quando: criatura
+      chance: 0.02
+      por_traco: {inseguro: 1.4, bravo: 0.7, protetor: 0.8}
+    limbo:
+      nome: o Limbo
+      quando: limbo
+      chance: 0.15
+
+funeral:
+  # o velório começa X horas depois da morte, dentro da janela abaixo
+  depois_horas: [2, 6]
+  comeca_entre: {das: "07:00", ate: "18:00"}
+  local_velorio: cathedral
+  velorio_minutos: 40
+  local_enterro: cemetery
+  duracao_minutos: [60, 90]
+  acao: velar
+  # vontade de ir = bonus_base + afinidade_com_o_morto × bonus_por_afinidade
+  # (mínimo bonus_min). Quem odiava o morto quase não vai (o vaidoso vai
+  # mesmo assim: traço vaidoso tem "velar: 3" em traits.yaml)
+  bonus_base: 3
+  bonus_por_afinidade: 0.06
+  bonus_min: 0.4
+  memoria: funeral
+  # quem conduz: o primeiro vivo com uma destas profissões
+  quem_conduz: [padre, lider]
+
+luto:
+  # entra em luto quem tinha afinidade com o morto acima disso (ou parente)
+  afinidade_min: 25
+  # duração (dias) com intensidade 1 (afinidade 100). Intensidade =
+  # afinidade/100 × fator_por_tipo (o maior tipo de relação com o morto)
+  dias: 6
+  fator_por_tipo: {casal: 1.6, filho: 1.5, mae: 1.5, pai: 1.5, irmao: 1.4, aprendiz: 1.2, mentor: 1.2}
+  # somado às necessidades na hora da notícia (× intensidade)
+  choque: {fe: 25, social: 20, tedio: 15, raiva: 10}
+  # taxas das necessidades durante o luto (× intensidade)
+  taxas: {fe: 1.6, sono: 1.2, fome: 0.7}
+  # vontade de fazer cada ação durante o luto (× intensidade)
+  acoes: {festejar: 0.2, pregar_peca: 0.2, fazer_malabarismo: 0.4, andar_de_skate: 0.5, rezar: 2.0,
+          visitar_tumulo: 3.0, consolar: 1.5, conversar: 1.2, trabalhar: 0.8}
+
+# O que a morte de alguém da bible muda ("Se morrer" de cada ficha).
+#   chuva_minutos: quanto tempo chove (padrão: limites.minutos_de_chuva_no_funeral)
+#   funeral_depois_horas: atraso do funeral; texto: narração depois do enterro
+#   acoes + para + dias: multiplica a vontade dessas ações (de "para", ou de todos)
+#   objetivo: um objetivo para todos depois do funeral; luto_fator: luto mais forte para alguém
+se_morrer:
+  fool:
+    chuva_minutos: 1440
+    acoes: {pregar_peca: 0.05, fazer_malabarismo: 0.1}
+    para: [clown]
+    dias: 7
+    luto_fator: {clown: 1.6}
+    texto: "Chove o dia inteiro. {@clown} guarda a buzina e não aperta nem uma vez."
+  clown:
+    acoes: {pregar_peca: 0.3, conversar: 0.9}
+    dias: 4
+    texto: "A cidade fica estranhamente quieta sem {morto}. Ninguém troca as placas."
+  musician:
+    acoes: {festejar: 0.6}
+    dias: 7
+    texto: "Sem a viola de {morto}, a praça fica com um silêncio esquisito."
+  priest:
+    texto: "O sino da Catedral fica mudo. Na floresta, as velas da seita acendem mais cedo."
+  chief:
+    acoes: {construir: 0.5, mandar_reconstruir: 0.3}
+    dias: 3
+    texto: "Sem {morto}, ninguém sabe quem manda. Começa o burburinho de eleição."
+  chef_wife:
+    luto_fator: {chef_husband: 1.8, teen: 1.4}
+    acoes: {trabalhar: 0.4}
+    para: [chef_husband]
+    dias: 6
+    texto: "A Cozinha Comunitária fica de portas fechadas. A comida da cidade piora."
+  chef_husband:
+    luto_fator: {chef_wife: 1.8, teen: 1.4}
+    acoes: {trabalhar: 0.4}
+    para: [chef_wife]
+    dias: 6
+    texto: "A Cozinha Comunitária fica de portas fechadas. A comida da cidade piora."
+  teen:
+    luto_fator: {chef_wife: 2.0, chef_husband: 2.0}
+    acoes: {trabalhar: 0.2, festejar: 0.1}
+    para: [chef_wife, chef_husband]
+    dias: 10
+    texto: "O casal da cozinha desmorona. É o luto mais pesado que a cidade já viu."
+  cowboy_fat:
+    objetivo: {acao: festejar, lugar: tavern, bonus: 4, duracao_horas: 8, para: todos}
+    texto: "Os cowboys que sobraram fazem velório com cerveja e viola até o dia nascer."
+  cowboy_thin:
+    objetivo: {acao: festejar, lugar: tavern, bonus: 4, duracao_horas: 8, para: todos}
+    texto: "Os cowboys que sobraram fazem velório com cerveja e viola até o dia nascer."
+  cowboy_old:
+    objetivo: {acao: festejar, lugar: tavern, bonus: 4, duracao_horas: 8, para: todos}
+    texto: "Os cowboys que sobraram fazem velório com cerveja e viola até o dia nascer."
+  medium:
+    texto: "A seita entra em crise. Na floresta, alguém já jura que ouviu as vozes."
+  weirdo:
+    objetivo: {acao: rezar, bonus: 2, duracao_horas: 24, para: todos}
+    texto: "Os objetos do carrinho de {morto} viram relíquias. Tem gente rezando para uma colher torta."
+  mike:
+    funeral_depois_horas: 48
+    texto: "Só agora alguém percebeu que {morto} tinha morrido. Faz dois dias."
+  lady:
+    texto: "O funeral mais pomposo da história. Ninguém chorou."
+  inspector:
+    objetivo: {acao: festejar, lugar: tavern, bonus: 3, duracao_horas: 5, para: todos}
+    texto: "A cidade faz uma festa escondida pela morte de {morto}. Depois, todo mundo sente culpa."
+  blacksmith:
+    acoes: {construir: 0.4}
+    dias: 7
+    texto: "Sem {morto}, as reconstruções ficam lentíssimas."
+  florist:
+    acoes: {conversar: 0.85}
+    dias: 5
+    texto: "As flores da cidade murcham todas no mesmo dia."
+  greedy:
+    objetivo: {acao: discutir, bonus: 2.5, duracao_horas: 6, para: todos}
+    texto: "Acharam o esconderijo de {morto}. A cidade inteira briga pela partilha."
+  tech_old:
+    texto: "A Sala do Servidor fica sem quem sabia onde não encostar."
+  tech_apprentice:
+    texto: "Na Sala do Servidor, um cabo solto ainda faísca no lugar onde {morto} sempre encostava."
+
+# Quem assume um papel importante quando ele fica vago (profissões com
+# papel_importante em traits.yaml). modo:
+#   eleicao  = assembleia em "lugar"; cada um vota em quem mais gosta
+#   vocacao  = alguém com estes traços sente o chamado
+#   sucessao = herdeiros, aprendizes e família primeiro
+sucessao:
+  acao_assembleia: assembleia
+  bonus_assembleia: 4
+  bonus_herdeiro: 6
+  bonus_por_tipo: {aprendiz: 6, filho: 3, casal: 2, irmao: 2, mentor: 2}
+  papeis:
+    lider: {modo: eleicao, depois_horas: [10, 30], lugar: town_square, duracao_minutos: 60}
+    padre: {modo: vocacao, depois_horas: [24, 60], tracos: [devoto, ranzinza, gentil, conciliador]}
+    medium: {modo: vocacao, depois_horas: [6, 24], tracos: [misterioso, estranho, curioso, carismatico, rebelde]}
+    fiscal: {modo: vocacao, depois_horas: [12, 36], tracos: [chato, burocrata, desconfiado, perfeccionista]}
+    ferreiro: {modo: sucessao, depois_horas: [12, 36], tracos: [protetor, honesto, irritado]}
+    cozinheiro: {modo: sucessao, depois_horas: [6, 24], tracos: [carinhoso, mandao, perfeccionista]}
+    tecnico: {modo: sucessao, depois_horas: [6, 24], tracos: [curioso, experiente, desastrado]}
+
+criaturas:
+  max_ao_mesmo_tempo: 3
+  acao_enfrentar: enfrentar
+  memoria: criatura
+  memoria_vitoria: criatura_vencida
+
+# O Diretor mede a tensão (0 a 100) e injeta eventos de data/events/ para
+# manter o ritmo: agita quando está calmo demais, acalma quando está caótico.
+# Ele NUNCA decide resultados, só cria situações.
+diretor:
+  a_cada_minutos: 10
+  # tensão = soma de (peso × quantos eventos daquele tipo nas últimas X horas)
+  janela_horas: 6
+  pesos_eventos: {fight: 9, argument: 2.5, chase: 6, arrest: 5, limbo_in: 10, theft: 2, prank: 1.5,
+                  structure_changed: 1.5, ghost: 8, creature_spawned: 4, infraction: 1}
+  # + medo e raiva médios da cidade × peso
+  peso_medo_medio: 0.5
+  peso_raiva_media: 0.6
+  # + cada morte recente × peso
+  peso_morte_recente: 18
+  janela_morte_horas: 48
+  # + cada criatura no mundo agora × peso
+  peso_criatura: 6
+  # a tensão que o diretor persegue em cada período (o dia tem ondas)
+  alvo: {madrugada: 15, manha: 25, tarde: 35, noite: 40}
+  margem: 8
+  chance_de_agir: 0.25
+  registrar_tensao_a_cada_minutos: 60

@@ -22,10 +22,17 @@ Só o thread da simulação mexe no estado. API/CLI/MQTT só põem comandos na f
 A sociedade (Fase 2) mora em módulos próprios — `memory`, `relations`,
 `gossip`, `law`, `factions`, `structures`, `social_events` — e este arquivo
 só liga os pontos: quando uma ação começa ou termina, o que muda no mundo.
+
+Fase 3: `lifecycle` (morte, funeral, luto, nascimentos, sucessão, fantasmas),
+`creatures`, `weather`, `screens` (névoa) e `director` (tensão e eventos).
+O `World` trabalha numa CÓPIA rasa dos dados (`self.data.characters` é um
+dicionário só dele): nascimentos e sucessões mudam essa cópia, nunca o
+`WorldData` de quem chamou (nem os YAML originais).
 """
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
 import math
@@ -35,7 +42,9 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from sim import creatures as creatures_mod
 from sim import factions as factions_mod
+from sim import lifecycle
 from sim import gossip as gossip_mod
 from sim import law as law_mod
 from sim import needs as needs_mod
@@ -43,15 +52,18 @@ from sim import rng as rng_mod
 from sim import social_events as social_mod
 from sim import speech, utility
 from sim.clock import WorldClock
+from sim.director import Director
 from sim.events import Event, EventBus
 from sim.loader import WorldData
 from sim.memory import Memories, Memory
 from sim.pathfinding import passable, path_from, shortest_paths
 from sim.persistence import Storage
 from sim.relations import Relations
+from sim.screens import Screens
 from sim.schemas import Action, time_to_minutes
 from sim.state import Activity, CharacterState, MoveStep, Plan
 from sim.structures import STATE_NAMES, Structures
+from sim.weather import Weather
 
 log = logging.getLogger("sim.engine")
 
@@ -77,7 +89,10 @@ class World:
         seed: int | None = None,
         speed: float | None = None,
         start: datetime | None = None,
+        weather_fetcher=None,
     ):
+        # cópia rasa: nascimentos e sucessões mudam só o dicionário deste mundo
+        data = dataclasses.replace(data, characters=dict(data.characters))
         self.data = data
         self.storage = storage
         self.bus = EventBus()
@@ -88,7 +103,7 @@ class World:
         self.stop_requested = False
         self.ticks = 0
         self._last_event_id = 0
-        self.weather_label = data.world.weather.fallback  # clima real chega na Fase 3
+        self.realtime = False  # True só em run(fast=False): libera o clima real (Open-Meteo)
         self.frozen_rows: dict[str, dict] = {}
         # Fase 2: a sociedade
         self.relations = Relations(data)
@@ -101,9 +116,18 @@ class World:
         self.visitors: dict[str, list[list]] = {}  # lugar -> [[minuto, id], ...]
         self.relation_marks: list[list[str]] = []  # [a, b, "inimigos"|"amigos"] já anunciados
         self._next_hourly: float | None = None
+        # Fase 3
+        self.life = lifecycle.LifeState()
+        self.screens = Screens()
+        self.creatures = creatures_mod.Creatures()
+        self.director = Director()
+        self.director.watched = set(data.world.director.event_weights)
+        self.blocked_places: frozenset[str] = frozenset()
+        self._mult_cache: dict[str, tuple[dict, dict]] = {}
 
         if storage is not None:
             self.bus.subscribe(storage.insert_event)
+        self.bus.subscribe(lambda ev: self.director.observe(self, ev))
 
         resumed = storage is not None and storage.has_world()
         self.resumed = resumed
@@ -133,10 +157,20 @@ class World:
         self._next_hourly = society.get("next_hourly")
         if self._next_hourly is None:
             self._next_hourly = self._now_minutes() + 60
+        self.life = lifecycle.LifeState.from_json(society.get("life", {}))
+        if not self.life.created:
+            self.life.created = self.clock.iso()
+        self.weather = Weather(self, fetcher=weather_fetcher)
+        self.weather.load(society.get("weather", {}))
+        self.screens.load(society.get("screens", {}))
+        self.creatures.load(society.get("creatures", {}))
+        self.director.load(society.get("director", {}))
 
         self.states: dict[str, CharacterState] = {}
         self._review_minutes: dict[str, set[int]] = {}
         self._load_characters()
+        lifecycle.apply_all_overrides(self)
+        self.refresh_blocked()
         factions_mod.init_membership(self)
         self._period = self.clock.period()
         self._next_save = self._now_minutes() + data.world.storage.save_every_minutes
@@ -308,6 +342,7 @@ class World:
             period_name=self.clock.period_name(), weather=self.weather_label,
             mood=needs_mod.mood(self.data, st.needs), needs=st.needs, target=target,
             extra=extra, genders=genders, recall=self._recall(cid, target),
+            weather_kind=self.weather.kind, dead=extra.get("morto"),
         )
 
     def say(self, speaker: str, situation: str, *, target: str | None = None, place: str | None = None,
@@ -358,6 +393,7 @@ class World:
             data=self.data, minute_of_day=self.clock.minute_of_day(), hour=self.clock.hour_float(),
             period=self.clock.period(), is_night=self.clock.is_night(), now_minutes=self._now_minutes(),
             states=self.states, present=self._present(), affinity=self.affinity, world=self, goals=self.goals,
+            blocked=self.blocked_places, tension=self.director.tension,
         )
 
     def _living(self) -> list[CharacterState]:
@@ -425,6 +461,92 @@ class World:
             self._finish_activity(st, interrupted=True)
         st.plan = None
 
+    # ================================================================ Fase 3
+    @property
+    def weather_label(self) -> str:
+        return self.weather.label
+
+    def refresh_review_minutes(self, cid: str) -> None:
+        if cid in self.data.characters:
+            self._review_minutes[cid] = self._trigger_minutes(self.data.characters[cid])
+
+    def refresh_blocked(self) -> None:
+        """Lugares na névoa (telas desligadas): ninguém entra, quem está dentro fica."""
+        self.blocked_places = self.screens.fogged_places(self)
+
+    def blocked_for(self, cid: str) -> frozenset[str]:
+        """A névoa não vale para quem é imune (o Mike)."""
+        if "nevoa" in self.data.characters[cid].immunities:
+            return frozenset()
+        return self.blocked_places
+
+    def trapped(self, cid: str) -> bool:
+        return self.states[cid].place in self.blocked_for(cid)
+
+    def send_to(self, cid: str, action_id: str, destination: str, target: str | None = None) -> None:
+        self._send(cid, action_id, destination, target)
+
+    def lifecycle_roll(self, when: str, cid: str, *, place: str | None = None, by_creature=None,
+                       factor: float = 1.0, action: str | None = None, by: str | None = None) -> bool:
+        detail = ""
+        if by_creature is not None:
+            cre = self.data.creatures.get(by_creature.kind)
+            detail = cre.name if cre else by_creature.kind
+        return lifecycle.roll(self, when, cid, action=action, place=place, by=by, factor=factor, detail=detail)
+
+    def faction_leader_professions(self) -> dict[str, str]:
+        """facção -> profissão do líder original (o Padre lidera a Igreja; quem virar padre, também)."""
+        out = {}
+        for fid, fac in self.data.world.factions.items():
+            if fac.leader in self.data.characters:
+                out[fid] = self.data.characters[fac.leader].profession
+        return out
+
+    def leader_of(self, fid: str) -> str | None:
+        if fid in self.life.faction_leaders:
+            return self.life.faction_leaders[fid]
+        fac = self.data.world.factions.get(fid)
+        return fac.leader if fac else None
+
+    def _multipliers(self, cid: str) -> tuple[dict, dict]:
+        """(taxas de necessidades, notas de ações) por clima, luto e consequências. Cache por tick."""
+        cached = self._mult_cache.get(cid)
+        if cached is not None:
+            return cached
+        rates, actions = lifecycle.multipliers(self, cid)
+        for key in self.weather.effect_keys():
+            eff = self.data.world.weather.effects.get(key)
+            if eff is None:
+                continue
+            for n, m in eff.needs.items():
+                rates[n] = rates.get(n, 1.0) * m
+            for a, m in eff.actions.items():
+                actions[a] = actions.get(a, 1.0) * m
+        self._mult_cache[cid] = (rates, actions)
+        return rates, actions
+
+    def score_multiplier(self, cid: str, action: Action, place: str) -> list[tuple[str, float]]:
+        """Fatores extras da nota (Fase 3): luto/consequências, clima, chuva em lugar externo."""
+        out = []
+        _rates, actions = self._multipliers(cid)
+        m = actions.get(action.id)
+        if m is not None and m != 1:
+            out.append(("luto/clima", m))
+        if self.data.places[place].environment == "externo" and not action.sleeping:
+            outdoor = 1.0
+            for key in self.weather.effect_keys():
+                eff = self.data.world.weather.effects.get(key)
+                if eff is not None:
+                    outdoor *= eff.outdoor
+            if outdoor != 1:
+                out.append((f"clima {self.weather.kind} lá fora", outdoor))
+        return out
+
+    def danger_at(self, place: str, is_night: bool) -> float:
+        p = self.data.places[place]
+        base = p.danger_night if (is_night and p.danger_night is not None) else p.danger
+        return min(100.0, base + self.creatures.danger_at(self, place))
+
     # ===================================================================== tick
     def tick(self) -> None:
         dt = self.clock.step_minutes
@@ -437,6 +559,8 @@ class World:
             self.emit("period_changed", f"Começa a {self.clock.period_name(period).lower()}.",
                       tags=["sistema"], data={"period": period, "is_night": self.clock.is_night()})
 
+        self._mult_cache = {}
+        self.weather.update()
         night = self.clock.is_night()
         for st in self._living():
             self._update_needs(st, night, dt)
@@ -446,9 +570,12 @@ class World:
             self._advance_movement(st, dt)
         law_mod.check_releases(self)
         social_mod.update(self)
+        lifecycle.update(self)
+        creatures_mod.update(self)
         if self._now_minutes() >= self._next_hourly:
             self._next_hourly += 60
             self._hourly()
+        self.director.update(self)
         self._decide_all()
 
         if self._now_minutes() >= self._next_save:
@@ -468,13 +595,23 @@ class World:
         for place in list(self.visitors):
             self.visitors[place] = [v for v in self.visitors[place] if v[0] >= now - VISITORS_KEEP_MINUTES]
         social_mod.plan_hourly(self)
+        lifecycle.hourly(self)
+        creatures_mod.hourly(self)
 
     # ------------------------------------------------------------ necessidades
     def _update_needs(self, st: CharacterState, night: bool, dt: float) -> None:
         char = self.data.characters[st.id]
         action = self.data.actions.get(st.activity.action) if st.activity else None
+        rates, _actions = self._multipliers(st.id)
         needs_mod.natural_change(self.data, char, st.needs, night, dt, sleeping=bool(action and action.sleeping),
-                                 extra_traits=st.extra_traits)
+                                 extra_traits=st.extra_traits, extra_mult=rates)
+        # medo do clima (o Esquisito e a chuva): medos.gatilho igual ao tipo de clima (ou "chuva")
+        wcfg = self.data.world.weather
+        if wcfg.fear_per_hour and char.fears:
+            triggers = {f.trigger for f in char.fears}
+            if self.weather.kind in triggers or ("chuva" in triggers and self.weather.is_rain()):
+                if self.data.places[st.place].environment == "externo" or self.weather.is_rain():
+                    st.needs["medo"] = needs_mod.clamp(st.needs.get("medo", 0) + wcfg.fear_per_hour * dt / 60)
         if action is not None and st.activity.duration > 0:
             fraction = dt / st.activity.duration
             effects = action.failure.effects if (st.activity.failed and action.failure) else action.effects
@@ -561,8 +698,17 @@ class World:
             factions_mod.check(self, act.target)
         if action.special == "roubar":
             self._hide_loot(st, act.place)
+        if action.special == "criatura":
+            creatures_mod.fight(self, st.id, act.place)
+        if action.event == "fight" and act.target in self.states:
+            # briga de pastelão às vezes acaba mal de verdade (morte.causas com quando: briga)
+            if not self.lifecycle_roll("briga", act.target, place=act.place, by=st.id, action=act.action):
+                self.lifecycle_roll("briga", st.id, place=act.place, by=act.target, action=act.action, factor=0.5)
+            if not st.alive:
+                return
         if action.chase_chance and act.target and self.rng.random() < action.chase_chance:
-            self._chase(st.id, act.target, act.place)
+            if self.states[act.target].alive:
+                self._chase(st.id, act.target, act.place)
 
     def _start_activity(self, st: CharacterState, action_id: str, place: str, target: str | None,
                         duration: float, score: float) -> None:
@@ -627,6 +773,8 @@ class World:
                 self.emit("speech", reply, actors=[target, st.id], place=place, tags=tags,
                           data={"situation": action.target_speech, "action": action_id, "reply_to": st.id})
         self._consequences(st, action, place, target, failed, extra)
+        if failed:  # pastelão que acaba mal de verdade (morte.causas com quando: falha)
+            self.lifecycle_roll("falha", st.id, place=place, action=action_id)
 
     # ------------------------------------------------------- consequências
     def _consequences(self, st: CharacterState, action: Action, place: str, target: str | None, failed: bool,
@@ -722,7 +870,27 @@ class World:
             return bool(self._loot_options(place))
         if sp == "ordem_reconstruir":
             return self.structures.worst()[1] > 0
+        if sp == "funeral":
+            return lifecycle.active_funeral_at(self, place) is not None
+        if sp == "tumulo":
+            return place == self.data.world.funeral.burial_place and self._grave_to_visit(me) is not None
+        if sp == "criatura":
+            return bool(self.creatures.at(place)) and "criaturas" not in self.data.characters[me].immunities
+        if sp == "assembleia":
+            return lifecycle.assembly_active(self, place)
         return True
+
+    def _grave_to_visit(self, cid: str) -> str | None:
+        """O morto enterrado que `cid` mais sente falta (luto; senão, o de maior afinidade)."""
+        buried = {g["cid"] for g in self.life.graves if not g.get("resurrected")
+                  and not any(f["dead"] == g["cid"] and f["status"] != "terminado" for f in self.life.funerals)}
+        if not buried:
+            return None
+        grieved = lifecycle.grieved_dead(self, cid)
+        if grieved in buried:
+            return grieved
+        best = max(sorted(buried), key=lambda d: self.affinity(cid, d))
+        return best if self.affinity(cid, best) >= 30 else None
 
     def _confession(self, me: str, priest: str) -> Memory | None:
         best = None
@@ -791,6 +959,42 @@ class World:
             inf = self.data.world.law.infractions.get(w["infraction"])
             extra["infracao"] = inf.name if inf else w["infraction"]
             return True
+        if sp == "funeral":
+            fun = lifecycle.active_funeral_at(self, place)
+            if fun is None:
+                return False
+            dead = fun["dead"]
+            extra["morto"] = dead
+            edata.update({"dead": dead, "funeral": fun["id"]})
+            # cada um reage do seu jeito: primeiro as falas da personalidade (Fool, Florista,
+            # Músico, Dama...); senão, pela afinidade com o morto
+            aff = self.affinity(st.id, dead)
+            ctx = self._speech_ctx(st.id, place, None, extra)
+            own = [ln for ln in self.data.lines.get("funeral_personalidade", []) if speech.matches(ln, ctx, self.data)]
+            if own and self.rng.random() < 0.7:
+                edata["situation"] = "funeral_personalidade"
+            elif aff >= 40:
+                edata["situation"] = "funeral_amigo"
+            elif aff <= -25:
+                edata["situation"] = "funeral_inimigo"
+            else:
+                edata["situation"] = "funeral"
+            return True
+        if sp == "tumulo":
+            dead = self._grave_to_visit(st.id)
+            if dead is None:
+                return False
+            extra["morto"] = dead
+            edata["dead"] = dead
+            return True
+        if sp == "criatura":
+            here = self.creatures.at(place)
+            if not here:
+                return False
+            cre = self.data.creatures.get(here[0].kind)
+            extra["objeto"] = here[0].service or (cre.name if cre else here[0].kind)
+            edata["creature"] = here[0].kind
+            return True
         return True
 
     def _special_after(self, st: CharacterState, action: Action, place: str, target: str | None,
@@ -818,6 +1022,12 @@ class World:
                 if other != st.id and not self.is_asleep(other) and self.rng.random() < chance:
                     self.remember(other, "roubo", subject=st.id, place=place, detail=obj,
                                   factor=self.data.world.memory.witness_factor)
+        elif sp == "funeral":
+            fun = lifecycle.active_funeral_at(self, place)
+            if fun is not None:
+                lifecycle.joined(self, fun, st.id)
+        elif sp == "assembleia":
+            lifecycle.assembly_joined(self, st.id)
         elif sp == "ordem_reconstruir":
             where, _damage = self.structures.worst()
             repair = next((a for a in self.data.actions.values() if a.active and a.repairs), None)
@@ -888,7 +1098,7 @@ class World:
 
     # ------------------------------------------------------ fugas e perseguições
     def _escape_route(self, place: str) -> str | None:
-        options = sorted(e.to for e in self.data.graph.get(place, []) if passable(self.data, e.to, frozenset())
+        options = sorted(e.to for e in self.data.graph.get(place, []) if passable(self.data, e.to, self.blocked_places)
                          and e.kind == "caminho")
         return self.rng.choice(options) if options else None
 
@@ -896,7 +1106,7 @@ class World:
         st = self.states[cid]
         action = self.data.actions[action_id]
         low, high = action.duration_minutes
-        _dist, came = shortest_paths(self.data, st.place, frozenset())
+        _dist, came = shortest_paths(self.data, st.place, self.blocked_for(cid))
         edges = path_from(came, st.place, destination) or []
         st.plan = Plan(action=action_id, place=destination, target=target, duration=float(self.rng.randint(low, high)),
                        steps=[MoveStep(e.to, e.kind, e.minutes) for e in edges])
@@ -929,6 +1139,14 @@ class World:
     # ---------------------------------------------------------------- movimento
     def _start_step(self, st: CharacterState) -> None:
         step = st.plan.steps[0]
+        if step.to in self.blocked_for(st.id) or st.place in self.blocked_for(st.id):
+            # a névoa fechou o caminho (ou prendeu quem está aqui dentro): desiste
+            self.say(st.id, "nevoa_barra", place=st.place, event_type="missed", tags=["misterio"],
+                     data={"action": st.plan.action, "to": step.to},
+                     fallback="{eu} dá de cara com a névoa e desiste do caminho.")
+            st.plan = None
+            st.last_action = None
+            return
         st.plan.started_move = True
         origin = st.place
         data = {"from": origin, "to": step.to, "minutes": step.minutes, "destination": st.plan.place,
@@ -1042,7 +1260,7 @@ class World:
         destination = chosen.place
         if action.wander:
             destination = self._wander_destination(st, ctx)
-        _dist, came = shortest_paths(self.data, st.place, ctx.blocked)
+        _dist, came = shortest_paths(self.data, st.place, self.blocked_for(st.id))
         edges = path_from(came, st.place, destination) or []
         plan = Plan(action=chosen.action, place=destination, target=chosen.target, score=chosen.score,
                     duration=duration, steps=[MoveStep(e.to, e.kind, e.minutes) for e in edges])
@@ -1060,11 +1278,13 @@ class World:
         char = self.data.characters[st.id]
         fearless = "criaturas" in char.immunities
         options, weights = [], []
+        blocked = self.blocked_for(st.id)
+        if st.place in blocked:
+            return st.place  # preso na névoa
         for edge in self.data.graph.get(st.place, []):
-            if not passable(self.data, edge.to, ctx.blocked):
+            if not passable(self.data, edge.to, blocked):
                 continue
-            place = self.data.places[edge.to]
-            danger = place.danger_night if (ctx.is_night and place.danger_night is not None) else place.danger
+            danger = self.danger_at(edge.to, ctx.is_night)
             options.append(edge.to)
             weight = 1.0 if fearless else max(0.05, 1 - danger / 100) ** 2
             if edge.to == st.prev_place:
@@ -1136,6 +1356,31 @@ class World:
                 return
             self.speed = value
             self.emit("system", f"Velocidade do mundo: {value:g}×.", tags=["sistema"], data={"speed": value})
+        elif cmd.cmd == "nascer":
+            traits = [t.strip() for t in cmd.arg.replace(",", " ").split() if t.strip()]
+            unknown = [t for t in traits if t not in self.data.traits]
+            if unknown:
+                self.emit("system", f"traço(s) desconhecido(s): {', '.join(unknown)}", tags=["sistema"])
+            lifecycle.birth(self, [t for t in traits if t in self.data.traits], reason="comando")
+        elif cmd.cmd == "tela":  # "parede_centro offline" (telas/<id>/status no MQTT)
+            parts = cmd.arg.split()
+            if len(parts) == 2 and parts[1] in ("online", "offline"):
+                self.screens.set_status(self, parts[0], parts[1] == "online")
+            else:
+                self.emit("system", "uso: tela <id> online|offline", tags=["sistema"])
+        elif cmd.cmd == "homelab":  # "jellyfin down" (homelab/servicos/<nome> no MQTT)
+            parts = cmd.arg.split()
+            if len(parts) == 2:
+                creatures_mod.homelab(self, parts[0], parts[1])
+            else:
+                self.emit("system", "uso: homelab <serviço> down|up", tags=["sistema"])
+        elif cmd.cmd == "clima":  # "chuva 60": força um clima por N minutos (testes)
+            parts = cmd.arg.split()
+            if parts and parts[0] in self.data.world.weather.kinds:
+                minutes = float(parts[1]) if len(parts) > 1 else 120
+                self.weather.force(parts[0], minutes, "comando")
+            else:
+                self.emit("system", f"clima desconhecido: {cmd.arg!r}", tags=["sistema"])
         else:
             self.emit("system", f"Comando '{cmd.cmd}' ainda não existe (Fase 4).", tags=["sistema"],
                       data={"cmd": cmd.cmd})
@@ -1149,6 +1394,7 @@ class World:
         segundo real: um dia inteiro em 2,4 minutos)."""
         step = timedelta(minutes=self.clock.step_minutes)
         done = 0
+        self.realtime = not fast
 
         def finished() -> bool:
             return (self.stop_requested or (until is not None and self.clock.now + step > until)
@@ -1233,7 +1479,10 @@ class World:
             "law": self.law.to_json(), "social": self.social.to_json(), "goals": self.goals,
             "stolen": self.stolen, "visitors": self.visitors, "relation_marks": self.relation_marks,
             "next_hourly": self._next_hourly,
+            "life": self.life.to_json(), "weather": self.weather.to_json(), "screens": self.screens.to_json(),
+            "creatures": self.creatures.to_json(), "director": self.director.to_json(),
         }, ensure_ascii=False))
+        s.save_graves(self.life.graves)
         s.commit()
 
     def close(self) -> None:
@@ -1245,7 +1494,13 @@ class World:
     def _update_snapshot(self) -> None:
         snap = {
             "ts": self.clock.iso(), "period": self.clock.period(), "is_night": self.clock.is_night(),
-            "speed": self.speed, "paused": self.paused, "weather": {"label": self.weather_label},
+            "speed": self.speed, "paused": self.paused,
+            "weather": {"label": self.weather.label, "kind": self.weather.kind, "temp": self.weather.now.temp,
+                        "forced": self.weather.now.forced},
+            "tension": self.director.tension,
+            "population": sum(1 for st in self.states.values() if st.alive and not st.frozen),
+            "fog": sorted(self.blocked_places),
+            "creatures": [{"kind": c.kind, "place": c.place, "service": c.service} for c in self.creatures.active],
             "characters": {
                 cid: {"place": st.place, "action": st.activity.action if st.activity else None,
                       "moving": st.moving, "alive": st.alive, "needs": dict(st.needs),
