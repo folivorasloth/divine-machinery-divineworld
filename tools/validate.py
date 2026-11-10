@@ -39,6 +39,7 @@ def main(argv: list[str] | None = None) -> int:
             f"{len(data.places)} lugares, {len(data.actions)} ações, {len(data.traits)} traços, "
             f"{len(data.professions)} profissões, {sum(len(v) for v in data.lines.values())} falas "
             f"em {len(data.lines)} situações, {len(data.events)} eventos, {len(data.social_events)} eventos sociais, "
+            f"{len(data.creatures)} criaturas, {len(data.world.death.causes)} causas de morte, "
             f"{len(data.world.memory.kinds)} tipos de memória, {len(data.world.screens)} telas."
         )
 

@@ -27,7 +27,7 @@ criaturas:
     descricao: Pares de olhos amarelos entre as árvores. Piscam fora de ritmo.
     lugares: [forest]
     periodos: [noite, madrugada]
-    chance_por_hora: 0.05
+    chance_por_hora: 0.02
     duracao_minutos: [40, 150]
     medo: 35
     perigo: 35
@@ -52,7 +52,7 @@ criaturas:
     descricao: Uma forma molhada que sobe da água de madrugada e cheira a peixe velho.
     lugares: [sea]
     periodos: [madrugada]
-    chance_por_hora: 0.04
+    chance_por_hora: 0.025
     duracao_minutos: [30, 120]
     medo: 40
     perigo: 40
@@ -74,7 +74,7 @@ criaturas:
     descricao: Uma sombra sem dono que anda pelos túneis esquecidos do Subterrâneo.
     lugares: [underground]
     periodos: [noite, madrugada]
-    chance_por_hora: 0.04
+    chance_por_hora: 0.025
     duracao_minutos: [60, 180]
     medo: 30
     perigo: 30
@@ -95,7 +95,7 @@ criaturas:
     descricao: Um vulto alto que fica encostado no portão do cemitério nas noites úmidas.
     lugares: [cemetery]
     periodos: [madrugada]
-    chance_por_hora: 0.03
+    chance_por_hora: 0.02
     duracao_minutos: [30, 90]
     medo: 30
     perigo: 25
@@ -116,7 +116,7 @@ criaturas:
     descricao: Algo que mora debaixo das ruínas do deserto e sai quando a areia esfria.
     lugares: [desert, mountain]
     periodos: [noite]
-    chance_por_hora: 0.03
+    chance_por_hora: 0.02
     duracao_minutos: [40, 120]
     medo: 30
     perigo: 30

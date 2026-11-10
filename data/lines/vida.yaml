@@ -23,7 +23,7 @@ situacoes:
     - "{eu} morre em {lugar}, de repente, no meio de uma frase. A frase fica para sempre sem fim."
     - "O coração de {eu} para em {lugar}. Assim, sem aviso."
     - "{eu} deita na grama de {lugar} para ver as nuvens. Não levanta mais."
-    - "{eu} morre de velhice em {lugar}, com o chapéu ainda na cabeça."
+    - "{eu} morre em {lugar}, de causas naturais, com o chapéu ainda na cabeça."
     - texto: "{eu} morre em {lugar} com um último \"{bordao}\" que ninguém ouviu."
     - "{eu} se encosta na parede de {lugar}, diz que está cansad{o|a} e escorrega devagar. Acabou."
   morte_briga:
@@ -160,6 +160,7 @@ situacoes:
     - texto: "{eu} faz malabarismo com três flores do funeral de {morto}. Deixa todas caírem na cova."
       personagens: [fool]
       peso: 3
+      lugares: [cemetery]
     - texto: "{eu} cochicha: \"Quantas vezes eu fiz {morto} rir? Onze. Doze, se contar a de hoje\" ...hehe."
       personagens: [fool]
       peso: 3
@@ -177,6 +178,7 @@ situacoes:
     - texto: "{eu} cobre a lápide de {morto} de margaridas, sorrindo. O sorriso não desliga nem agora."
       personagens: [florist]
       peso: 3
+      lugares: [cemetery]
     # O Músico: toca sem ninguém pedir
     - texto: "{eu} tira a viola das costas e toca para {morto} sem ninguém pedir. É a música mais bonita do dia."
       personagens: [musician]
@@ -204,6 +206,7 @@ situacoes:
     - texto: "{eu} fica no fundo do funeral de {morto}, encarando a cova por tempo demais."
       personagens: [clown]
       peso: 3
+      lugares: [cemetery]
     - texto: "{eu} não aperta a buzina nem uma vez. Pela primeira vez na vida, não tem piada. É o irmão."
       personagens: [clown]
       mortos: [fool]
@@ -218,6 +221,7 @@ situacoes:
     - texto: "{eu} começa um causo sobre {morto} no meio do enterro. Ninguém sabe se é verdade."
       tracos: [contador_de_causo]
       peso: 2
+      lugares: [cemetery]
     # O Padre
     - texto: "{eu} reza pela alma de {morto} e, no meio da reza, conta um segredo de confissão sem perceber."
       personagens: [priest]
@@ -225,6 +229,7 @@ situacoes:
     - texto: "{eu} joga água benta na cova de {morto}, nos sapatos de quem está perto e em si mesmo."
       profissoes: [padre]
       peso: 2
+      lugares: [cemetery]
     # A Médium
     - texto: "{eu} fecha os olhos no funeral de {morto}: \"As vozes disseram que {morto} mandou um recado.\""
       profissoes: [medium]
@@ -236,6 +241,7 @@ situacoes:
     - texto: "{eu} pega uma pedrinha da cova de {morto} e sussurra: \"...isso é importante...\""
       personagens: [weirdo]
       peso: 3
+      lugares: [cemetery]
     - texto: "{eu} anota tudo do funeral de {morto} num caderninho, inclusive o formato das nuvens."
       personagens: [weirdo]
       peso: 3
@@ -243,6 +249,7 @@ situacoes:
     - texto: "{eu} mede a cova de {morto} com a régua: \"Dois centímetros fora do padrão. Vou relevar.\""
       personagens: [inspector]
       peso: 3
+      lugares: [cemetery]
     - texto: "{eu} apita baixinho no funeral de {morto}. Não era infração. Era tristeza."
       personagens: [inspector]
       peso: 3
@@ -253,6 +260,7 @@ situacoes:
     - texto: "{eu} pergunta, no meio do enterro de {morto}, quem fica com as botas. \"É meu.\""
       personagens: [greedy]
       peso: 3
+      lugares: [cemetery]
     # O Chefe
     - texto: "{eu} faz um discurso sobre {morto}, aprova tudo que pedem e cochila em pé."
       personagens: [chief]
@@ -264,6 +272,7 @@ situacoes:
     - texto: "{eu} carrega o caixão de {morto} sozinho. Bufa fumaça de raiva da morte."
       personagens: [blacksmith]
       peso: 3
+      lugares: [cemetery]
     # O casal da cozinha
     - texto: "{eu} trouxe comida para o funeral de {morto}: \"Come que esfria!\" Ninguém consegue."
       personagens: [chef_wife]
@@ -275,6 +284,7 @@ situacoes:
     - texto: "{eu} fica de capuz no funeral de {morto}, fone no ouvido. Tira o fone só na hora de jogar a terra."
       personagens: [teen]
       peso: 3
+      lugares: [cemetery]
     # Os Técnicos
     - texto: "{eu} murmura no funeral de {morto}: \"Não encosta nisso...\" e não explica para ninguém."
       personagens: [tech_old]
@@ -282,6 +292,7 @@ situacoes:
     - texto: "{eu} pergunta alto, no meio do enterro de {morto}, se dá para ligar alguém de volta na tomada."
       personagens: [tech_apprentice]
       peso: 3
+      lugares: [cemetery]
     # traços
     - texto: "{eu} chega ao funeral de {morto} com a roupa mais cara, para ser vist{o|a}."
       tracos: [vaidoso]
@@ -291,38 +302,49 @@ situacoes:
       tracos: [sarcastico]
     - texto: "{eu} olha a chuva cair na cova de {morto} e pensa que todo mundo um dia vai ser esquecido."
       tracos: [melancolico]
+      lugares: [cemetery]
 
   funeral_amigo:
-    - "{eu} segura a terra na mão e não consegue jogar na cova de {morto}."
+    - texto: "{eu} segura a terra na mão e não consegue jogar na cova de {morto}."
+      lugares: [cemetery]
     - "{eu} chora no funeral de {morto} sem tentar esconder."
     - "{eu} conta, com a voz falhando, a primeira vez que encontrou {morto}."
-    - "{eu} põe a mão na lápide de {morto}: \"Até logo.\""
-    - "{eu} fica até o fim do enterro de {morto}, mesmo encharcad{o|a}."
+    - texto: "{eu} põe a mão na lápide de {morto}: \"Até logo.\""
+      lugares: [cemetery]
+    - texto: "{eu} fica até o fim do enterro de {morto}, mesmo encharcad{o|a}."
+      lugares: [cemetery]
     - "{eu} abraça quem estiver do lado no funeral de {morto}. Não importa quem."
-    - "{eu} deixa uma coisa pequena na cova de {morto}. Ninguém vê o que é."
+    - texto: "{eu} deixa uma coisa pequena na cova de {morto}. Ninguém vê o que é."
+      lugares: [cemetery]
     - "{eu} diz baixinho no funeral: \"{morto} merecia mais tempo.\""
     - "{eu} canta junto, desafinad{o|a}, a música que {morto} gostava."
     - "{eu} não fala nada no funeral de {morto}. Só fica, debaixo da chuva."
     - "{eu} ri chorando de uma lembrança de {morto}."
     - "{eu} joga a primeira pá de terra em {morto} e pede desculpas por tudo."
-    - "{eu} fica de mãos dadas com a lápide molhada de {morto}."
-    - "{eu}: \"{bordao}... era o que {morto} mais ouvia de mim.\""
+    - texto: "{eu} fica de mãos dadas com a lápide molhada de {morto}."
+      lugares: [cemetery]
+    - "{eu} repete baixinho: \"{bordao}\" — era o que {morto} mais ouvia."
     - "{eu} lembra de {morto} rindo, e por um segundo a chuva parece mais fraca."
-    - "{eu} promete a {morto}, olhando a cova, que vai cuidar de quem ficou."
+    - texto: "{eu} promete a {morto}, olhando a cova, que vai cuidar de quem ficou."
+      lugares: [cemetery]
 
   funeral:
     - "{eu} vai ao funeral de {morto} porque todo mundo foi."
     - "{eu} fica em pé no funeral de {morto}, sem saber o que fazer com as mãos."
-    - "{eu} acompanha o enterro de {morto} de longe, com o chapéu no peito."
-    - "{eu} olha a cova de {morto} e pensa que a vida é curta."
+    - texto: "{eu} acompanha o enterro de {morto} de longe, com o chapéu no peito."
+      lugares: [cemetery]
+    - texto: "{eu} olha a cova de {morto} e pensa que a vida é curta."
+      lugares: [cemetery]
     - "{eu} reza um pouco por {morto}, meio sem jeito."
     - "{eu} cochicha com quem está do lado sobre como {morto} morreu."
     - "{eu} fica no funeral de {morto} só o tempo de ser educad{o|a}."
     - "{eu} se protege da chuva embaixo de uma árvore no funeral de {morto}."
     - "{eu} assina o livro do velório de {morto} com letra caprichada."
-    - "{eu} joga um punhado de terra na cova de {morto} e limpa a mão na calça."
+    - texto: "{eu} joga um punhado de terra na cova de {morto} e limpa a mão na calça."
+      lugares: [cemetery]
     - "{eu} observa todo mundo chorando por {morto} e se pergunta quem chorará por si."
-    - "{eu}, molhad{o|a} até os ossos, fica até o fim do enterro de {morto}."
+    - texto: "{eu}, molhad{o|a} até os ossos, fica até o fim do enterro de {morto}."
+      lugares: [cemetery]
     - "{eu} pensa numa coisa que nunca disse a {morto}. Agora não dá mais."
     - "{eu} tira o chapéu para {morto}. A chuva entra no cabelo."
     - "{eu} conta pra ninguém em especial que {morto} uma vez lhe deu bom dia."
@@ -332,14 +354,18 @@ situacoes:
     - "{eu} vai ao funeral de {morto} só para ter certeza."
     - "{eu} fica no fundo do funeral de {morto}, de braços cruzados."
     - "{eu} não chora no funeral de {morto}. Nem finge."
-    - "{eu} murmura no enterro de {morto}: \"Que descanse. Longe de mim.\""
-    - "{eu} olha a cova de {morto} e sente uma coisa que não sabe o nome. Não é saudade."
+    - texto: "{eu} murmura no enterro de {morto}: \"Que descanse. Longe de mim.\""
+      lugares: [cemetery]
+    - texto: "{eu} olha a cova de {morto} e sente uma coisa que não sabe o nome. Não é saudade."
+      lugares: [cemetery]
     - "{eu} aparece no funeral de {morto}, fica dois minutos e vai embora."
     - "{eu} sussurra: \"A gente nunca resolveu aquilo, {morto}.\""
     - "{eu} sente culpa por não sentir nada no funeral de {morto}."
-    - "{eu} joga terra na cova de {morto} com mais força do que precisava."
+    - texto: "{eu} joga terra na cova de {morto} com mais força do que precisava."
+      lugares: [cemetery]
     - "{eu} vai ao funeral de {morto} e, no fim, chora. Ninguém entende, nem {eu}."
-    - "{eu} fica olhando a lápide de {morto}: \"Ganhei.\" Não parece vitória."
+    - texto: "{eu} fica olhando a lápide de {morto}: \"Ganhei.\" Não parece vitória."
+      lugares: [cemetery]
     - "{eu} lembra de cada briga com {morto} enquanto a chuva cai."
 
   funeral_passante:

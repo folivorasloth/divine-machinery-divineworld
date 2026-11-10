@@ -147,8 +147,8 @@ def build_report(world, col: Collector, days: float, per_day: float, minimum: in
         t.add_row(a, str(used[a]))
     tables.append(t)
     never = [a for a in active if used[a] == 0]
-    if never:
-        alerts.append(f"ações que nunca aconteceram: {', '.join(never)}")
+    if never:  # só informação: algumas dependem de algo raro (eleição só se o Chefe morrer)
+        t.caption = f"Nunca aconteceram: {', '.join(never)}"
 
     t = Table(title=f"Falas mais repetidas (alerta acima de {limit})")
     t.add_column("vezes", justify="right")

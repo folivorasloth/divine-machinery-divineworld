@@ -75,11 +75,11 @@ sim/                      simulação (Python puro, sem rede, exceto weather/llm
                            casamento, mutirão)
                            (ganância — roubo, esconderijo, sumiço, achado — e as
                            perseguições ficaram no engine: dependem de tudo do World)
-  lifecycle.py      📐 F3  morte, funeral, luto, fantasmas, nascimentos, sucessão
-  creatures.py      📐 F3  criaturas noturnas e as da Sala do Servidor (homelab)
-  weather.py        📐 F3  Open-Meteo com cache e fallback
-  screens.py        📐 F3  telas online/offline → névoa nos lugares
-  director.py       📐 F3  tensão do mundo e injeção de eventos de data/events
+  lifecycle.py      ✅ F3  morte, funeral, luto, herança, fantasmas, ressurreição, nascimentos, sucessão
+  creatures.py      ✅ F3  criaturas noturnas e as da Sala do Servidor (homelab)
+  weather.py        ✅ F3  Open-Meteo com cache e fallback; clima sorteado no tempo acelerado
+  screens.py        ✅ F3  telas online/offline → névoa nos lugares
+  director.py       ✅ F3  tensão do mundo e injeção de eventos de data/events
   commands.py       📐 F4  comandos do Criador (chefe, medium, reviver, nascer, ...)
   llm.py            📐 F4  cliente Ollama opcional (httpx, timeout curto, limite/hora)
   presence.py       📐 F4  o olhar e a Aparição (sala/camera/pessoas)
@@ -93,7 +93,7 @@ tools/
   run.py            ✅ F1  `python -m tools.run --speed 60 [--fast] [--horas N|--dias N] [--personagem id]
                            [--lugar id] [--movimento] [--debug] [--resumo] [--saida arq] [--novo]
                            [--seed N] [--inicio HH:MM] [--banco arq]`
-  report.py         📐 F3  `python -m tools.report --days 7`: relatório de variedade
+  report.py         ✅ F3  `python -m tools.report --days 7 [--seed N] [--saida arq] [--estrito]`: relatório de variedade
   cli.py            📐 F4  `python -m tools.cli chefe "..."` (fala com a API)
 viewer/             📐 F5  Three.js + Vite; index.html?screen=<id>, chat.html, layout.html
 tests/              pytest (um arquivo por módulo)
@@ -180,7 +180,7 @@ novo; se tiver erro, manter o `WorldData` anterior e publicar evento `system` co
 ```
 1. drenar comandos (fila)                                   ✅ F1 (pausar/continuar/velocidade), F4 (resto)
 2. avançar relógio; emitir period_changed se mudou           ✅ F1
-3. atualizar clima (cache; no máx. a cada atualizar_minutos) F3
+3. atualizar clima (sorteado, ou Open-Meteo numa thread a cada atualizar_minutos) ✅ F3
 4. necessidades: para cada vivo, variar por taxa + efeito proporcional da ação em andamento  ✅ F1
 5. memórias e relações: decaimento lento (1×/hora do mundo)  ✅ F2 (passo 9, junto do resto)
 6. ações em andamento: terminar as que acabaram (emite action_finished)                      ✅ F1
@@ -189,8 +189,9 @@ novo; se tiver erro, manter o `WorldData` anterior e publicar evento `system` co
    (ordem embaralhada pelo RNG; quem decidiu entra na contagem de "presentes" dos próximos)
 9. sistemas: solturas (prisão/Limbo) e eventos sociais a cada tick; de hora em hora:
    memórias decaem, afinidades voltam, pontos da lei somem, facções, ideias de eventos ✅ F2
-   criaturas, morte/nascimento, telas                                                  F3
-10. diretor: 1× a cada 10 min do mundo                        F3
+   F3 ✅: a cada tick funerais (fases) e criaturas vencidas; de hora em hora mortes "do dia",
+   nascimentos, sucessões, lutos que acabaram, sustos/aparições de criaturas
+10. diretor: 1× a cada 10 min do mundo                        ✅ F3
 11. snapshot para a API; commit dos eventos; salvar estado a cada salvar_a_cada_minutos (e ao sair)  ✅ F1
 ```
 (Na implementação, movimento vem antes das decisões — diferente do plano — para quem chega
@@ -427,7 +428,7 @@ Tipos (`type`) planejados:
 |---|---|
 | F1 | `system`, `period_changed`, `decision` (debug), `action_started`, `action_finished`, `speech`, `move_started`, `move_arrived`, `teleport_started`, `teleport_finished`, `bell` |
 | F2 ✅ | `relation_changed`, `gossip`, `argument`, `fight`, `reconcile`, `prank`, `slapstick`, `chase`, `theft`, `suspicion`, `found`, `missed`, `structure_changed`, `infraction`, `arrest`, `released`, `limbo_in`, `limbo_out`, `faction`, `ritual`, `social_event_planned`, `social_event_started`, `social_event_ended` (o `memory_formed` planejado não foi criado: cada briga gera memórias em todas as testemunhas e inundaria o Chat; as memórias ficam no banco e aparecem nas falas) |
-| F3 | `death`, `funeral_started`, `funeral_ended`, `grief`, `ghost`, `birth`, `succession`, `creature_spawned`, `creature_gone`, `weather_changed`, `fog_on`, `fog_off`, `director_event`, `tension` |
+| F3 ✅ | `death`, `grief`, `inheritance`, `funeral_planned`, `funeral_started`, `funeral_procession`, `funeral_ended`, `grave`, `death_consequence`, `ghost`, `resurrection`, `birth`, `succession`, `election`, `creature_spawned`, `creature_gone`, `creature_fight`, `weather_changed`, `fog_on`, `fog_off`, `director_event`, `tension` (a cada hora; o terminal só mostra com --debug) |
 | F4 | `creator_command`, `creator_order`, `creator_voice`, `resurrection`, `stare`, `apparition` |
 
 ## 9. Falas ✅ F1
@@ -514,12 +515,15 @@ CREATE TABLE structures (id TEXT PRIMARY KEY, place TEXT NOT NULL, hp REAL NOT N
 -- visitantes recentes por lugar, amizades/inimizades já anunciadas e a próxima "hora":
 -- tudo em meta.society (JSON). As tabelas objects/goals planejadas não foram criadas.
 -- characters.flags ganhou: faction, jailed_until, limbo_until, spouse; extra_traits passa a ser usado.
--- F3
-CREATE TABLE graves (char_id TEXT PRIMARY KEY, born_ts TEXT, died_ts TEXT, cause TEXT, epitaph TEXT);
-CREATE TABLE cooldowns (key TEXT PRIMARY KEY, until_ts TEXT NOT NULL);
+-- F3 ✅ (migração 3)
+CREATE TABLE graves (char_id TEXT PRIMARY KEY, born_ts TEXT, died_ts TEXT, cause TEXT, epitaph TEXT,
+  data TEXT NOT NULL DEFAULT '{}');          -- {cause_name, resurrected}
 CREATE TABLE director_log (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, tension REAL,
   chosen TEXT, reason TEXT);
-CREATE TABLE weather_log (ts TEXT PRIMARY KEY, code INTEGER, label TEXT, temp REAL, raw TEXT);
+CREATE TABLE weather_log (ts TEXT PRIMARY KEY, kind TEXT, label TEXT, temp REAL, source TEXT, forced TEXT);
+-- a tabela cooldowns planejada não foi criada: o estado da vida (mortes, funerais, lutos,
+-- vagas, papéis assumidos, objetos herdados), do clima, das telas, das criaturas e do
+-- diretor (histórico da tensão, cooldowns) vai em meta.society (JSON), como na F2.
 ```
 
 Na F1: `events.id` é dado pelo `World` (não é AUTOINCREMENT); eventos `decision` não são gravados;
@@ -639,38 +643,136 @@ rave secreta, rodeio, procissão, casamento, mutirão.
 eventos organizados com o resultado). `tests/test_society.py` cobre cada sistema e roda uma
 semana (seed 42) conferindo o critério de aceite.
 
-## 12. Fase 3 — vida, morte e diretor 📐
+## 12. Fase 3 — vida, morte e diretor ✅
 
-- **Morte**: chance base `limites.chance_morte_por_dia` por personagem + causas (briga, acidente,
-  criatura, velhice, choque na Sala do Servidor, Limbo), cada uma com chance no YAML.
-  `death` (importance 3) → `alive=0`, lápide em `graves`, memória permanente em todos.
-- **Funeral**: objetivo coletivo (ir ao cemitério) + clima forçado `chuva` por
-  `minutos_de_chuva_no_funeral`; reações via falas filtradas por personagem e afinidade com o morto.
-- **Luto**: `flags.luto = {de, ate, intensidade}` proporcional à afinidade; multiplica taxas.
-- **Fantasmas**: à noite, `chance_fantasma_por_noite`, perto de quem o morto mais amava/odiava.
-- **Nascimentos**: a cada ~`intervalo_nascimento_dias` (ou comando), sorteio em `traits.yaml`
-  (traços respeitando `opostos`, profissão `sorteavel`, aparência), herança de objeto/mania de morto
-  recente (`chance_herdar_do_morto`). Salva YAML em `data/characters/born/<id>.yaml` com id
-  `born_<n>` e `nome: nascimento.nome_padrao` para o João renomear.
-- **Sucessão**: profissão com `papel_importante` vaga → objetivo de eleição/vocação; quem assume
-  ganha a profissão em `characters.flags` (o YAML original não é alterado).
-- **Criaturas**: `data/events/creatures.yaml` (chave `criaturas:`, esquema a criar na F3);
-  homelab (`homelab/servicos/#`) → criatura na Sala do Servidor; Técnicos ganham objetivo de
-  `trabalhar` lá até resolver.
-- **Clima**: Open-Meteo (`latitude/longitude` do YAML), cache em `clima.cache_arquivo`, fallback
-  `clima_padrao`. Rótulos em português a partir do weather code. Entra como filtro de falas,
-  condição de eventos e multiplicador de necessidades (chuva → medo do Esquisito).
-- **Telas offline** (`screens.py`): `telas/<id>/status = offline` → `fog_on` em todos os lugares
-  da tela; ninguém entra (pathfinding ignora), quem está dentro fica preso (exceto `imunidades:
-  [nevoa]`, o Mike).
-- **Diretor** (`director.py`): `tensao` 0..100 = f(brigas recentes, mortes recentes, criaturas,
-  tédio médio). Alvo de tensão oscila no dia. Se tensão < alvo, escolhe evento `tensao: agita`; se >,
-  `acalma`. Respeita `condicoes`, `cooldown_horas`, `max_eventos_diretor_por_hora/dia`. Só cria
-  situações (`efeitos.necessidades`, `efeitos.objetivo`, `efeitos.clima`); registra o motivo em
-  `director_log`.
-- **`tools.report --days N`**: roda N dias em `--fast` num banco temporário e gera relatório:
-  ações mais/menos usadas, falas repetidas (limite justificado no relatório da F3), eventos por
-  tipo, mortes/nascimentos, personagens parados.
+Números e textos ficam no YAML: `world.yaml > limites, clima, vida, morte, funeral, luto,
+se_morrer, sucessao, criaturas, diretor`; `traits.yaml > nascimento`; `data/actions/vida.yaml`;
+`data/events/diretor.yaml` e `creatures.yaml`; `data/lines/vida.yaml`. O código só tem as regras.
+
+**Cópia dos dados.** `World.__init__` faz `dataclasses.replace(data, characters=dict(...))`:
+nascimentos e sucessões alteram só o dicionário daquele mundo (nunca o `WorldData` de quem
+chamou, nem os YAML originais).
+
+### 12.1 Morte (`lifecycle.roll` / `kill`)
+`morte.causas.<id>` tem `quando` (`diario` — sorteado de hora em hora com chance/24; vazio =
+`limites.chance_morte_por_dia` —, `briga` — fim de uma briga, para o alvo e com metade da chance
+para quem bateu —, `falha` — pastelão de uma das `acoes` —, `criatura` — por hora perto de uma
+criatura, ×3 ao perder um enfrentamento —, `limbo` — ao ser mandado para o Limbo), `chance`,
+`acoes`, `lugares`, `por_traco`. **Ninguém morre por sorteio se a cidade tem
+`min_populacao` vivos** (sem extinção). `kill`: `alive=False`, corpo no cemitério, evento
+`death` (falas `morte_<causa>`, {eu} = o morto, {outro} = quem brigou), metas/mandados/eventos
+sociais do morto cancelados, viúvo(a) solteiro(a), memória permanente `morte` em todos os
+vivos, luto, herança, vaga de papel, consequência (`se_morrer.<id>`) e funeral marcado.
+
+### 12.2 Funeral
+Marcado `funeral.depois_horas` depois, dentro de `comeca_entre` (dia). Cada vivo ganha dois
+objetivos de `velar` (velório na Catedral `velorio_minutos` antes; enterro no Cemitério), com
+`bonus = max(bonus_min, bonus_base + afinidade × bonus_por_afinidade)` — quem odiava quase não vai;
+o traço `vaidoso` tem `velar: 3` (a Dama vai para ser vista), `vazio` 0,15 (o Mike não vai, passa).
+Fases (`lifecycle.update`): `funeral_started` (clima forçado `clima_do_funeral` por
+`max(minutos_de_chuva_no_funeral, até o fim)`; `se_morrer.fool.chuva_minutos: 1440`);
+`funeral_procession` (quem está velando na Catedral é mandado andando até o Cemitério — o
+cortejo); enterro; `funeral_ended` (participantes) + `grave` (lápide: nome, datas, causa,
+epitáfio da situação `epitafio` com {eu} = o morto) + memória `funeral` + `death_consequence`.
+A ação `velar` (`especial: funeral`) só vale onde há funeral agora; a fala sai de
+`funeral_personalidade` (70%, se houver fala do personagem/traço — Fool piada, Florista canta,
+Músico toca, Dama se exibe...) ou pela afinidade: `funeral_amigo` (≥ 40) / `funeral` /
+`funeral_inimigo` (≤ −25). Quem passa pelo Cemitério durante o enterro sem velar sai em
+`funeral_passante` (o Mike atravessa o funeral). Filtro novo nas falas: `mortos: [id]`.
+
+### 12.3 Luto, herança, consequências
+Intensidade = afinidade/100 × maior `luto.fator_por_tipo` dos tipos de relação (casal, filho...)
+× `se_morrer.<morto>.luto_fator.<quem>`, até 1,5; entra em luto quem passa de
+`luto.afinidade_min` (ou é parente). Na hora: `luto.choque` × intensidade; por
+`luto.dias × intensidade` dias: taxas `luto.taxas` e notas `luto.acoes` (`1 + (m−1)×int.`).
+Entrada nova `luto` (0..100) para curvas (`visitar_tumulo`). Só os 3 mais abalados aparecem no
+Chat (`grief`). Herança: o primeiro herdeiro vivo (`heranca.herdeiros`) fica com o primeiro objeto;
+sem herdeiro, quem o morto mais gostava fica com um sorteado (`inheritance`; `life.objects`).
+`se_morrer.<id>`: chuva, atraso do funeral, `acoes`+`para`+`dias` (multiplicadores),
+`objetivo` (ex.: velório de cerveja dos Cowboys), `texto`.
+
+### 12.4 Fantasma e ressurreição (raros, pelo diretor)
+`ghost`: um morto há ≥ 12 h (no máx. 1 vez a cada 3 dias por morto) aparece à noite para o vivo de
+maior |afinidade do morto| (≥ 30): `fantasma_amor`/`fantasma_odio`/`fantasma_sonho` (se dorme);
+medo e fé para quem vê, memória `fantasma` (vira fofoca). `resurrect(cid, how)`: volta no
+cemitério com medo 85, traço novo, ~metade das memórias não permanentes esquecidas; o Padre
+(quem tem a profissão) grita milagre, a Médium reivindica; memória permanente `ressurreicao`.
+`how="criador"` fica pronto para o `reviver` da F4.
+
+### 12.5 Nascimento
+Chance por dia = `1/intervalo_nascimento_dias × (1 + bonus_por_vaga × max(0, mortes − nascimentos
+nos últimos 30 dias))`, ×3 abaixo de `min_populacao`, 0 a partir de `max_populacao`; sorteada de
+hora em hora. Comando `nascer [traços]`. Sorteia pronome, traços (`tracos_min..max`, `sorteavel`,
+sem `opostos`), profissão `sorteavel`, aparência (`aparencias`), rotina-base
+(`nascimento.rotina`); com `chance_herdar_do_morto` herda um objeto ou mania de quem morreu nos
+últimos `vida.dias_morto_recente` dias (mania com texto entre aspas vira bordão: o filho do
+Fool termina as frases com "...hehe."). Id `born_<n>`, nome `nome_padrao`/`nome_padrao_ela`
+com `{n}`. Campos novos do personagem: `nascido_em`, `herdou: {de, objeto, mania}`.
+**Pasta**: `DW_BORN_DIR` (lida em tempo de execução e pelo loader, sempre do ambiente real) >
+`vida.pasta_nascidos` (relativa a `data/`). O loader lê a pasta mesmo fora de
+`data/characters/`. `tools.run --nascidos PASTA`; sem isso, em simulação de teste (`--fast` ou
+`--banco`) usa `var/nascidos/<banco>/` (esvaziada com `--novo`, nunca dentro de `data/`).
+`tests/conftest.py` aponta `DW_BORN_DIR` para uma pasta temporária; `tools.report` também.
+
+### 12.6 Sucessão
+Profissão com `papel_importante` sem ninguém vivo para exercer abre uma vaga; depois de
+`sucessao.papeis.<prof>.depois_horas`: `vocacao`/`sucessao` = sorteio ponderado por
+`1 + bonus_herdeiro (herdeiros) + bonus_por_tipo (aprendiz, filho...) + 2 × traços em comum +
+afinidade/50`; quem já tem papel importante não concorre. `eleicao` (o Chefe): convoca
+assembleia (`assembleia`, objetivo para todos, 60 min na Praça) com os 3 melhores; cada um que
+foi vota em quem mais gosta (candidato vota em si); `election` com a apuração. Quem assume:
+profissão, local de trabalho e os blocos de rotina do papel (`trabalhar` + ações com
+`condicoes.profissoes` do papel) — salvo em `life.overrides` e reaplicado ao carregar; vira líder
+da facção se o papel é o do líder original (`World.leader_of`). Para isso as ações de papel
+passaram de `personagens:` para `profissoes:` (ritual, recrutar, pregar, espiar_seita, confessar,
+mandar_reconstruir).
+
+### 12.7 Criaturas (`creatures.py`, `data/events/creatures.yaml`)
+Ver o topo do YAML. De hora em hora, cada criatura comum nos `periodos` dela tem
+`chance_por_hora` (no máx. `criaturas.max_ao_mesmo_tempo`, uma de cada tipo). Enquanto está
+lá: `perigo` soma ao perigo do lugar (`World.danger_at`, usado pela entrada `perigo` e por
+`perambular`), medo para quem está perto, sorteio de morte `criatura`. `enfrentar`
+(`especial: criatura`) espanta com `chance_vencer` (×1,5 `especialistas`). `homelab: true`:
+comando `homelab <serviço> down|up` (a F4 liga `homelab/servicos/#` nele) → criatura na Sala do
+Servidor com `{objeto}` = serviço, objetivo de enfrentar para `chama_profissoes`; só some no `up`.
+Imunidade `criaturas` (Mike): nem medo nem morte. Entrada nova `criatura` (0/1).
+
+### 12.8 Clima (`weather.py`)
+`clima.modo: auto` = real (Open-Meteo, `current=temperature_2m,weather_code`, thread separada,
+cache em `cache_arquivo`, sem internet → cache → `clima_padrao`) só quando `World.realtime`
+(run sem --fast), velocidade 1 e hora do mundo perto da real; senão sorteado com o RNG do mundo
+(`simulado`), reproduzível. `tipos` mapeia códigos WMO em tipos com nome ({clima}) e
+`chuva: true`. Clima forçado (`force`) ganha de tudo: funeral, eventos do diretor, comando
+`clima <tipo> [min]`. `efeitos.<tipo|frio|calor>`: `necessidades` (taxas), `acoes` (notas),
+`acoes_externas` (qualquer ação em lugar `externo`). `medos.gatilho` igual ao tipo (ou `chuva`
+com chuva) → `medo_por_hora_com_gatilho`. Filtro `climas:` das falas aceita tipo ou nome;
+entrada nova `chuva` (0/1). Evento `weather_changed` (falas `clima_<tipo>`, `clima_funeral`) e
+`weather_log`.
+
+### 12.9 Telas offline (`screens.py`)
+Comando `tela <id> online|offline` (a F4 liga `telas/<id>/status`). Offline: `fog_on` em cada
+lugar da tela (com quem ficou preso), `World.blocked_places`; o pathfinding evita, quem está
+dentro só tem candidatos no próprio lugar, plano que ia atravessar desiste (`missed`,
+`nevoa_barra`). `imunidades: [nevoa]` (Mike) ignora tudo. Online: `fog_off`.
+
+### 12.10 Diretor (`director.py`)
+Ver o topo do arquivo. Tensão = Σ `pesos_eventos` × eventos na `janela_horas` + medo e raiva
+médios × peso + mortes recentes × `peso_morte_recente` + criaturas × `peso_criatura`
+(0..100; o histórico é alimentado por um assinante do EventBus). `alvo` por período ± `margem`:
+abaixo → `tensao: agita`, acima → `acalma`, com chance `chance_de_agir × distância/50`, limites
+`max_eventos_diretor_por_hora/dia`, `cooldown_horas`, `condicoes`. Efeitos: necessidades (lugar
+ou todos), objetivo (`para: todos|presentes`; sem `lugar` = qualquer lugar), clima forçado,
+criatura, memória, `especial`. Raros (`tipo: raro|lendario`) sorteados à parte:
+`fantasma` (`chance_fantasma_por_noite`), `ressurreicao` (`..._por_ano`), `desenho_do_criador`
+(`chance_por_dia`). Cada escolha: `director_event` com `reason` ("tensão 12 < alvo 40: agita")
+e linha em `director_log`. A tensão vai para a entrada `tensao` da Utility AI.
+
+### 12.11 `tools.report`
+Simula N dias num diretório temporário (banco e nascidos) e mostra: resumo (população, mortes,
+nascimentos), ações mais/menos usadas e nunca usadas, falas exatas mais repetidas, narrações
+repetidas (informativo), eventos por tipo, variedade por personagem e ALERTAS. Limite de
+repetição: uma fala exata (texto final do Chat, com nomes) no máximo `max(3, dias × 0,5)` vezes
+(justificativa no relatório da F3). `--estrito` sai com 1 se houver alerta.
 
 ## 13. Fase 4 — Criador, API e integração 📐
 
@@ -794,7 +896,10 @@ O viewer (F5) é servido como estático pelo próprio FastAPI (`viewer/dist`), s
 ## 16. Decisões em aberto (para as próximas fases)
 
 - Layout interno dos lugares numa tela (posições 3D) — F5 decide; pode ganhar campo no YAML.
-- Esquema das criaturas — F3 cria e documenta aqui (o dos eventos sociais está na seção 11.9).
+- Esquema das criaturas — F3 ✅ (seção 12.7).
+- F4: ligar `world/commands`, `homelab/servicos/#` e `telas/+/status` nos comandos `nascer`,
+  `homelab`, `tela` (já existem no `World.handle_command`); `reviver` usa
+  `lifecycle.resurrect(cid, "criador")`.
 - Lista de situações reescritas pelo LLM — F4.
 - Técnicos: na F1 trabalham na Sala do Servidor como qualquer profissão (manhã/tarde). Quando a F4
   ligar `homelab/servicos/#`, o trabalho deles deve depender de objetivo (problema real aberto).

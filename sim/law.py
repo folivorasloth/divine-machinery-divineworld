@@ -164,7 +164,7 @@ def best_report(world: "World", cid: str) -> tuple[object | None, float]:
         if not k or not k.infraction or m.reported or not m.subject or m.subject == cid:
             continue
         sub = world.states.get(m.subject)
-        if sub is None or sub.jailed_until is not None or sub.away or is_enforcer(world, m.subject):
+        if sub is None or not sub.alive or sub.jailed_until is not None or sub.away or is_enforcer(world, m.subject):
             continue
         if m.intensity > value:
             best, value = m, m.intensity

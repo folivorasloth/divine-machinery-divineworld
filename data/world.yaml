@@ -138,7 +138,7 @@ limites:
   # chance BASE de morte "de velhice / de repente", por personagem, por dia
   # (é a causa morte.causas.velhice; as outras causas têm chance própria).
   # Ninguém morre por acaso se a cidade estiver com min_populacao vivos.
-  chance_morte_por_dia: 0.002
+  chance_morte_por_dia: 0.0013
   # chance de UM fantasma aparecer, por noite (se houver mortos que amavam ou
   # odiavam alguém vivo)
   chance_fantasma_por_noite: 0.12
@@ -246,7 +246,7 @@ clima:
       acoes: {festejar: 1.2, cochilar: 1.3}
   # quem tem medo do clima (medos.gatilho: chuva, como o Esquisito) ganha
   # este tanto de medo por hora enquanto ele dura
-  medo_por_hora_com_gatilho: 12
+  medo_por_hora_com_gatilho: 25
 
 # MQTT do homelab (Mosquitto). Se estiver fora do ar, o mundo continua.
 mqtt:
@@ -691,19 +691,19 @@ morte:
   lugar_do_corpo: cemetery
   causas:
     velhice:
-      nome: velhice
+      nome: morte natural
       quando: diario
       por_traco: {experiente: 3, cansado: 2, contador_de_causo: 1.5, preguicoso: 1.2}
     briga:
       nome: briga que passou do ponto
       quando: briga
-      chance: 0.04
+      chance: 0.03
       por_traco: {briguento: 1.3}
     acidente:
       nome: acidente bobo
       quando: falha
       acoes: [andar_de_skate, fazer_malabarismo, pregar_peca, construir, quebrar]
-      chance: 0.008
+      chance: 0.006
       por_traco: {desastrado: 1.5}
     choque:
       nome: choque na Sala do Servidor
@@ -714,7 +714,7 @@ morte:
     criatura:
       nome: coisa da noite
       quando: criatura
-      chance: 0.02
+      chance: 0.01
       por_traco: {inseguro: 1.4, bravo: 0.7, protetor: 0.8}
     limbo:
       nome: o Limbo

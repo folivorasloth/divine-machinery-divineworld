@@ -342,7 +342,8 @@ def active_funeral_at(world: "World", place: str) -> dict | None:
     for fun in world.life.funerals:
         if fun["status"] == "terminado":
             continue
-        if place == cfg.wake_place and fun["wake"] - 20 <= now < fun["start"] and cfg.wake_minutes > 0:
+        # o velório só "acontece" a partir da hora marcada (quem chega antes espera)
+        if place == cfg.wake_place and fun["wake"] <= now < fun["start"] and cfg.wake_minutes > 0:
             return fun
         if place == cfg.burial_place and fun["start"] <= now < fun["end"]:
             return fun

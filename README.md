@@ -20,6 +20,12 @@ consertadas, o Fiscal com advertências, prisão e Limbo, Igreja × Seita, o Gan
 (e a cidade acusando, às vezes a pessoa errada) e festas, raves, rodeios, procissões, casamentos
 e mutirões organizados pelos próprios NPCs. `--resumo` mostra tudo que aconteceu.
 
+Fase 3 (vida, morte e diretor): mortes permanentes com causas configuráveis, funeral com chuva,
+cortejo, reações por personalidade e lápide; luto, herança, fantasmas e ressurreição rara;
+nascimentos sorteados (viram YAML em `data/characters/born/`), sucessão de papéis (eleição do
+Chefe), criaturas noturnas e do homelab, clima de Botucatu (Open-Meteo, com cache), névoa nas
+telas desligadas e um Diretor que mede a tensão e injeta eventos. `tools.report` mede a variedade.
+
 ## Primeiros passos
 
 ```bash
@@ -32,7 +38,10 @@ python3 -m venv .venv
 .venv/bin/python -m tools.run --speed 60                       # 1 hora do mundo por minuto
 .venv/bin/python -m tools.run --fast --dias 1 --novo --resumo  # um dia inteiro em segundos
 .venv/bin/python -m tools.run --help                           # filtros e outras opções
+.venv/bin/python -m tools.report --days 7                      # relatório de variedade (pasta temporária)
 ```
+Simulações de teste (`--fast` ou `--banco`) gravam os nascidos em `var/nascidos/<banco>/`, não em
+`data/characters/born/` (ou use `--nascidos PASTA`, ou a variável `DW_BORN_DIR`).
 
 ## Onde mexer sem programar
 

@@ -124,7 +124,7 @@ def test_funeral_rains_has_procession_reactions_and_a_grave(data):
     assert len(reactions) >= 5
     grave = next(e for e in events if e.type == "grave")
     txt = grave.render(world.names())
-    assert "Florista" in txt and "Velhice" in txt and "09/11/2026" in txt
+    assert "Florista" in txt and "Morte natural" in txt and "09/11/2026" in txt
     assert world.memories.strongest(ended.data["attendees"][0], "funeral") is not None
 
 
@@ -438,7 +438,7 @@ def test_life_survives_restart(data, tmp_path):
     lifecycle.kill(world, "greedy", "briga", by="blacksmith")
     cid = lifecycle.birth(world)
     world.close()
-    again = World(data, Storage(db))
+    again = World(load_data_or_raise(DATA, environ={}), Storage(db))  # relê data/ (com o nascido)
     assert not again.states["greedy"].alive and again.states[cid].alive
     assert again.life.funerals and again.life.graves[-1]["cid"] == "greedy"
     row = again.storage.conn.execute("SELECT cause FROM graves WHERE char_id='greedy'").fetchone()

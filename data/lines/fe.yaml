@@ -9,6 +9,14 @@ situacoes:
       personagens: [priest]
     - texto: "{eu} toca o sino e grita lá de cima: \"{hora}! Quem não for à missa vai pro inferno!\""
       personagens: [priest]
+    - "O sino de {@cathedral} anuncia {hora}. Na Feira, alguém confere se o relógio está certo."
+    - "DONG... o sino de {@cathedral} toca {hora} e o eco vai até a Montanha."
+    - "O sino toca {hora}. Os cowboys tiram o chapéu sem saber bem por quê."
+    - "O sino de {@cathedral} bate {hora}, meio desafinado, como sempre."
+    - "{eu} toca o sino de {@cathedral} e fica pendurad{o|a} na corda um segundo a mais."
+    - "{eu} toca {hora} no sino e confere o próprio relógio, desconfiad{o|a}."
+    - "DONG. O sino de {@cathedral} marca {hora}. Uma revoada de pombos cobre a Praça."
+    - "{eu} toca o sino de {@cathedral} com toda a fé que tem às {hora}."
 
   rezar:
     - "{eu} reza baixinho em {lugar}."
@@ -87,7 +95,11 @@ situacoes:
     - "{eu} oferece um objeto sagrado às vozes. É uma tampinha de garrafa."
     - texto: "{eu} abre os braços: \"{bordao}\""
       personagens: [medium]
-      peso: 3
+      peso: 1.2
+    - "{eu} apaga todas as velas de uma vez com um sopro só e diz que foi o vento dos anjos."
+    - "{eu} pede um minuto de silêncio às vozes. Elas pedem dois."
+    - "{eu} desenha na terra de {lugar} um mapa que ninguém entende, nem ela."
+    - "{eu} anuncia que o Criador está de bom humor hoje. Ninguém sabe como ela sabe."
     - texto: "{eu} fala com as vozes de madrugada, e o Subterrâneo inteiro escuta o eco."
       lugares: [underground]
       peso: 2

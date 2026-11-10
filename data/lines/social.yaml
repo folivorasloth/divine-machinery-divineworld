@@ -5,7 +5,7 @@ situacoes:
     - "{eu} e {outro} falam do tempo: {clima}."
     - "{eu} conta um causo para {outro}, que finge acreditar."
     - texto: "{eu}: \"{bordao}\""
-      peso: 2
+      peso: 0.7
     - "{eu} pergunta pra {outro} se viu alguma coisa estranha hoje."
     - "{eu} comenta com {outro} que está {humor}."
     - "{eu} pergunta pra {outro} se é impressão ou a tela está olhando pra gente."
