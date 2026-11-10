@@ -939,6 +939,8 @@ def _check_phase3(data, report, source, line_sources, world_file, traits_file, r
             ref(world_file, f"clima.efeitos.{k}.necessidades", "necessidade", n, needs)
         for a in eff.actions:
             ref(world_file, f"clima.efeitos.{k}.acoes", "ação", a, data.actions)
+    for c in w.limits.deaths_cap_exempt:
+        ref(world_file, "limites.causas_fora_do_limite", "causa de morte (morte.causas)", c, w.death.causes)
     for cid_, cause in w.death.causes.items():
         where = f"morte.causas.{cid_}"
         for a in cause.actions:

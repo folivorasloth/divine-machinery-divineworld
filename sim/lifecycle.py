@@ -153,10 +153,15 @@ def roll(world: "World", when: str, cid: str, *, action: str | None = None, plac
         return False  # Fase 6: o luto da última morte ainda nem acabou
     place = place or st.place
     traits = set(world.traits_of(cid))
+    lim = world.data.world.limits
+    capped = bool(lim.max_deaths_per_week) and sum(
+        1 for d in world.life.deaths if world.now_minutes() - d["minute"] < 7 * DAY) >= lim.max_deaths_per_week
     for cause_id in sorted(world.data.world.death.causes):
         cause = world.data.world.death.causes[cause_id]
         if cause.when != when:
             continue
+        if capped and cause_id not in lim.deaths_cap_exempt:
+            continue  # Fase 6: a semana já teve mortes demais (limites.max_mortes_em_7_dias)
         if cause.actions and action not in cause.actions:
             continue
         if cause.places and place not in cause.places:

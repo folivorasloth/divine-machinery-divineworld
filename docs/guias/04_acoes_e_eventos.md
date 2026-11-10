@@ -137,7 +137,7 @@ convida quem mais gosta. Exemplo, a **noite do causo**:
 **Lições do balanceamento da Fase 6** (`docs/relatorios/FASE_6.md`): um evento fracassa quando o
 `bonus` não vence o que os convidados fariam naquela hora (trabalho de tarde, cama de madrugada), quando a
 `antecedencia_horas` é grande (eles esquecem) ou quando a janela `comeca_entre` cai num horário em que a
-cidade dorme. Confira a taxa de sucesso na tabela "Eventos sociais" do `tools.report`.
+cidade dorme — ou quando a `acao` não vale para quem vai (a procissão usava `missa`, que só vale onde o Padre está e não vale para o próprio Padre: ele nunca ia, e ninguém ia sem ele). Confira a taxa de sucesso na tabela "Eventos sociais" do `tools.report`.
 
 ## 5. Criar uma criatura
 

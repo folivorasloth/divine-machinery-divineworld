@@ -203,3 +203,19 @@ def test_lowercase_names_keep_their_case_mid_sentence():
     assert text.render("Já dá pra ver: {@pool} vai precisar de um mutirão.", names) == \
         "Já dá pra ver: a mesa de sinuca vai precisar de um mutirão."
     assert text.render("Em {@pool} ninguém mexe.", names) == "Na mesa de sinuca ninguém mexe."
+
+
+def test_weekly_death_cap_spares_everyone_but_exempt_causes(data_copy, tmp_path):
+    from sim import lifecycle
+
+    w = _world(data_copy, tmp_path)
+    assert w.data.world.limits.max_deaths_per_week == 2
+    now = w.now_minutes()
+    w.life.deaths += [{"cid": "x", "minute": now - 60}, {"cid": "y", "minute": now - 120}]
+    # choque com chance 100%: com o teto cheio, o Aprendiz sobrevive
+    assert not lifecycle.roll(w, "falha", "tech_apprentice", action="fucar", place="server_room", factor=1000)
+    assert w.states["tech_apprentice"].alive
+    # a causa fora do limite mata mesmo assim
+    w.data.world.limits.deaths_cap_exempt.append("choque")
+    assert lifecycle.roll(w, "falha", "tech_apprentice", action="fucar", place="server_room", factor=1000)
+    w.close()

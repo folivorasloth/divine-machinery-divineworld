@@ -64,6 +64,8 @@ desde a Fase 6, 35 de tédio).
 |---|---|
 | `limites.chance_morte_por_dia` (0.0013) | morte natural por pessoa/dia (~0,8 por mês com 21) |
 | `limites.dias_minimos_entre_mortes_naturais` (8) | **Fase 6**: sem morte natural se alguém morreu há menos dias (evita rajadas) |
+| `limites.max_mortes_em_7_dias` (2) | **Fase 6**: teto da semana. Com 2 mortes nos últimos 7 dias, nenhuma causa sorteada mata (o acidente, o choque, a briga e o Limbo acontecem, mas a pessoa sobrevive). 0 = sem teto. Subir = semanas trágicas possíveis |
+| `limites.causas_fora_do_limite` (`[]`) | causas que matam mesmo com o teto cheio (ex.: `[criatura]` para as noites de terror continuarem perigosas) |
 | `morte.causas.<causa>.chance` | briga (0.03 por briga), acidente (0.004 por falha), choque (0.012 por falha ao fuçar), criatura (0.01) |
 | `morte.causas.<causa>.por_traco` | quem morre mais disso (`desastrado: 1.5`) |
 | `limites.min_populacao` (12) / `max_populacao` (40) | ninguém morre por acaso com 12; ninguém nasce com 40 |
@@ -124,5 +126,6 @@ Medido com `tools.report` (14 dias, seeds 7, 42 e 99, e o teste de 60 dias): vej
 (sono agora alivia tédio e a taxa da noite caiu); prisões (~13/semana na F2) caíram com
 `pontos_para_prisao: 2.5` e barulho mais leve; rave, rodeio, casamento e mutirão quase sempre
 fracassavam (janelas, antecedência e bônus ajustados; o mutirão também marcava conserto onde não dava
-para consertar); mortes em rajada (intervalo mínimo entre mortes naturais) e o Aprendiz morrendo de choque
-(chance 0.03 → 0.012).
+para consertar; a procissão e o casamento usavam a ação `missa`, que só vale onde o Padre está e não vale
+para o próprio Padre — agora usam `rezar`); mortes em rajada (intervalo mínimo entre mortes naturais e
+teto de 2 mortes por semana) e o Aprendiz morrendo de choque (chance 0.03 → 0.012).

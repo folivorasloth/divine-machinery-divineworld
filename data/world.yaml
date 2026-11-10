@@ -143,6 +143,13 @@ limites:
   # Fase 6: sem morte natural se alguém morreu há menos destes dias (as mortes vinham
   # em rajadas: 3 em 4 dias). Briga, acidente, choque e criatura continuam valendo.
   dias_minimos_entre_mortes_naturais: 8
+  # Fase 6: teto de mortes por semana (qualquer causa sorteada: velhice, briga, acidente,
+  # choque, criatura, Limbo). Com 2 mortes nos últimos 7 dias, ninguém mais morre por acaso
+  # até a mais antiga sair da janela: o acidente/choque/briga acontece, mas a pessoa sobrevive.
+  # Rodadas de 60 dias tinham "rajadas" de 3 a 5 mortes numa semana. 0 = sem teto.
+  # causas_fora_do_limite: causas que matam mesmo com o teto cheio (ids de morte.causas).
+  max_mortes_em_7_dias: 2
+  causas_fora_do_limite: []
   # chance de UM fantasma aparecer, por noite (se houver mortos que amavam ou
   # odiavam alguém vivo)
   chance_fantasma_por_noite: 0.12

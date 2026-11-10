@@ -220,6 +220,11 @@ class LimitsConfig(DataModel):
     # Fase 6: morte "de velhice / de repente" não sorteia se alguém morreu (de qualquer
     # causa) há menos destes dias — evita as rajadas de 3 mortes numa semana
     natural_death_gap_days: float = Field(0, alias="dias_minimos_entre_mortes_naturais", ge=0)
+    # Fase 6: no máximo N mortes (de qualquer causa sorteada) em 7 dias; 0 = sem limite.
+    # Causas em `causas_fora_do_limite` ignoram o teto. Quem "escapou" não morre: segue a vida
+    # (o acidente, o choque, a briga e o Limbo acontecem do mesmo jeito, só não matam).
+    max_deaths_per_week: int = Field(0, alias="max_mortes_em_7_dias", ge=0)
+    deaths_cap_exempt: list[Id] = Field(default_factory=list, alias="causas_fora_do_limite")
 
     @model_validator(mode="after")
     def _population(self) -> "LimitsConfig":

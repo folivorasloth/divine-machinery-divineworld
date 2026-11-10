@@ -141,19 +141,22 @@ eventos_sociais:
 
   - id: procissao
     nome: procissão
-    acao: missa
+    # Fase 6: era "missa", que só vale onde o Padre está e NÃO vale para o próprio Padre
+    # (ele é o líder): o organizador nunca ia, ninguém ia sem ele, e fracassava 5 de 6.
+    # Rezar na Catedral vale para todo mundo, inclusive o Padre.
+    acao: rezar
     lugar: cathedral
     organizadores:
       personagens: [priest]
     vontade: {fe: 35}
     chance_por_hora: 0.04
-    comeca_entre: {das: "08:00", ate: "16:00"}
-    antecedencia_horas: [2, 6]
+    comeca_entre: {das: "10:00", ate: "16:00"}   # era 08:00 (café/trabalho)
+    antecedencia_horas: [1, 3]   # era [2, 6]
     duracao_horas: [1, 2]
     convite_afinidade_min: 30
     max_convidados: 8
     quorum: 4
-    bonus: 3
+    bonus: 12   # era 3
     cooldown_horas: 96
     memoria: missa
     memoria_fracasso: festa_fracassada
@@ -174,7 +177,7 @@ eventos_sociais:
 
   - id: casamento
     nome: casamento
-    acao: missa
+    acao: rezar   # Fase 6: era missa (só valia com o Padre presente, e ele nem sempre vinha)
     lugar: cathedral
     organizadores:
       tracos: [alegre, carente, sensivel, vaidoso, sonhador, gentil, carinhoso, leal, ingenuo]
