@@ -1,4 +1,4 @@
-# Falas sociais. Formato explicado no topo de rotina.yaml.
+# Falas sociais (conversa, resposta, festa). Formato explicado no topo de rotina.yaml.
 situacoes:
   conversa:
     - "{eu} puxa conversa com {outro}."
@@ -6,28 +6,65 @@ situacoes:
     - "{eu} conta um causo para {outro}, que finge acreditar."
     - texto: "{eu}: \"{bordao}\""
       peso: 2
-    - texto: "{eu} buzina pra {outro}. *FOM FOM*"
-      personagens: [clown]
-      peso: 2
-    - texto: "{eu} conta uma piada pra {outro} ...hehe."
-      personagens: [fool]
-    - texto: "{eu} olha {outro} de cima a baixo. \"{bordao}\""
-      personagens: [lady]
-      peso: 2
-    - texto: "{eu}: \"...\""
-      personagens: [mike]
-    - texto: "{eu} cochicha pra {outro}: \"{bordao}\""
-      personagens: [medium, weirdo]
     - "{eu} pergunta pra {outro} se viu alguma coisa estranha hoje."
-    - "{eu} reclama com {outro}: está {humor}."
+    - "{eu} comenta com {outro} que está {humor}."
+    - "{eu} pergunta pra {outro} se é impressão ou a tela está olhando pra gente."
+    - "{eu} e {outro} discordam educadamente sobre qual é a melhor sopa da cidade."
+    - "{eu} conta pra {outro} um sonho esquisito, com muitos detalhes. {outro} se arrepende de ter perguntado."
+    - "{eu} elogia o chapéu de {outro}. {outro} não está de chapéu."
+    - "{eu} e {outro} combinam de fazer alguma coisa juntos qualquer dia. Nunca vão fazer."
+    - "{eu} desabafa com {outro} sobre a vida, a morte e o preço do feijão (que é zero, mas mesmo assim)."
+    - "{eu} conta pra {outro} que acha que alguém anda roubando as coisas da cidade."
+    - "{eu} e {outro} riem de uma piada que só os dois entendem."
     - texto: "{eu} comenta com {outro} que a {periodo} está esquisita."
       periodos: [madrugada, noite]
     - texto: "{eu} confessa pra {outro}, de mau humor: \"{bordao}\""
       necessidades_min: {raiva: 50}
     - texto: "{eu} chama {outro} pra comer alguma coisa."
       necessidades_min: {fome: 55}
+    - texto: "{eu} boceja na cara de {outro} no meio da conversa."
+      necessidades_min: {sono: 65}
+    # lembranças (memória): só saem se quem fala lembra de algo assim
+    - texto: "{eu} olha torto para {outro}: \"Desde {lembranca}, eu não esqueço.\""
+      memoria: [briga, discussao, pegadinha]
+      peso: 3
+    - texto: "{eu} relembra com {outro} {lembranca} e os dois riem até chorar."
+      memoria: [festa, pazes, tombo, mutirao]
+      peso: 3
+    - texto: "{eu} cutuca {outro}: \"Lembra? {lembranca}... Eu lembro.\""
+      memoria: [briga, festa, ritual, prisao, tombo, choque, casamento]
+      peso: 2
+    - texto: "{eu} fala baixinho pra {outro}: \"Ainda penso naquilo: {lembranca}...\""
+      memoria: [casamento, consolo, pazes]
+      peso: 2
+    - texto: "{eu} cobra de {outro}: \"E {lembranca}? Vai fingir que não foi nada?\""
+      memoria: [roubo, sumico, pegadinha, quebra]
+      peso: 3
+    - texto: "{eu} conta pra {outro} que ainda tem pesadelo com {lembranca}."
+      memoria: [prisao, limbo, choque, briga]
+      peso: 2
+    # personagens
+    - texto: "{eu} buzina pra {outro}. *FOM FOM*"
+      personagens: [clown]
+      peso: 2
+    - texto: "{eu} conta uma piada pra {outro} ...hehe."
+      personagens: [fool]
+    - texto: "{eu} conta pra {outro} uma piada sobre morte. Ninguém ri ...hehe."
+      personagens: [fool]
+    - texto: "{eu} olha {outro} de cima a baixo. \"{bordao}\""
+      personagens: [lady]
+      peso: 2
+    - texto: "{eu} comenta com {outro} que todo mundo na cidade é apaixonado por ela. Todo mundo."
+      personagens: [lady]
+    - texto: "{eu}: \"...\""
+      personagens: [mike]
+    - texto: "{eu} cochicha pra {outro}: \"{bordao}\""
+      personagens: [medium, weirdo]
     - texto: "{eu} conta pra {outro} um causo do campo que ninguém pediu. \"{bordao}\""
       personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+      peso: 2
+    - texto: "{eu} jura pra {outro} que já viu um anjo. {outro} não acredita. Ninguém nunca acredita."
+      personagens: [cowboy_old]
       peso: 2
     - texto: "{eu} ouve {outro} e responde com três notas na viola. ♪"
       personagens: [musician]
@@ -49,6 +86,17 @@ situacoes:
     - texto: "{eu} pergunta pra {outro} se a comida estava boa. Pergunta de novo."
       personagens: [chef_husband]
       peso: 2
+    - texto: "{eu} explica pra {outro} que as vozes têm opinião sobre o cabelo del{outro:e|a}."
+      personagens: [medium]
+    - texto: "{eu} reclama pra {outro} do barulho da cidade. GRRR."
+      personagens: [blacksmith]
+    - texto: "{eu} conta pra {outro} que viu uma coisa no fundo da Sala do Servidor. Depois diz que não viu nada."
+      personagens: [tech_old]
+    - texto: "{eu} explica pra {outro}, empolgadíssimo, como funciona um cabo de rede. {outro} dorme."
+      personagens: [tech_apprentice]
+    - texto: "{eu} revira os olhos pra tudo que {outro} diz. \"{bordao}\""
+      personagens: [teen]
+      peso: 2
 
   # Resposta de quem foi chamado para conversar ({outro} é quem puxou papo).
   resposta:
@@ -56,6 +104,14 @@ situacoes:
     - "{eu} concorda com a cabeça e não diz nada."
     - "{eu} ri do que {outro} disse."
     - "{eu} muda de assunto."
+    - "{eu} finge que entendeu."
+    - "{eu} responde \"pois é\", que serve pra tudo."
+    - "{eu} conta um causo maior ainda, só pra ganhar de {outro}."
+    - "{eu} dá razão a {outro} só para a conversa acabar logo."
+    - "{eu} olha pros lados e responde baixinho, como se fosse segredo."
+    - "{eu} suspira: \"A vida é assim mesmo.\""
+    - "{eu} responde {humor}."
+    - "{eu} ri alto demais e depois fica sem graça."
     - texto: "{eu} responde só com uma buzina. *FOM*"
       personagens: [clown]
       peso: 3
@@ -80,27 +136,55 @@ situacoes:
     - texto: "{eu} responde em notas: ♪ lá, mi, ré ♪"
       personagens: [musician]
       peso: 2
+    - texto: "{eu} responde: \"Que LINDO!\" — mesmo que não fosse."
+      personagens: [florist]
+      peso: 2
+    - texto: "{eu} responde que as vozes já tinham avisado."
+      personagens: [medium]
+      peso: 2
+    - texto: "{eu} sussurra: \"...isso é importante...\""
+      personagens: [weirdo]
+      peso: 2
 
   festejar:
     - "{eu} dança no meio de {lugar}."
     - "{eu} pede mais uma rodada."
+    - "{eu} dança uma música que não está tocando."
+    - "{eu} sobe na mesa e é convencid{o|a} a descer."
+    - "{eu} canta alto e erra a letra com convicção."
+    - "{eu} brinda com quem estiver mais perto, mesmo que seja uma parede."
+    - "{eu} dança agarrad{o|a} num lampião."
+    - "{eu} faz um discurso emocionado sobre a amizade. Ninguém pediu."
+    - "{eu} aposta que consegue equilibrar um copo na cabeça. Não consegue."
+    - "{eu} ri tanto que derruba a bebida em alguém."
+    - "{eu} chama todo mundo pra dançar. Só um aceita. Dançam assim mesmo."
+    - texto: "{eu} dança no escuro do Subterrâneo, sob uma luz roxa piscando."
+      lugares: [underground]
+      peso: 3
+    - texto: "{eu} dança na areia e quase é levad{o|a} por uma onda."
+      lugares: [sea]
+      peso: 2
     - texto: "{eu} puxa um modão. \"{bordao}\""
       personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+      peso: 2
+    - texto: "{eu} joga sinuca e acerta a bola branca na testa de alguém."
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+      lugares: [tavern]
     - texto: "{eu} toca a viola até a corda arrebentar. {bordao}"
       personagens: [musician]
-
-  briga:
-    - "{eu} grita com {outro}."
-    - "{eu} e {outro} discutem aos berros em {lugar}."
-  tombo:
-    - "{eu} tenta acertar {outro}, escorrega e cai de cara no chão."
-  fofoca:
-    - "{eu} cochicha uma fofoca no ouvido de {outro}."
-  consolar:
-    - "{eu} dá um abraço desajeitado em {outro}."
-  roubo:
-    - "{eu} enfia alguma coisa no bolso. \"{bordao}\""
-  construir:
-    - "{eu} martela, serra e pinta em {lugar}."
-  quebrar:
-    - "{eu} quebra alguma coisa em {lugar}. Ops."
+      peso: 2
+    - texto: "{eu} dança sozinha no centro da pista, convencida de que todos a admiram."
+      personagens: [lady]
+      peso: 2
+    - texto: "{eu} buzina no ritmo da música. *FOM FOM FOM*"
+      personagens: [clown]
+      peso: 2
+    - texto: "{eu} fica num canto, de fone, fingindo que não está curtindo."
+      personagens: [teen]
+      peso: 2
+    - texto: "{eu} dança. Do jeito dele. Que é ficar parado no meio da pista."
+      personagens: [mike]
+      peso: 2
+    - texto: "{eu} distribui flores para todo mundo na festa. \"{bordao}\""
+      personagens: [florist]
+      peso: 2

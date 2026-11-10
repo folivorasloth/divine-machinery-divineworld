@@ -27,6 +27,7 @@ casa: houses
 rotina:
   - {das: "10:30", ate: "11:30", acao: comer, lugar: community_kitchen}
   - {das: "11:30", ate: "16:00", acao: trabalhar, lugar: market}
+  - {das: "16:00", ate: "19:00", acao: pregar_peca, peso: 3}
   - {das: "19:00", ate: "20:00", acao: comer, lugar: tavern}
   - {das: "20:00", ate: "23:59", acao: festejar, lugar: tavern}
   - {das: "01:00", ate: "10:00", acao: dormir, lugar: houses}

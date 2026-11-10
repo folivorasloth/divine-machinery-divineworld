@@ -12,13 +12,21 @@ Ordem de um tick (seção 4.1 de docs/arquitetura.md):
   1. drenar comandos            2. avançar o relógio (period_changed)
   3. necessidades               4. ações em andamento (terminar as que acabaram)
   5. movimento (chegadas, túneis)
-  6. decisões dos livres + reavaliação de quem está ocupado (interrupção)
-  7. salvar no SQLite a cada `salvar_a_cada_minutos`
+  6. sistemas: solturas (prisão/Limbo), eventos sociais (começo/fim/fracasso);
+     de hora em hora: memórias decaem, afinidades voltam devagar, pontos da lei
+     somem, facções, ideias de eventos sociais
+  7. decisões dos livres + reavaliação de quem está ocupado (interrupção)
+  8. salvar no SQLite a cada `salvar_a_cada_minutos`
 Só o thread da simulação mexe no estado. API/CLI/MQTT só põem comandos na fila.
+
+A sociedade (Fase 2) mora em módulos próprios — `memory`, `relations`,
+`gossip`, `law`, `factions`, `structures`, `social_events` — e este arquivo
+só liga os pontos: quando uma ação começa ou termina, o que muda no mundo.
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import math
 import queue
@@ -27,22 +35,30 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from sim import factions as factions_mod
+from sim import gossip as gossip_mod
+from sim import law as law_mod
 from sim import needs as needs_mod
 from sim import rng as rng_mod
+from sim import social_events as social_mod
 from sim import speech, utility
 from sim.clock import WorldClock
 from sim.events import Event, EventBus
 from sim.loader import WorldData
+from sim.memory import Memories, Memory
 from sim.pathfinding import passable, path_from, shortest_paths
 from sim.persistence import Storage
-from sim.schemas import time_to_minutes
+from sim.relations import Relations
+from sim.schemas import Action, time_to_minutes
 from sim.state import Activity, CharacterState, MoveStep, Plan
+from sim.structures import STATE_NAMES, Structures
 
 log = logging.getLogger("sim.engine")
 
 IDLE = "_parado"  # "ação" interna: ficar parado quando nada vale a pena
 IDLE_MINUTES = 10
 MAX_CATCHUP_TICKS = 600  # no tempo real, no máximo isso de ticks atrasados por rodada
+VISITORS_KEEP_MINUTES = 24 * 60  # quem passou por cada lugar (para suspeitar de sumiços)
 
 
 @dataclass
@@ -72,16 +88,26 @@ class World:
         self.stop_requested = False
         self.ticks = 0
         self._last_event_id = 0
-        self.affinities: dict[tuple[str, str], float] = {}  # só os pares que mudaram
-        self._changed_relations: set[tuple[str, str]] = set()
         self.weather_label = data.world.weather.fallback  # clima real chega na Fase 3
         self.frozen_rows: dict[str, dict] = {}
+        # Fase 2: a sociedade
+        self.relations = Relations(data)
+        self.memories = Memories(data.world.memory)
+        self.structures = Structures(data)
+        self.law = law_mod.Law()
+        self.social = social_mod.SocialEvents()
+        self.goals: list[dict] = []  # objetivos temporários (convites, ordens do Chefe, diretor)
+        self.stolen: list[dict] = []  # objetos roubados (e onde foram parar)
+        self.visitors: dict[str, list[list]] = {}  # lugar -> [[minuto, id], ...]
+        self.relation_marks: list[list[str]] = []  # [a, b, "inimigos"|"amigos"] já anunciados
+        self._next_hourly: float | None = None
 
         if storage is not None:
             self.bus.subscribe(storage.insert_event)
 
         resumed = storage is not None and storage.has_world()
         self.resumed = resumed
+        society = {}
         if resumed:
             saved_seed = int(storage.get_meta("seed"))
             self.rng, self.seed = rng_mod.make_rng(saved_seed)
@@ -90,15 +116,28 @@ class World:
             self.speed = speed if speed is not None else float(storage.get_meta("speed", data.world.clock.multiplier))
             self.paused = storage.get_meta("paused", "0") == "1"
             self._last_event_id = int(storage.get_meta("last_event_id", "0"))
-            self.affinities = storage.load_relations()
+            self.relations.values = storage.load_relations()
+            self.memories.load(storage.load_memories(), int(storage.get_meta("next_memory_id", "1")))
+            self.structures.load(storage.load_structures())
+            society = json.loads(storage.get_meta("society", "{}"))
         else:
             self.rng, self.seed = rng_mod.make_rng(seed if seed is not None else data.world.seed)
             self.clock = WorldClock(data.world.clock, start or WorldClock.parse_start(data.world.clock, None))
             self.speed = speed if speed is not None else data.world.clock.multiplier
+        self.law.load(society.get("law", {}))
+        self.social.load(society.get("social", {}))
+        self.goals = society.get("goals", [])
+        self.stolen = society.get("stolen", [])
+        self.visitors = society.get("visitors", {})
+        self.relation_marks = society.get("relation_marks", [])
+        self._next_hourly = society.get("next_hourly")
+        if self._next_hourly is None:
+            self._next_hourly = self._now_minutes() + 60
 
         self.states: dict[str, CharacterState] = {}
         self._review_minutes: dict[str, set[int]] = {}
         self._load_characters()
+        factions_mod.init_membership(self)
         self._period = self.clock.period()
         self._next_save = self._now_minutes() + data.world.storage.save_every_minutes
 
@@ -120,6 +159,9 @@ class World:
             row = rows.pop(cid, None)
             if row is None:  # personagem novo: entra em casa, com as necessidades iniciais
                 st = CharacterState(id=cid, place=char.home, needs=needs_mod.initial_needs(self.data, char))
+                st.faction = char.faction
+                # casal do YAML (relação "tipo: casal") já é casado
+                st.spouse = next((r.with_ for r in char.relations if r.kind == "casal"), None)
             else:
                 place = row["place"] if row["place"] in self.data.places else char.home
                 st = CharacterState(id=cid, place=place, needs=row["needs"], alive=row["alive"],
@@ -130,6 +172,12 @@ class World:
                 flags = row["flags"]
                 st.cooldowns = flags.get("cooldowns", {})
                 st.recent_lines = flags.get("recent_lines", [])
+                st.faction = flags.get("faction", char.faction)
+                st.jailed_until = flags.get("jailed_until")
+                st.limbo_until = flags.get("limbo_until")
+                st.spouse = flags.get("spouse")
+                st.prev_place = flags.get("prev_place")
+                st.extra_traits = [t for t in row.get("extra_traits", []) if t in self.data.traits]
                 try:
                     st.restore_current(row["current"])
                 except (TypeError, KeyError):
@@ -186,19 +234,50 @@ class World:
     def _now_minutes(self) -> float:
         return self.clock.now.timestamp() / 60.0
 
+    now_minutes = _now_minutes
+
+    def iso_of(self, minute: float) -> str:
+        return datetime.fromtimestamp(minute * 60, self.clock.tz).isoformat(timespec="seconds")
+
+    def hhmm_of(self, minute: float) -> str:
+        return datetime.fromtimestamp(minute * 60, self.clock.tz).strftime("%H:%M")
+
     def names(self) -> dict[str, str]:
         return self.data.names()
 
+    @property
+    def affinities(self) -> dict[tuple[str, str], float]:
+        return self.relations.values
+
     def affinity(self, a: str, b: str) -> float:
-        if (a, b) in self.affinities:
-            return self.affinities[(a, b)]
-        return float(self.data.affinity(a, b))
+        return self.relations.get(a, b)
 
     def change_affinity(self, a: str, b: str, delta: float) -> None:
-        if not delta or a == b or a not in self.data.characters:
+        before, after = self.relations.change(a, b, delta)
+        if before == after:
             return
-        self.affinities[(a, b)] = max(-100.0, min(100.0, self.affinity(a, b) + delta))
-        self._changed_relations.add((a, b))
+        cfg = self.data.world.relations
+        initial = self.relations.initial(a, b)
+        mark = None
+        if after <= cfg.enemies_below < before and initial > cfg.enemies_below:
+            mark = "inimigos"
+        elif after >= cfg.friends_above > before and initial < cfg.friends_above:
+            mark = "amigos"
+        if mark and [a, b, mark] not in self.relation_marks:
+            self.relation_marks.append([a, b, mark])
+            self.say(a, "virou_inimigo" if mark == "inimigos" else "virou_amigo", target=b,
+                     place=self.states[a].place, event_type="relation_changed", importance=1,
+                     tags=["briga" if mark == "inimigos" else "conversa"],
+                     data={"affinity": round(after, 1), "initial": initial, "mark": mark},
+                     fallback="{eu} e {outro} agora são " + mark + ".")
+
+    def traits_of(self, cid: str) -> list[str]:
+        return self.data.all_traits(cid, self.states[cid].extra_traits if cid in self.states else [])
+
+    def is_asleep(self, cid: str) -> bool:
+        st = self.states[cid]
+        act = self.data.actions.get(st.activity.action) if st.activity else None
+        return bool(act and act.sleeping)
 
     def emit(self, type: str, text: str = "", *, actors=(), place=None, tags=(), importance=0, data=None) -> Event:
         self._last_event_id += 1
@@ -207,30 +286,144 @@ class World:
         self.bus.publish(ev)
         return ev
 
-    def _speech_ctx(self, cid: str, place: str, target: str | None = None) -> speech.SpeechContext:
+    def _recall(self, cid: str, target: str | None):
+        def recall(kinds: list[str]) -> str | None:
+            mem = self.memories.strongest(cid, kinds=kinds, involving=target)
+            if mem is None:
+                return None
+            return self.memories.phrase(mem, "lembranca")
+        return recall
+
+    def _speech_ctx(self, cid: str, place: str, target: str | None = None,
+                    extra: dict | None = None) -> speech.SpeechContext:
         st = self.states[cid]
+        extra = dict(extra or {})
+        genders = {"eu": self.data.characters[cid].pronoun}
+        if target in self.data.characters:
+            genders["outro"] = self.data.characters[target].pronoun
+        if extra.get("terceiro") in self.data.characters:
+            genders["terceiro"] = self.data.characters[extra["terceiro"]].pronoun
         return speech.SpeechContext(
-            speaker=cid, place=place, period=self.clock.period(), hour=self.clock.hhmm(),
+            speaker=cid, place=place, period=self.clock.period(), hour=extra.pop("hora", None) or self.clock.hhmm(),
             period_name=self.clock.period_name(), weather=self.weather_label,
             mood=needs_mod.mood(self.data, st.needs), needs=st.needs, target=target,
+            extra=extra, genders=genders, recall=self._recall(cid, target),
         )
+
+    def say(self, speaker: str, situation: str, *, target: str | None = None, place: str | None = None,
+            event_type: str = "speech", extra: dict | None = None, tags=(), importance: int = 0,
+            data: dict | None = None, fallback: str | None = None) -> Event | None:
+        """Uma fala/narração de uma situação de data/lines (ou `fallback` se não houver)."""
+        place = place or self.states[speaker].place
+        ctx = self._speech_ctx(speaker, place, target, extra)
+        line = speech.pick_line(self.data, situation, ctx, self.rng, self.states[speaker].recent_lines)
+        if line is None and fallback:
+            line = speech.fill_narration(self.data, fallback, ctx, self.rng)
+        if line is None:
+            return None
+        actors = [speaker] + ([target] if target else [])
+        return self.emit(event_type, line, actors=actors, place=place, tags=tags, importance=importance,
+                         data={"situation": situation, **(data or {})})
+
+    narrate = say
+
+    def event_text(self, actor: str, template: str, event_type: str, *, place: str, target: str | None = None,
+                   tags=(), importance: int = 0, extra: dict | None = None, data: dict | None = None) -> Event:
+        ctx = self._speech_ctx(actor, place, target, extra)
+        text = speech.fill_narration(self.data, template, ctx, self.rng)
+        actors = [actor] + ([target] if target else [])
+        return self.emit(event_type, text, actors=actors, place=place, tags=tags, importance=importance, data=data)
+
+    def list_names(self, ids: list[str]) -> str:
+        tokens = ["{@" + i + "}" for i in ids]
+        if not tokens:
+            return "ninguém"
+        if len(tokens) == 1:
+            return tokens[0]
+        return ", ".join(tokens[:-1]) + " e " + tokens[-1]
 
     def _present(self) -> dict[str, list[str]]:
         present: dict[str, list[str]] = {}
         for cid, st in self.states.items():
-            if st.alive and not st.frozen and not st.moving:
+            if st.alive and not st.frozen and not st.moving and not st.away:
                 present.setdefault(st.place, []).append(cid)
         return present
+
+    def present_at(self, place: str) -> list[str]:
+        return sorted(cid for cid, st in self.states.items()
+                      if st.alive and not st.frozen and not st.moving and not st.away and st.place == place)
 
     def decision_context(self) -> utility.DecisionContext:
         return utility.DecisionContext(
             data=self.data, minute_of_day=self.clock.minute_of_day(), hour=self.clock.hour_float(),
             period=self.clock.period(), is_night=self.clock.is_night(), now_minutes=self._now_minutes(),
-            states=self.states, present=self._present(), affinity=self.affinity,
+            states=self.states, present=self._present(), affinity=self.affinity, world=self, goals=self.goals,
         )
 
     def _living(self) -> list[CharacterState]:
-        return [st for st in self.states.values() if st.alive and not st.frozen]
+        return [st for st in self.states.values() if st.alive and not st.frozen and not st.away]
+
+    # ------------------------------------------------------------- memórias
+    def remember(self, owner: str, kind: str, *, subject: str | None, object: str | None = None,
+                 place: str | None = None, factor: float = 1.0, heard_from: str | None = None,
+                 distorted: bool = False, detail: str = "", secret: bool = False) -> tuple[Memory | None, bool]:
+        st = self.states.get(owner)
+        if st is None or not st.alive or kind not in self.data.world.memory.kinds:
+            return None, False
+        mem, new = self.memories.form(owner, kind, subject=subject, object=object, place=place, ts=self.clock.iso(),
+                                      minute=self._now_minutes(), factor=factor, heard_from=heard_from,
+                                      distorted=distorted, detail=detail, secret=secret)
+        if mem is not None and new and subject and subject != owner:
+            k = self.data.world.memory.kinds[kind]
+            self.change_affinity(owner, subject, k.affinity * factor)
+        return mem, new
+
+    def remember_scene(self, kind: str, *, subject: str | None, object: str | None = None, place: str,
+                       detail: str = "", witnesses: bool = True) -> None:
+        """Quem fez, com quem foi e quem estava acordado no lugar (testemunhas) lembram."""
+        involved = [c for c in (subject, object) if c]
+        for cid in dict.fromkeys(involved):
+            self.remember(cid, kind, subject=subject, object=object, place=place, detail=detail)
+        if not witnesses:
+            return
+        factor = self.data.world.memory.witness_factor
+        for cid in self.present_at(place):
+            if cid not in involved and not self.is_asleep(cid):
+                self.remember(cid, kind, subject=subject, object=object, place=place, detail=detail, factor=factor)
+
+    def gossip_value(self, speaker: str, listener: str) -> float:
+        return gossip_mod.best(self, speaker, listener)[1]
+
+    def report_value(self, cid: str) -> float:
+        return law_mod.best_report(self, cid)[1]
+
+    # ------------------------------------------------------------- objetivos
+    def add_goal(self, *, who: str | None, action: str, place: str | None, bonus: float, start: float,
+                 end: float, source: str) -> None:
+        self.goals.append({"who": who, "action": action, "place": place, "bonus": bonus, "start": start,
+                           "end": end, "source": source})
+
+    def remove_goals(self, source: str) -> None:
+        self.goals[:] = [g for g in self.goals if g["source"] != source]
+
+    # -------------------------------------------------------------- traços
+    def draw_new_trait(self, cid: str) -> str | None:
+        """Traço novo sorteado (quem volta do Limbo volta estranho)."""
+        current = set(self.traits_of(cid))
+        blocked = set(current)
+        for tid in current:
+            if tid in self.data.traits:
+                blocked |= set(self.data.traits[tid].opposites)
+        options = sorted(t.id for t in self.data.traits.values()
+                         if t.drawable and t.id not in blocked and not (set(t.opposites) & current))
+        return self.rng.choice(options) if options else None
+
+    def interrupt(self, cid: str) -> None:
+        """Larga o que está fazendo agora (preso, fugindo, levando uma pegadinha...)."""
+        st = self.states[cid]
+        if st.activity is not None:
+            self._finish_activity(st, interrupted=True)
+        st.plan = None
 
     # ===================================================================== tick
     def tick(self) -> None:
@@ -251,6 +444,11 @@ class World:
             self._advance_activity(st, dt)
         for st in self._living():
             self._advance_movement(st, dt)
+        law_mod.check_releases(self)
+        social_mod.update(self)
+        if self._now_minutes() >= self._next_hourly:
+            self._next_hourly += 60
+            self._hourly()
         self._decide_all()
 
         if self._now_minutes() >= self._next_save:
@@ -260,13 +458,61 @@ class World:
             self.storage.commit_if_dirty()
         self._update_snapshot()
 
+    def _hourly(self) -> None:
+        self.memories.decay(1.0)
+        self.relations.drift(1.0)
+        law_mod.daily_decay(self, 1.0)
+        factions_mod.check_all(self)
+        now = self._now_minutes()
+        self.goals[:] = [g for g in self.goals if g["end"] > now]
+        for place in list(self.visitors):
+            self.visitors[place] = [v for v in self.visitors[place] if v[0] >= now - VISITORS_KEEP_MINUTES]
+        social_mod.plan_hourly(self)
+
     # ------------------------------------------------------------ necessidades
     def _update_needs(self, st: CharacterState, night: bool, dt: float) -> None:
         char = self.data.characters[st.id]
         action = self.data.actions.get(st.activity.action) if st.activity else None
-        needs_mod.natural_change(self.data, char, st.needs, night, dt, sleeping=bool(action and action.sleeping))
+        needs_mod.natural_change(self.data, char, st.needs, night, dt, sleeping=bool(action and action.sleeping),
+                                 extra_traits=st.extra_traits)
         if action is not None and st.activity.duration > 0:
-            needs_mod.apply_effect(st.needs, action.effects.needs, dt / st.activity.duration)
+            fraction = dt / st.activity.duration
+            effects = action.failure.effects if (st.activity.failed and action.failure) else action.effects
+            needs_mod.apply_effect(st.needs, effects.needs, fraction)
+            if not st.activity.failed:
+                for tid in self.traits_of(st.id):
+                    if tid in action.effects.by_trait:
+                        needs_mod.apply_effect(st.needs, action.effects.by_trait[tid], fraction)
+                if action.repairs:
+                    self._repair(st, action, fraction)
+
+    def _repair(self, st: CharacterState, action: Action, fraction: float) -> None:
+        here = [s for s in self.structures.at(st.activity.place) if s.hp < 100]
+        if not here:
+            return
+        target = min(here, key=lambda s: (s.hp, s.id))
+        before, after = self.structures.change(target.id, action.repairs * fraction)
+        if target.hp >= 100:
+            target.marks.clear()  # pintou por cima da pichação
+        if before != after:
+            self.say(st.id, "estrutura_consertada", place=target.place, event_type="structure_changed",
+                     tags=["trabalho"], importance=1, extra={"objeto": "{@" + target.id + "}"},
+                     data={"structure": target.id, "from": before, "to": after, "hp": round(target.hp)},
+                     fallback="{eu} termina o conserto de {objeto}.")
+
+    def damage_structure(self, place: str, amount: float, by: str, cause: str) -> None:
+        here = self.structures.at(place)
+        if not here or amount <= 0:
+            return
+        target = self.rng.choice(sorted(here, key=lambda s: s.id))
+        before, after = self.structures.change(target.id, -amount)
+        if before != after:
+            self.say(by, f"estrutura_{after}", place=place, event_type="structure_changed", tags=["briga"],
+                     importance=2 if after == "destruido" else 1,
+                     extra={"objeto": "{@" + target.id + "}"},
+                     data={"structure": target.id, "from": before, "to": after, "hp": round(target.hp), "cause": cause},
+                     fallback="{objeto} ficou " + STATE_NAMES[after] + ".")
+        return target
 
     # ---------------------------------------------------- ações em andamento
     def _advance_activity(self, st: CharacterState, dt: float) -> None:
@@ -284,11 +530,16 @@ class World:
         action = self.data.actions[act.action]
         fraction = min(1.0, act.elapsed / act.duration) if act.duration else 1.0
         # efeitos no alvo e afinidades: no fim, proporcionais ao que durou
-        if act.target and act.target in self.states:
+        if act.target and act.target in self.states and not act.failed:
             target_st = self.states[act.target]
-            needs_mod.apply_effect(target_st.needs, action.effects.target_needs, fraction)
+            if not act.target_applied:
+                needs_mod.apply_effect(target_st.needs, action.effects.target_needs, fraction)
             self.change_affinity(st.id, act.target, action.effects.affinity * fraction)
             self.change_affinity(act.target, st.id, action.effects.target_affinity * fraction)
+        if not act.failed:
+            for other, delta in action.effects.affinity_with.items():
+                if other != st.id:
+                    self.change_affinity(st.id, other, delta * fraction)
         st.last_action = act.action
         if action.cooldown_minutes:
             st.cooldowns[act.action] = self._now_minutes() + action.cooldown_minutes
@@ -298,36 +549,382 @@ class World:
                                          self._speech_ctx(st.id, act.place, act.target), self.rng)
         self.emit("action_finished", text, actors=[st.id] + ([act.target] if act.target else []),
                   place=act.place, tags=action.tags, data={"action": act.action, "interrupted": interrupted,
-                                                           "minutes": round(act.elapsed)})
+                                                           "minutes": round(act.elapsed), "failed": act.failed})
+        # consequências (Fase 2)
+        damage = (action.failure.effects.structure_damage if (act.failed and action.failure)
+                  else action.effects.structure_damage)
+        if damage and not interrupted:
+            self.damage_structure(act.place, damage, st.id, act.action)
+        if act.failed or interrupted:
+            return
+        if action.special == "recrutar" and act.target:
+            factions_mod.check(self, act.target)
+        if action.special == "roubar":
+            self._hide_loot(st, act.place)
+        if action.chase_chance and act.target and self.rng.random() < action.chase_chance:
+            self._chase(st.id, act.target, act.place)
 
     def _start_activity(self, st: CharacterState, action_id: str, place: str, target: str | None,
                         duration: float, score: float) -> None:
         st.plan = None
-        st.activity = Activity(action=action_id, place=place, duration=duration, target=target, score=score)
         if action_id == IDLE:
+            st.activity = Activity(action=action_id, place=place, duration=duration, target=target, score=score)
             return
         action = self.data.actions[action_id]
+        # foi atrás de alguém e a pessoa já não está (ou dormiu)?
+        if target and action.kind == "social" and not action.automatic:
+            tst = self.states[target]
+            if tst.place != place or tst.moving or tst.away or self.is_asleep(target):
+                self.say(st.id, "nao_achou", target=target, place=place, event_type="missed",
+                         data={"action": action_id}, fallback="{eu} procura {outro} e não acha.")
+                st.last_action = action_id
+                return
+        failed = False
+        if action.failure:
+            chance = action.failure.chance
+            for tid in self.traits_of(st.id):
+                trait = self.data.traits.get(tid)
+                if trait:
+                    chance *= trait.effects.failure
+            failed = self.rng.random() < min(0.95, chance)
+        # comportamentos especiais que decidem o que vai ser dito (ou se nem acontece)
+        extra, edata = {}, {}
+        if action.special:
+            ok = self._special_before(st, action, place, target, failed, extra, edata)
+            if not ok:
+                st.last_action = action_id
+                return
+        st.activity = Activity(action=action_id, place=place, duration=duration, target=target, score=score,
+                               failed=failed)
         actors = [st.id] + ([target] if target else [])
+        situation = action.speech
+        if failed and action.failure and action.failure.speech:
+            situation = action.failure.speech
+        elif edata.get("situation"):
+            situation = edata.pop("situation")
         spoken = None
-        if action.speech and self.rng.random() < action.speech_chance:
-            spoken = speech.pick_line(self.data, action.speech, self._speech_ctx(st.id, place, target),
+        chance = 1.0 if (failed or action.special in ("fofoca", "confissao", "denuncia")) else action.speech_chance
+        if situation and self.rng.random() < chance:
+            spoken = speech.pick_line(self.data, situation, self._speech_ctx(st.id, place, target, extra),
                                       self.rng, st.recent_lines)
         template = action.narration or ("{eu} vai " + action.name[:1].lower() + action.name[1:] + " em {lugar}.")
-        narration = speech.fill_narration(self.data, template, self._speech_ctx(st.id, place, target), self.rng)
-        kind = action.event or "action_started"
-        self.emit(kind, narration, actors=actors, place=place, tags=action.tags, importance=action.importance,
+        if failed and action.failure and action.failure.narration:
+            template = action.failure.narration
+        narration = speech.fill_narration(self.data, template, self._speech_ctx(st.id, place, target, extra), self.rng)
+        kind = "slapstick" if failed else (action.event or "action_started")
+        tags = list(action.tags)
+        self.emit(kind, narration, actors=actors, place=place, tags=tags, importance=action.importance,
                   data={"action": action_id, "target": target, "minutes": round(duration),
-                        "score": round(score, 3), "spoke": spoken is not None})
+                        "score": round(score, 3), "spoke": spoken is not None, "failed": failed, **edata})
         if spoken:
-            self.emit("speech", spoken, actors=actors, place=place, tags=action.tags,
-                      importance=action.importance, data={"situation": action.speech, "action": action_id})
+            self.emit("speech", spoken, actors=actors, place=place, tags=tags,
+                      importance=action.importance, data={"situation": situation, "action": action_id})
         # o alvo responde (conversa de verdade tem duas pessoas)
-        if target and action.target_speech and self.rng.random() < action.target_speech_chance:
-            reply = speech.pick_line(self.data, action.target_speech, self._speech_ctx(target, place, st.id),
+        if target and not failed and action.target_speech and self.rng.random() < action.target_speech_chance:
+            reply = speech.pick_line(self.data, action.target_speech, self._speech_ctx(target, place, st.id, extra),
                                      self.rng, self.states[target].recent_lines)
             if reply:
-                self.emit("speech", reply, actors=[target, st.id], place=place, tags=action.tags,
+                self.emit("speech", reply, actors=[target, st.id], place=place, tags=tags,
                           data={"situation": action.target_speech, "action": action_id, "reply_to": st.id})
+        self._consequences(st, action, place, target, failed, extra)
+
+    # ------------------------------------------------------- consequências
+    def _consequences(self, st: CharacterState, action: Action, place: str, target: str | None, failed: bool,
+                      extra: dict) -> None:
+        """O que muda no mundo quando uma ação começa: memórias, lei, efeitos no alvo..."""
+        self.visitors.setdefault(place, []).append([self._now_minutes(), st.id])
+        if failed:
+            if action.failure and action.failure.memory:
+                self.remember_scene(action.failure.memory, subject=st.id, object=None, place=place)
+            if action.special == "prender" and target:
+                self._flee(target, st.id, place)
+            return
+        if action.special:
+            self._special_after(st, action, place, target, extra)
+        if action.reconciles and target:
+            self.memories.weaken_between(st.id, target, 0.3)
+        if action.memory:
+            self.remember_scene(action.memory, subject=st.id, object=target, place=place,
+                                detail=extra.get("objeto", ""))
+        if action.interrupts_target and target and target in self.states:
+            self.interrupt(target)
+            needs_mod.apply_effect(self.states[target].needs, action.effects.target_needs, 1.0)
+            if st.activity is not None:
+                st.activity.target_applied = True
+            if action.target_reaction:
+                react = self.data.actions[action.target_reaction]
+                low, high = react.duration_minutes
+                self._start_activity(self.states[target], react.id, place, None,
+                                     float(self.rng.randint(low, high)), 0.0)
+        if action.signs:
+            here = self.structures.at(place)
+            if here:
+                spot = min(here, key=lambda s: s.id)
+                spot.marks.append([st.id, action.infraction or ""])
+        if action.observe:
+            for other in self.present_at(place):
+                ost = self.states[other]
+                oact = self.data.actions.get(ost.activity.action) if ost.activity else None
+                if other != st.id and oact and action.observe.tag in oact.tags:
+                    self.remember(st.id, action.observe.memory, subject=other, place=place)
+                    break
+        # lei: infração em flagrante, ou o Fiscal chegando e vendo o que acontece
+        if action.infraction:
+            for fiscal in law_mod.enforcers(self):
+                if fiscal != st.id and law_mod.watching(self, fiscal, place):
+                    if st.activity is not None:
+                        st.activity.seen_by_law = True
+                    law_mod.register(self, fiscal, st.id, action.infraction, place, "flagrante")
+                    break
+        if law_mod.is_enforcer(self, st.id):
+            self._fiscal_looks(st.id, place)
+        self._check_missing(st, action, place)
+        self._check_lost_found(st, action, place)
+
+    def _fiscal_looks(self, fiscal: str, place: str) -> None:
+        caught = 0
+        for other in self.present_at(place):
+            ost = self.states[other]
+            act = self.data.actions.get(ost.activity.action) if ost.activity else None
+            if other == fiscal or not act or not act.infraction or ost.activity.failed or ost.activity.seen_by_law:
+                continue
+            ost.activity.seen_by_law = True
+            if law_mod.register(self, fiscal, other, act.infraction, place, "flagrante"):
+                caught += 1
+                if caught >= self.data.world.law.max_per_look:
+                    break
+        for s in self.structures.at(place):
+            marks, s.marks = s.marks, []
+            for who, infraction in marks:
+                if who in self.states and infraction:
+                    law_mod.register(self, fiscal, who, infraction, place, "assinatura")
+
+    # ---------------------------------------------------- especiais (YAML: especial)
+    def special_target_ok(self, action: Action, me: str, other: str) -> bool:
+        sp = action.special
+        if sp == "fofoca":
+            return gossip_mod.best(self, me, other)[0] is not None
+        if sp == "prender":
+            return other in self.law.warrants and self.states[other].jailed_until is None
+        if sp == "denuncia":
+            return law_mod.is_enforcer(self, other) and law_mod.best_report(self, me)[0] is not None
+        if sp == "confissao":
+            return self._confession(me, other) is not None
+        if sp == "recrutar":
+            return self.states[other].faction != action.faction and other not in factions_mod.leaders(self)
+        return True
+
+    def special_place_ok(self, action: Action, me: str, place: str) -> bool:
+        if action.repairs and self.structures.damage_at(place) <= 0:
+            return False
+        sp = action.special
+        if sp == "roubar":
+            return bool(self._loot_options(place))
+        if sp == "ordem_reconstruir":
+            return self.structures.worst()[1] > 0
+        return True
+
+    def _confession(self, me: str, priest: str) -> Memory | None:
+        best = None
+        for m in self.memories.of(me):
+            if m.subject == me and m.sentiment < 0 and m.heard_from is None and not self.memories.knows(priest, m):
+                if best is None or m.intensity > best.intensity:
+                    best = m
+        return best
+
+    def _loot_options(self, place: str) -> list[str]:
+        taken = {s["name"] for s in self.stolen if s["from_place"] == place and not s.get("returned")}
+        return [o for o in self.data.places[place].objects if o not in taken]
+
+    def _special_before(self, st: CharacterState, action: Action, place: str, target: str | None, failed: bool,
+                        extra: dict, edata: dict) -> bool:
+        """Prepara a ação especial. False = não tem como acontecer agora (não começa)."""
+        sp = action.special
+        if failed:
+            return True
+        if sp == "fofoca":
+            res = gossip_mod.spread(self, st.id, target, place)
+            if res is None:
+                return False
+            extra.update(res["vars"])
+            edata.update(res["data"])
+            if res["secret"] and "fofoca_confissao" in self.data.lines:
+                edata["situation"] = "fofoca_confissao"
+            return True
+        if sp == "confissao":
+            mem = self._confession(st.id, target)
+            if mem is None:
+                return False
+            self.remember(target, mem.kind, subject=st.id, object=mem.object, place=mem.place, factor=0.9,
+                          heard_from=st.id, detail=mem.detail, secret=True)
+            extra["lembranca"] = self.memories.phrase(mem, "lembranca")
+            edata.update({"memory_kind": mem.kind})
+            return True
+        if sp == "denuncia":
+            mem, _v = law_mod.best_report(self, st.id)
+            if mem is None:
+                return False
+            extra.update({"terceiro": mem.subject, "fato": self.memories.phrase(mem, "fato")})
+            edata.update({"about": mem.subject, "memory_kind": mem.kind})
+            return True
+        if sp == "roubar":
+            options = self._loot_options(place)
+            if not options:
+                return False
+            extra["objeto"] = self.rng.choice(options)
+            return True
+        if sp == "recrutar":
+            fac = self.data.world.factions.get(action.faction)
+            extra["faccao"] = fac.name if fac else action.faction
+            return True
+        if sp == "ordem_reconstruir":
+            where, damage = self.structures.worst()
+            if where is None:
+                return False
+            extra["objeto"] = "{@" + where + "}"
+            edata["where"] = where
+            return True
+        if sp == "prender":
+            w = self.law.warrants.get(target)
+            if not w:
+                return False
+            inf = self.data.world.law.infractions.get(w["infraction"])
+            extra["infracao"] = inf.name if inf else w["infraction"]
+            return True
+        return True
+
+    def _special_after(self, st: CharacterState, action: Action, place: str, target: str | None,
+                       extra: dict) -> None:
+        sp = action.special
+        if sp == "fofoca" and target and law_mod.is_enforcer(self, target):
+            # contaram ao Fiscal uma infração (talvez com o culpado errado!)
+            heard = [m for m in self.memories.of(target) if m.heard_from == st.id and not m.reported]
+            for m in heard[-1:]:
+                k = self.data.world.memory.kinds.get(m.kind)
+                if k and k.infraction and m.subject:
+                    m.reported = True
+                    law_mod.register(self, target, m.subject, k.infraction, place, "denuncia", reporter=st.id)
+        elif sp == "denuncia" and target:
+            law_mod.report(self, st.id, target)
+        elif sp == "prender" and target:
+            law_mod.arrest(self, st.id, target)
+        elif sp == "roubar":
+            obj = extra.get("objeto", "")
+            self.stolen.append({"name": obj, "from_place": place, "thief": st.id, "minute": self._now_minutes(),
+                                "noticed": False, "lost": False, "hidden_place": None, "returned": False})
+            self.remember(st.id, "roubo", subject=st.id, place=place, detail=obj)
+            chance = self.data.world.theft.witness_notice_chance
+            for other in self.present_at(place):
+                if other != st.id and not self.is_asleep(other) and self.rng.random() < chance:
+                    self.remember(other, "roubo", subject=st.id, place=place, detail=obj,
+                                  factor=self.data.world.memory.witness_factor)
+        elif sp == "ordem_reconstruir":
+            where, _damage = self.structures.worst()
+            repair = next((a for a in self.data.actions.values() if a.active and a.repairs), None)
+            if where and repair:
+                now = self._now_minutes()
+                self.remove_goals(f"ordem:{st.id}")
+                self.add_goal(who=None, action=repair.id, place=where, bonus=3.0, start=now, end=now + 8 * 60,
+                              source=f"ordem:{st.id}")
+
+    # ---------------------------------------------------- ganância e sumiços
+    def _hide_loot(self, st: CharacterState, place: str) -> None:
+        loot = next((s for s in reversed(self.stolen) if s["thief"] == st.id and not s["lost"]
+                     and s["hidden_place"] is None), None)
+        if loot is None:
+            return
+        spots = sorted(p for p, pl in self.data.places.items() if pl.access == "normal")
+        loot["hidden_place"] = self.rng.choice(spots)
+        if self.rng.random() < self.data.world.theft.forget_chance:
+            loot["lost"] = True
+            self.say(st.id, "esqueceu_esconderijo", place=st.place, event_type="action_started",
+                     extra={"objeto": loot["name"]}, tags=["evento"], data={"action": "esconder", "lost": True},
+                     fallback="{eu} esconde {objeto} em algum lugar... e já esqueceu onde.")
+
+    def _check_missing(self, st: CharacterState, action: Action, place: str) -> None:
+        """Quem começa a trabalhar no próprio local de trabalho percebe o que sumiu de lá."""
+        if action.conditions.own_place != "trabalho" or utility.workplace_of(self.data, self.data.characters[st.id]) != place:
+            return
+        for loot in self.stolen:
+            if loot["noticed"] or loot["from_place"] != place or loot["thief"] == st.id:
+                continue
+            loot["noticed"] = True
+            since = loot["minute"] - 60
+            seen = sorted({cid for minute, cid in self.visitors.get(place, []) if minute >= since
+                           and cid != st.id and cid in self.states})
+            suspect = None
+            if seen:
+                weights = [max(1.0, 40 - self.affinity(st.id, cid)) for cid in seen]
+                suspect = rng_mod.weighted_choice(self.rng, seen, weights)
+            st.needs["raiva"] = min(100.0, st.needs.get("raiva", 0) + self.data.world.theft.anger_on_notice)
+            extra = {"objeto": loot["name"]}
+            if suspect:
+                extra["terceiro"] = suspect
+                self.remember(st.id, "sumico", subject=suspect, place=place, detail=loot["name"])
+            self.say(st.id, "sumico" if suspect else "sumico_sem_suspeito", place=place, event_type="suspicion",
+                     extra=extra, tags=["evento"], importance=1,
+                     data={"object": loot["name"], "suspect": suspect, "thief": loot["thief"],
+                           "right": suspect == loot["thief"]},
+                     fallback="{eu} percebe que sumiu {objeto}.")
+            break
+
+    def _check_lost_found(self, st: CharacterState, action: Action, place: str) -> None:
+        if not action.wander:
+            return
+        cfg = self.data.world.theft
+        for loot in self.stolen:
+            if not loot["lost"] or loot.get("returned") or loot["hidden_place"] != place:
+                continue
+            if self.rng.random() >= cfg.find_chance:
+                return
+            loot["returned"] = True
+            sacred = bool(set(cfg.sacred_traits) & set(self.traits_of(st.id)))
+            kind = "achado_sagrado" if sacred else "achado"
+            self.say(st.id, kind, place=place, event_type="found", extra={"objeto": loot["name"]},
+                     tags=["misterio"], importance=1 if sacred else 0, data={"object": loot["name"], "sacred": sacred},
+                     fallback="{eu} encontra {objeto} no meio de {lugar}, sem dono.")
+            self.remember_scene(kind, subject=st.id, place=place, detail=loot["name"])
+            return
+
+    # ------------------------------------------------------ fugas e perseguições
+    def _escape_route(self, place: str) -> str | None:
+        options = sorted(e.to for e in self.data.graph.get(place, []) if passable(self.data, e.to, frozenset())
+                         and e.kind == "caminho")
+        return self.rng.choice(options) if options else None
+
+    def _send(self, cid: str, action_id: str, destination: str, target: str | None) -> None:
+        st = self.states[cid]
+        action = self.data.actions[action_id]
+        low, high = action.duration_minutes
+        _dist, came = shortest_paths(self.data, st.place, frozenset())
+        edges = path_from(came, st.place, destination) or []
+        st.plan = Plan(action=action_id, place=destination, target=target, duration=float(self.rng.randint(low, high)),
+                       steps=[MoveStep(e.to, e.kind, e.minutes) for e in edges])
+        if st.plan.steps:
+            self._start_step(st)
+        else:
+            self._start_activity(st, action_id, destination, target, st.plan.duration, 0.0)
+
+    def _chase(self, attacker: str, target: str, place: str) -> None:
+        cfg = self.data.world.law
+        dest = self._escape_route(place)
+        if dest is None or self.states[target].place != place or self.states[target].away:
+            return
+        self.say(attacker, "perseguicao", target=target, place=place, event_type="chase", tags=["briga"],
+                 importance=1, data={"to": dest}, fallback="{outro} sai correndo e {eu} vai atrás!")
+        self.interrupt(target)
+        self._send(target, cfg.flee_action, dest, None)
+        self.interrupt(attacker)
+        self._send(attacker, cfg.chase_action, dest, target)
+
+    def _flee(self, offender: str, fiscal: str, place: str) -> None:
+        """O infrator escapa do Fiscal (o mandado continua)."""
+        cfg = self.data.world.law
+        dest = self._escape_route(place)
+        if dest is None:
+            return
+        self.interrupt(offender)
+        self._send(offender, cfg.flee_action, dest, None)
 
     # ---------------------------------------------------------------- movimento
     def _start_step(self, st: CharacterState) -> None:
@@ -371,6 +968,7 @@ class World:
             return
         origin = st.place
         st.place = step.to
+        st.prev_place = origin
         plan.steps.pop(0)
         final = not plan.steps
         data = {"from": origin, "to": step.to, "final": final, "destination": plan.place}
@@ -396,8 +994,12 @@ class World:
         review_every = self.data.world.decision.reevaluate_minutes
         for cid in order:
             st = self.states[cid]
+            if st.away:
+                continue  # foi para o Limbo no meio deste tick
             if ctx.minute_of_day in self._review_minutes.get(cid, ()):
                 st.pending_review = True
+            if any(g["who"] in (None, cid) and now <= g["start"] < now + 1 for g in self.goals):
+                st.pending_review = True  # começou um objetivo (festa marcada, ordem do Chefe)
             if st.free:
                 st.pending_review = False
                 self._decide(st, ctx)
@@ -416,8 +1018,9 @@ class World:
             ranked = utility.rank(utility.candidates(char, st, ctx), cfg.min_score)
         chosen = utility.choose(ranked, cfg.top_n, cfg.temperature, self.rng, cfg.relative_cutoff)
         if chosen is None:
-            wander = next((a for a in self.data.actions.values() if a.wander and a.active), None)
-            if wander is not None:
+            wander = next((a for a in self.data.actions.values() if a.wander and a.active and not a.automatic
+                           and not a.conditions.professions), None)
+            if wander is not None and st.jailed_until is None:
                 chosen = utility.Candidate(wander.id, st.place, None, 0.0, 0.0, [utility.Factor("nada melhor", 0)])
             else:
                 st.activity = Activity(action=IDLE, place=st.place, duration=IDLE_MINUTES)
@@ -452,6 +1055,8 @@ class World:
     def _wander_destination(self, st: CharacterState, ctx: utility.DecisionContext) -> str:
         """Perambular: um vizinho sorteado. Lugares perigosos têm menos chance,
         exceto para quem é imune a criaturas (o Mike vai a qualquer lugar)."""
+        if st.jailed_until is not None:
+            return st.place
         char = self.data.characters[st.id]
         fearless = "criaturas" in char.immunities
         options, weights = [], []
@@ -461,7 +1066,10 @@ class World:
             place = self.data.places[edge.to]
             danger = place.danger_night if (ctx.is_night and place.danger_night is not None) else place.danger
             options.append(edge.to)
-            weights.append(1.0 if fearless else max(0.05, 1 - danger / 100) ** 2)
+            weight = 1.0 if fearless else max(0.05, 1 - danger / 100) ** 2
+            if edge.to == st.prev_place:
+                weight *= 0.25  # quem perambula raramente volta direto por onde veio
+            weights.append(weight)
         if not options:
             return st.place
         return rng_mod.weighted_choice(self.rng, options, weights)
@@ -473,6 +1081,9 @@ class World:
             return False
         char = self.data.characters[st.id]
         cfg = self.data.world.decision
+        action = self.data.actions.get(st.activity.action)
+        if action is not None and action.automatic:
+            return False  # fugindo / perseguindo: vai até o fim
         current = utility.current_score(char, st, ctx)
         act = st.activity
         if current < cfg.min_score:
@@ -486,7 +1097,6 @@ class World:
         if not ranked:
             return False
         best = ranked[0]
-        action = self.data.actions.get(act.action)
         minimum = cfg.wake_min_score if (action and action.sleeping) else cfg.interrupt_min_score
         if best.score < max(minimum, current * cfg.interrupt_factor):
             return False
@@ -587,6 +1197,7 @@ class World:
             skipped = lost - limit
             self.clock.now = self.clock.now + skipped
             self._period = self.clock.period()
+            self._next_hourly = self._now_minutes() + 60
             hours = skipped.total_seconds() / 3600
             self.emit("system", f"O mundo cochilou por {hours:.1f} horas.", tags=["sistema"], importance=1,
                       data={"skipped_hours": round(hours, 2)})
@@ -608,10 +1219,21 @@ class World:
                              current=st.current_json(), last_action=st.last_action,
                              flags={"cooldowns": st.cooldowns, "next_review": st.next_review,
                                     "pending_review": st.pending_review,
-                                    "recent_lines": st.recent_lines})
-        for a, b in sorted(self._changed_relations):
-            s.save_relation(a, b, self.affinities[(a, b)], self.clock.iso())
-        self._changed_relations.clear()
+                                    "recent_lines": st.recent_lines, "faction": st.faction,
+                                    "jailed_until": st.jailed_until, "limbo_until": st.limbo_until,
+                                    "spouse": st.spouse, "prev_place": st.prev_place},
+                             extra_traits=st.extra_traits)
+        for a, b in sorted(self.relations.changed):
+            s.save_relation(a, b, self.relations.values[(a, b)], self.clock.iso())
+        self.relations.changed.clear()
+        s.save_memories(self.memories.rows())
+        s.set_meta("next_memory_id", self.memories.next_id)
+        s.save_structures(self.structures.rows(), self.clock.iso())
+        s.set_meta("society", json.dumps({
+            "law": self.law.to_json(), "social": self.social.to_json(), "goals": self.goals,
+            "stolen": self.stolen, "visitors": self.visitors, "relation_marks": self.relation_marks,
+            "next_hourly": self._next_hourly,
+        }, ensure_ascii=False))
         s.commit()
 
     def close(self) -> None:
@@ -626,9 +1248,12 @@ class World:
             "speed": self.speed, "paused": self.paused, "weather": {"label": self.weather_label},
             "characters": {
                 cid: {"place": st.place, "action": st.activity.action if st.activity else None,
-                      "moving": st.moving, "alive": st.alive, "needs": dict(st.needs)}
+                      "moving": st.moving, "alive": st.alive, "needs": dict(st.needs),
+                      "faction": st.faction, "jailed": st.jailed_until is not None, "away": st.away}
                 for cid, st in self.states.items()
             },
+            "structures": {sid: {"place": s.place, "hp": round(s.hp), "state": self.structures.state(sid)}
+                           for sid, s in self.structures.items.items()},
         }
         with self._lock:
             self._snapshot = snap

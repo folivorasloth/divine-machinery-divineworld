@@ -13,4 +13,9 @@ tem: [balcão, mesa de sinuca, lampiões, palco improvisado]
 conexoes:
   - {para: town_square, tipo: caminho, minutos: 3}
   - {para: market, tipo: caminho, minutos: 2}
-acoes: [comer, cochilar, festejar, quebrar, roubar]
+acoes: [comer, cochilar, festejar, quebrar, roubar, construir]
+estruturas:
+  - {id: tavern_pool_table, nome: a mesa de sinuca}
+  - {id: tavern_counter, nome: o balcão da Taverna}
+# coisas que o Ganancioso (ou quem for) pode roubar daqui
+objetos: [uma garrafa de pinga, o taco de sinuca, um lampião]

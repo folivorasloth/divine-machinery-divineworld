@@ -13,3 +13,8 @@ conexoes:
   - {para: town_square, tipo: caminho, minutos: 4}
   - {para: houses, tipo: caminho, minutos: 3}
 acoes: [construir, quebrar]
+estruturas:
+  - {id: forge_anvil, nome: a bigorna}
+  - {id: forge_bellows, nome: o fole da forja}
+# coisas que o Ganancioso (ou quem for) pode roubar daqui
+objetos: [um martelo, uma ferradura nova]

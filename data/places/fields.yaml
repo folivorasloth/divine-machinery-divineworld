@@ -15,4 +15,8 @@ paleta:
 tem: [cerca, curral, plantação]
 conexoes:
   - {para: town_square, tipo: caminho, minutos: 8}
-acoes: [cochilar, festejar, construir]
+acoes: [cochilar, festejar, construir, quebrar]
+estruturas:
+  - {id: fields_fence, nome: a cerca do curral}
+# coisas que o Ganancioso (ou quem for) pode roubar daqui
+objetos: [uma galinha, um saco de milho]

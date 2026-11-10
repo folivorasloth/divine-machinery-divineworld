@@ -27,11 +27,14 @@ casa: houses
 rotina:
   - {das: "05:30", ate: "14:30", acao: trabalhar, lugar: community_kitchen, peso: 3}
   - {das: "14:30", ate: "15:00", acao: comer, lugar: community_kitchen}
+  # "a briga das três da tarde": a rotina só dá vontade; com quem e se vira briga, o mundo decide
+  - {das: "15:00", ate: "15:30", acao: discutir, lugar: community_kitchen, peso: 25}
   - {das: "16:00", ate: "19:30", acao: trabalhar, lugar: community_kitchen, peso: 2.5}
   - {das: "20:00", ate: "22:00", acao: festejar, lugar: tavern}
   - {das: "22:00", ate: "05:30", acao: dormir, lugar: houses}
 necessidades:
-  raiva: {taxa: 1.2}
+  raiva: {taxa: 0.8}   # demora a esfriar
+faccao: igreja
 relacoes:
   - {com: chef_husband, afinidade: 80, tipo: casal, nota: "Briga às três da tarde, pazes às três e cinco."}
   - {com: teen, afinidade: 75, tipo: mae, nota: "O filho foge, os pais procuram, a cidade inteira participa."}

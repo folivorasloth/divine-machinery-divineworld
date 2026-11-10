@@ -1,0 +1,84 @@
+# Ganância: roubos, sumiços, acusações (às vezes erradas), achados.
+# Formato explicado no topo de rotina.yaml. {objeto} é o que sumiu/achou;
+# no sumiço, {terceiro} é o SUSPEITO (que pode não ser o culpado).
+situacoes:
+  roubo:
+    - "{eu} olha pros lados. Ninguém. E {objeto} some no casaco."
+    - "{eu} sussurra pra {objeto}: \"{bordao}\""
+    - "{eu} esconde {objeto} num dos 47 bolsos do casaco."
+    - "{eu} assobia, inocente, com {objeto} fazendo volume no bolso."
+    - "{eu} pega {objeto} e deixa no lugar uma pedra parecida."
+    - "{eu} leva {objeto} com a naturalidade de quem pegou o que é seu. Não é."
+    - "{eu} enfia {objeto} no casaco e sai andando de lado, encostado na parede."
+    - "{eu} pega {objeto}. Os olhos brilham. Literalmente."
+    - "{eu} troca {objeto} de lugar. Pro bolso dele."
+    - "{eu} acaricia {objeto}: \"Agora você é meu.\""
+    - "{eu} cobre {objeto} com um pano e sai como quem carrega um bebê."
+    - "{eu} rouba {objeto} e, de quebra, um palito de dente."
+    - "{eu} conta mentalmente: com {objeto}, falta pouco para comprar o Mundo de Fora."
+    - "{eu} pega {objeto} e, por educação, deixa um bilhete: \"não fui eu\"."
+    - "{eu} leva {objeto} em três viagens, bem devagar, pra ninguém notar."
+    - "{eu} esconde {objeto} dentro do chapéu. O chapéu fica estranho."
+
+  sumico:
+    - "{eu} percebe que sumiu {objeto}! E já tem um suspeito: {terceiro}."
+    - "{eu} conta as coisas duas vezes. Falta {objeto}. \"Foi {terceiro}. Só pode.\""
+    - "{eu} grita: \"Quem pegou {objeto}?!\" e olha direto pra {terceiro}."
+    - "{eu} dá falta de {objeto} e lembra que {terceiro} esteve por aqui. Coincidência? Não pra {eu}."
+    - "{eu} revira tudo atrás de {objeto}. Nada. A culpa, na cabeça del{o|a}, é de {terceiro}."
+    - "{eu} anota num papel: \"{objeto} — sumiu — {terceiro}??\" e sublinha o nome."
+    - "{eu} jura que viu {terceiro} rondando a despensa. Talvez tenha visto. Talvez não."
+    - "{eu} percebe o sumiço de {objeto} e sai {humor}, pensando em {terceiro}."
+    - "{eu} acusa o ar: \"Alguém levou {objeto}!\" O ar não responde. {terceiro} é o mais próximo."
+    - "{eu} chora a perda de {objeto}. E promete que {terceiro} vai pagar."
+    - "{eu} examina pegadas no chão. Conclui, sem nenhuma prova, que foi {terceiro}."
+    - "{eu} descobre que {objeto} sumiu e decide que vai descobrir. Já decidiu: {terceiro}."
+    - "{eu} sente falta de {objeto}. Lembra da cara de {terceiro} hoje cedo. Tinha culpa naquela cara."
+    - "{eu} conta pra si mesm{o|a}: \"{objeto} não sai andando sozinho. {terceiro}...\""
+    - "{eu} chuta o balde: sumiu {objeto}. E {terceiro} passou por aqui, não passou?"
+    - texto: "{eu} bate a colher de pau na mesa: \"Sumiu {objeto}! Eu CONTEI! Foi {terceiro}!\""
+      personagens: [chef_wife]
+      peso: 4
+    - texto: "{eu} chora com o pano de prato: \"Sumiu {objeto}... ela vai achar que fui eu... deve ter sido {terceiro}.\""
+      personagens: [chef_husband]
+      peso: 4
+
+  sumico_sem_suspeito:
+    - "{eu} percebe que sumiu {objeto}. Ninguém passou por aqui. Fantasma?"
+    - "{eu} procura {objeto} por todo canto. Sumiu como se nunca tivesse existido."
+    - "{eu} dá falta de {objeto} e olha desconfiad{o|a} pra tela."
+    - "{eu} sente falta de {objeto}. Não tem suspeito. Isso é pior."
+    - "{eu} jura que {objeto} estava aqui ontem. Ou anteontem."
+    - "{eu} anota o sumiço de {objeto} e decide desconfiar de todo mundo um pouquinho."
+
+  esqueceu_esconderijo:
+    - "{eu} esconde {objeto} num lugar secreto... e já esqueceu onde."
+    - "{eu} enterra {objeto} e marca o lugar com um X. Depois esquece onde fica o X."
+    - "{eu} guarda {objeto} num esconderijo tão bom que nem ele acha mais."
+    - "{eu} coça a cabeça: onde foi parar {objeto}? Não lembra. \"É meu\", diz pra ninguém."
+    - "{eu} esconde {objeto} e, cinco minutos depois, não faz a menor ideia de onde."
+    - "{eu} procura {objeto} nos 47 bolsos. Não está em nenhum. Escondeu e esqueceu."
+    - "{eu} jura que escondeu {objeto} num lugar ótimo. Não lembra qual."
+    - "{eu} perde {objeto} no próprio esconderijo. Um clássico."
+
+  achado:
+    - "{eu} encontra {objeto} no meio de {lugar}, sem dono."
+    - "{eu} tropeça em {objeto}. \"Ué. Quem largou isso aqui?\""
+    - "{eu} acha {objeto} enterrado em {lugar}. Fica com ele."
+    - "{eu} encontra {objeto} e olha em volta: ninguém. Agora é del{o|a}."
+    - "{eu} acha {objeto} e não faz ideia de como foi parar ali."
+    - "{eu} encontra {objeto} perdido em {lugar} e leva pra casa \"pra guardar\"."
+    - "{eu} vê {objeto} jogado em {lugar} e dá um chute. Depois pega."
+    - "{eu} encontra {objeto} e conta pra todo mundo que achou um tesouro."
+
+  achado_sagrado:
+    - "{eu} encontra {objeto} em {lugar}, ergue para o céu e sussurra: \"...isso é importante...\" É sagrado."
+    - "{eu} desenterra {objeto} em {lugar}. Os olhos enchem de lágrimas. É o objeto sagrado. Talvez."
+    - "{eu} acha {objeto} e declara, para quem quiser ouvir: é uma relíquia."
+    - "{eu} se ajoelha diante de {objeto}. Ninguém sabe o que está acontecendo."
+    - "{eu} coloca {objeto} no carrinho com todo o cuidado do mundo. Sagrado."
+    - "{eu} acha {objeto} e vê nele um sinal dos anjos. Mostra pra tela."
+    - "{eu} embrulha {objeto} num pano e anuncia que vai levar para a seita."
+    - "{eu} encontra {objeto} e começa a rezar pra ele. Baixinho."
+    - "{eu} encontra {objeto}. Diz que brilhou. Não brilhou. Mas agora é sagrado."
+    - "{eu} acha {objeto} e cochicha que o Criador deixou ali de propósito."

@@ -47,20 +47,182 @@ acoes:
     nome: Ritual da seita
     descricao: Velas, ossinhos e a Médium dizendo que as vozes disseram. Só à noite.
     tipo: individual
-    ativa: false        # Fase 2 (facções)
     peso: 0.8
     duracao_minutos: [45, 120]
     condicoes:
+      personagens: [medium]
       periodos: [noite, madrugada]
     consideracoes:
       - entrada: necessidade.fe
-        curva: {tipo: linear}
+        curva: {tipo: linear, minimo: 0.3}
       - entrada: perigo
         nota: o perigo atrai a seita, até certo ponto
         curva: {tipo: pontos, pontos: [[0, 0.5], [50, 1], [90, 0.4]]}
     efeitos:
       necessidades: {fe: -50, medo: 10, tedio: -20}
+    memoria: ritual
+    evento: ritual
+    narracao: "{eu} acende as velas em {lugar}. O ritual começa."
     fala: ritual
+    chance_fala: 0.7
+    tags: [seita]
+    importancia: 1
+
+  - id: participar_ritual
+    nome: Participar do ritual
+    descricao: Vai até onde a Médium está fazendo ritual e entra na roda.
+    tipo: individual
+    peso: 0.9
+    duracao_minutos: [30, 90]
+    condicoes:
+      periodos: [noite, madrugada]
+    consideracoes:
+      - entrada: presenca.medium
+        nota: só tem ritual onde a Médium está
+        curva: {tipo: degrau, limite: 1}
+      - entrada: faccao.seita
+        curva: {tipo: pontos, pontos: [[0, 0.12], [1, 1]]}
+      - entrada: necessidade.fe
+        curva: {tipo: pontos, pontos: [[0, 0.2], [40, 0.6], [80, 1]]}
+      - entrada: afinidade_com.medium
+        curva: {tipo: pontos, pontos: [[-100, 0.01], [0, 0.2], [50, 0.8], [100, 1]]}
+    efeitos:
+      necessidades: {fe: -40, medo: 10, tedio: -25, social: -15}
+      afinidade_com: {medium: 3}
+    narracao: "{eu} entra na roda do ritual em {lugar}."
+    fala: participar_ritual
     chance_fala: 0.5
     tags: [seita]
     importancia: 1
+
+  - id: missa
+    nome: Ir à missa
+    descricao: Assiste à missa do Padre na Catedral.
+    tipo: individual
+    peso: 0.8
+    duracao_minutos: [30, 60]
+    condicoes:
+      periodos: [manha, tarde]
+    consideracoes:
+      - entrada: presenca.priest
+        curva: {tipo: degrau, limite: 1}
+      - entrada: faccao.igreja
+        curva: {tipo: pontos, pontos: [[0, 0.3], [1, 1]]}
+      - entrada: necessidade.fe
+        curva: {tipo: pontos, pontos: [[0, 0.05], [30, 0.3], [70, 1]]}
+    efeitos:
+      necessidades: {fe: -45, medo: -10, tedio: 10}
+      afinidade_com: {priest: 2}
+    narracao: "{eu} senta no banco da missa em {lugar}."
+    fala: missa
+    chance_fala: 0.4
+    tags: [igreja]
+
+  - id: espiar_seita
+    nome: Espiar a seita
+    descricao: O Padre espia o ritual escondido atrás de uma árvore.
+    tipo: individual
+    peso: 1.5
+    duracao_minutos: [15, 40]
+    condicoes:
+      personagens: [priest]
+      periodos: [noite, madrugada]
+    consideracoes:
+      - entrada: presenca.medium
+        curva: {tipo: degrau, limite: 1}
+      - entrada: necessidade.tedio
+        curva: {tipo: linear, minimo: 0.4}
+    efeitos:
+      necessidades: {tedio: -25, medo: 15, fe: 5}
+    observa: {memoria: ritual_visto, tag: seita}
+    narracao: "{eu} se esconde atrás de uma moita em {lugar} para espiar a seita."
+    fala: espiar
+    chance_fala: 0.6
+    tags: [igreja, seita]
+    importancia: 1
+
+  - id: confessar
+    nome: Confessar
+    descricao: Conta ao Padre o que fez de errado. O Padre... conta pros outros sem perceber.
+    tipo: social
+    peso: 1.5
+    duracao_minutos: [5, 15]
+    em_qualquer_lugar: true
+    especial: confissao
+    cooldown_minutos: 600
+    condicoes:
+      alvo: {obrigatorio: true, personagens: [priest]}
+    consideracoes:
+      - entrada: necessidade.fe
+        curva: {tipo: pontos, pontos: [[0, 0.15], [40, 0.5], [80, 1]]}
+      - entrada: afinidade
+        curva: {tipo: pontos, pontos: [[-100, 0.02], [0, 0.3], [60, 1]]}
+    efeitos:
+      necessidades: {fe: -30, medo: -15}
+      afinidade_do_alvo: 2
+    narracao: "{eu} se ajoelha e confessa uma coisa para {outro}."
+    fala: confissao
+    chance_fala: 1
+    fala_alvo: resposta_confissao
+    chance_fala_alvo: 0.6
+    tags: [igreja]
+
+  - id: recrutar
+    nome: Recrutar para a seita
+    descricao: A Médium tenta trazer alguém para a seita.
+    tipo: social
+    peso: 0.8
+    duracao_minutos: [10, 25]
+    em_qualquer_lugar: true
+    especial: recrutar
+    faccao: seita
+    cooldown_minutos: 120
+    condicoes:
+      personagens: [medium]
+      alvo: {obrigatorio: true, afinidade_min: 15}
+    consideracoes:
+      - entrada: afinidade
+        curva: {tipo: pontos, pontos: [[15, 0.2], [60, 1]]}
+      - entrada: alvo_necessidade.fe
+        curva: {tipo: pontos, pontos: [[0, 0.3], [60, 1]]}
+    efeitos:
+      necessidades: {social: -15}
+      afinidade_do_alvo: 8
+    evento: faction
+    narracao: "{eu} chama {outro} num canto e fala de {faccao}."
+    fala: recrutar
+    chance_fala: 0.9
+    fala_alvo: resposta_recrutar
+    chance_fala_alvo: 0.6
+    tags: [seita]
+    importancia: 1
+
+  - id: pregar
+    nome: Pregar
+    descricao: O Padre tenta trazer alguém para a Igreja (e afastar da seita).
+    tipo: social
+    peso: 0.7
+    duracao_minutos: [10, 20]
+    em_qualquer_lugar: true
+    especial: recrutar
+    faccao: igreja
+    cooldown_minutos: 120
+    condicoes:
+      personagens: [priest]
+      periodos: [manha, tarde]
+      alvo: {obrigatorio: true, afinidade_min: 0}
+    consideracoes:
+      - entrada: afinidade
+        curva: {tipo: pontos, pontos: [[0, 0.2], [60, 1]]}
+      - entrada: alvo_necessidade.fe
+        curva: {tipo: pontos, pontos: [[0, 0.3], [60, 1]]}
+    efeitos:
+      necessidades: {social: -10}
+      afinidade_do_alvo: 6
+    evento: faction
+    narracao: "{eu} segura {outro} pelo braço e prega sobre {faccao}."
+    fala: pregar
+    chance_fala: 0.9
+    fala_alvo: resposta_pregar
+    chance_fala_alvo: 0.5
+    tags: [igreja]

@@ -28,8 +28,6 @@ rotina:
   - {das: "19:00", ate: "20:00", acao: comer, lugar: tavern}
   - {das: "21:00", ate: "02:00", acao: ritual, lugar: forest, peso: 3}
   - {das: "02:00", ate: "04:00", acao: ritual, lugar: underground, peso: 2}
-  # enquanto o ritual não existe (Fase 2), ela reza na floresta à noite
-  - {das: "21:00", ate: "04:00", acao: rezar, lugar: forest, peso: 3}
   - {das: "05:00", ate: "14:00", acao: dormir, lugar: houses, peso: 3}
 necessidades:
   fe: {inicial: 50, taxa: 1.5}

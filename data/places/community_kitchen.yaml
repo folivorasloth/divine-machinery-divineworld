@@ -13,3 +13,8 @@ conexoes:
   - {para: town_square, tipo: caminho, minutos: 3}
   - {para: houses, tipo: caminho, minutos: 2}
 acoes: [comer, roubar, construir, quebrar]
+estruturas:
+  - {id: kitchen_stove, nome: o fogão a lenha}
+  - {id: kitchen_tables, nome: as mesas compridas}
+# coisas que o Ganancioso (ou quem for) pode roubar daqui
+objetos: [um pão inteiro, a panela de pressão, um saco de feijão, um queijo curado, a colher de pau reserva, uma linguiça defumada]

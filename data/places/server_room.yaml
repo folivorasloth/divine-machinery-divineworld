@@ -15,4 +15,8 @@ tem: [racks piscando, cabos soltos, um fundo que ninguém olha]
 conexoes:
   - {para: town_hall, tipo: tunel, minutos: 5}
   - {para: underground, tipo: caminho, minutos: 15}
-acoes: [quebrar, construir]
+acoes: [quebrar, construir, fucar]
+estruturas:
+  - {id: server_racks, nome: os racks do servidor}
+# coisas que o Ganancioso (ou quem for) pode roubar daqui
+objetos: [um cabo de rede, um pendrive misterioso]

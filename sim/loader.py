@@ -34,6 +34,7 @@ from pydantic import BaseModel, ValidationError
 
 from sim import curves, text
 from sim.schemas import (
+    LawConfig,
     Action,
     ActionsFile,
     Character,
@@ -47,6 +48,7 @@ from sim.schemas import (
     Visual,
     WorldConfig,
     WorldEvent,
+    SocialEventDef,
 )
 
 # --------------------------------------------------------------------------
@@ -124,12 +126,19 @@ class WorldData:
     events: dict[str, WorldEvent]
     graph: dict[str, list[Edge]]  # grafo NÃO direcionado dos lugares
     source_files: dict[str, str] = field(default_factory=dict)  # id -> arquivo de origem
+    social_events: dict[str, SocialEventDef] = field(default_factory=dict)  # Fase 2
 
     def names(self) -> dict[str, str]:
-        """id -> nome atual, para personagens e lugares (usado por sim.text.render)."""
+        """id -> nome atual, para personagens, lugares e estruturas (usado por sim.text.render)."""
         result = {pid: p.name for pid, p in self.places.items()}
+        for p in self.places.values():
+            result.update({s.id: s.name for s in p.structures})
         result.update({cid: c.name for cid, c in self.characters.items()})
         return result
+
+    def all_traits(self, char_id: str, extra: list[str] | tuple = ()) -> list[str]:
+        """Traços do YAML + os ganhos em vida (Limbo, Fase 3: ressurreição)."""
+        return list(self.characters[char_id].traits) + [t for t in extra if t not in self.characters[char_id].traits]
 
     def name_of(self, some_id: str) -> str:
         return self.names().get(some_id, some_id)
@@ -429,6 +438,7 @@ def load_data(data_dir: str | Path = "data", environ: dict[str, str] | None = No
 
     # events/ ------------------------------------------------------------------
     events: dict[str, WorldEvent] = {}
+    social_events: dict[str, SocialEventDef] = {}
     for path in _yaml_files(root / "events"):
         raw = read_yaml(path, report, rel(path))
         if raw is None:
@@ -443,6 +453,13 @@ def load_data(data_dir: str | Path = "data", environ: dict[str, str] | None = No
                 mark_broken(item)
             if event:
                 register("evento", events, event, rel(path))
+        for index, item in enumerate(container.social_events):
+            label = f"evento social '{item.get('id', index)}': " if isinstance(item, dict) else f"eventos_sociais[{index}]: "
+            sev = validate_model(SocialEventDef, item, report, rel(path), prefix=label)
+            if not sev:
+                mark_broken(item)
+            if sev:
+                register("evento social", social_events, sev, rel(path))
 
     if world is None or traits_file is None:
         return None, report
@@ -460,6 +477,7 @@ def load_data(data_dir: str | Path = "data", environ: dict[str, str] | None = No
         events=events,
         graph={},
         source_files={k: v for k, v in source.items()},
+        social_events=social_events,
     )
     _cross_check(data, report, source, line_sources, rel(world_path), rel(traits_path), broken)
     return data, report
@@ -640,6 +658,69 @@ def _cross_check(
         for i, heir in enumerate(char.inheritance.heirs):
             ref(file, f"heranca.herdeiros[{i}]", "personagem", heir, data.characters)
 
+    # Fase 2: sociedade ---------------------------------------------------------
+    memory_kinds = set(w.memory.kinds)
+    factions = set(w.factions)
+    infractions = set(w.law.infractions)
+    known_ids_all = set(data.characters) | set(data.places)
+    for kid, kind in w.memory.kinds.items():
+        ref(world_file, f"memoria.tipos.{kid}.infracao", "infração (leis.infracoes)", kind.infraction, infractions, True)
+        for key, template in (("fato", kind.fact), ("lembranca", kind.recollection)):
+            for problem in text.check_template(template, known_ids_all, text.MEMORY_VARS):
+                report.error(world_file, f"memoria.tipos.{kid}.{key}: {problem}")
+    for fid, fac in w.factions.items():
+        ref(world_file, f"faccoes.{fid}.lider", "personagem", fac.leader, data.characters)
+    ref(world_file, "leis.profissao_fiscal", "profissão", w.law.enforcer_profession, data.professions)
+    for key in ("prison", "limbo", "limbo_return"):
+        ref(world_file, f"leis.{LawConfig.model_fields[key].alias}", "lugar", getattr(w.law, key), data.places)
+    for i, aid in enumerate(w.law.prison_actions):
+        ref(world_file, f"leis.acoes_na_prisao[{i}]", "ação", aid, data.actions)
+    for key in ("flee_action", "chase_action"):
+        ref(world_file, f"leis.{LawConfig.model_fields[key].alias}", "ação", getattr(w.law, key), data.actions)
+    structure_ids: dict[str, str] = {}
+    for pid, place in data.places.items():
+        for st in place.structures:
+            if st.id in data.characters or st.id in data.places or st.id in structure_ids:
+                report.error(source["lugar" + pid], f"estruturas: id '{st.id}' repetido (já é personagem, lugar ou outra estrutura)")
+            structure_ids[st.id] = pid
+    for cid, char in data.characters.items():
+        ref(source["personagem" + cid], "faccao", "facção (world.yaml > faccoes)", char.faction, factions, True)
+    for sid, sev in data.social_events.items():
+        file = source["evento social" + sid]
+        where = f"evento social '{sid}'"
+        ref(file, f"{where}.acao", "ação", sev.action, data.actions)
+        ref(file, f"{where}.lugar", "lugar", sev.place, data.places, True)
+        for c in sev.organizers.characters:
+            ref(file, f"{where}.organizadores.personagens", "personagem", c, data.characters)
+        for t in sev.organizers.traits:
+            ref(file, f"{where}.organizadores.tracos", "traço", t, data.traits)
+        for p in sev.organizers.professions:
+            ref(file, f"{where}.organizadores.profissoes", "profissão", p, data.professions)
+        for g in sev.organizers.groups:
+            ref(file, f"{where}.organizadores.grupos", "grupo", g, w.groups)
+        for f in sev.organizers.factions:
+            ref(file, f"{where}.organizadores.faccoes", "facção", f, factions)
+        for n in sev.desire:
+            ref(file, f"{where}.vontade", "necessidade", n, needs)
+        for c in sev.excluded:
+            ref(file, f"{where}.excluidos", "personagem", c, data.characters)
+        for key in ("memory", "failure_memory"):
+            ref(file, f"{where}.{SocialEventDef.model_fields[key].alias}", "tipo de memória (world.yaml > memoria.tipos)",
+                getattr(sev, key), memory_kinds, True)
+        for key, templates in sev.texts.model_dump().items():
+            for template in templates:
+                for problem in text.check_template(template, known_ids_all):
+                    report.error(file, f"{where}.textos: {problem}")
+        if sev.place and sev.action in data.actions:
+            act = data.actions[sev.action]
+            if not act.anywhere and sev.action not in data.places[sev.place].actions:
+                report.warn(file, f"{where}: o lugar '{sev.place}' não oferece a ação '{sev.action}'")
+
+    input_ids = {
+        "necessidade": needs, "personagem": set(data.characters), "facção": factions,
+        "tipo de memória": memory_kinds,
+    }
+
     # actions/ -----------------------------------------------------------------
     offered = {a for p in data.places.values() for a in p.actions}
     for aid, action in data.actions.items():
@@ -659,7 +740,7 @@ def _cross_check(
         for n in list(action.effects.needs) + list(action.effects.target_needs):
             ref(file, f"{where}.efeitos", "necessidade", n, needs)
         for i, cons in enumerate(action.considerations):
-            problem = _check_input(cons.input, needs, has_target=cond.target is not None)
+            problem = _check_input(cons.input, input_ids, has_target=cond.target is not None)
             if problem:
                 report.error(file, f"{where}.consideracoes[{i}].entrada: {problem}")
         if action.speech and action.speech not in data.lines:
@@ -675,6 +756,33 @@ def _cross_check(
                 _warn_literal_names(report, file, f"{where}.{key}", template, {c.name: cid for cid, c in data.characters.items()})
         if action.failure and action.failure.speech and action.failure.speech not in data.lines:
             report.warn(file, f"{where}.falha.fala: não há falas para a situação '{action.failure.speech}'")
+        if action.failure:
+            ref(file, f"{where}.falha.memoria", "tipo de memória", action.failure.memory, memory_kinds, True)
+        ref(file, f"{where}.memoria", "tipo de memória (world.yaml > memoria.tipos)", action.memory, memory_kinds, True)
+        ref(file, f"{where}.infracao", "infração (world.yaml > leis.infracoes)", action.infraction, infractions, True)
+        ref(file, f"{where}.faccao", "facção", action.faction, factions, True)
+        if action.special == "recrutar" and not action.faction:
+            report.error(file, f"{where}: especial 'recrutar' precisa de 'faccao'")
+        if action.observe:
+            ref(file, f"{where}.observa.memoria", "tipo de memória", action.observe.memory, memory_kinds)
+        for f in cond.factions:
+            ref(file, f"{where}.condicoes.faccoes", "facção", f, factions)
+        if cond.target:
+            for c in cond.target.characters:
+                ref(file, f"{where}.condicoes.alvo.personagens", "personagem", c, data.characters)
+            for p in cond.target.professions:
+                ref(file, f"{where}.condicoes.alvo.profissoes", "profissão", p, data.professions)
+        for c in action.effects.affinity_with:
+            ref(file, f"{where}.efeitos.afinidade_com", "personagem", c, data.characters)
+        for t, effects in action.effects.by_trait.items():
+            ref(file, f"{where}.efeitos.por_traco", "traço", t, data.traits)
+            for n in effects:
+                ref(file, f"{where}.efeitos.por_traco.{t}", "necessidade", n, needs)
+        if action.target_reaction and ref(file, f"{where}.reacao_alvo", "ação", action.target_reaction, data.actions):
+            if not data.actions[action.target_reaction].automatic:
+                report.error(file, f"{where}.reacao_alvo: a ação '{action.target_reaction}' precisa ser 'automatica: true'")
+        if action.seek_target and action.kind != "social":
+            report.error(file, f"{where}.ir_atras: só faz sentido em ações 'social'")
         if (
             action.active
             and action.kind != "movimento"
@@ -702,6 +810,8 @@ def _cross_check(
             ref(file, f"{where}: periodos", "período", p, periods)
         for n in line.min_needs:
             ref(file, f"{where}: necessidades_min", "necessidade", n, needs)
+        for m in line.memory:
+            ref(file, f"{where}: memoria", "tipo de memória (world.yaml > memoria.tipos)", m, memory_kinds)
         _warn_literal_names(report, file, where, line.text, char_names)
     for cid, char in data.characters.items():
         for phrase in char.catchphrases:
@@ -726,6 +836,10 @@ def _cross_check(
 
     # tags usadas em ações e eventos devem ser categorias do chat conhecidas
     categories = set(w.chat_categories)
+    for sid, sev in data.social_events.items():
+        for tag in sev.tags:
+            if tag not in categories:
+                report.warn(source["evento social" + sid], f"evento social '{sid}'.tags: '{tag}' não está em world.yaml > categorias_chat")
     for aid, action in data.actions.items():
         for tag in action.tags:
             if tag not in categories:
@@ -736,19 +850,21 @@ def _cross_check(
                 report.warn(source["evento" + eid], f"evento '{eid}'.tags: '{tag}' não está em world.yaml > categorias_chat")
 
 
-def _check_input(entry: str, needs: set[str], has_target: bool) -> str | None:
+def _check_input(entry: str, valid: dict[str, set[str]], has_target: bool) -> str | None:
+    """`valid` diz os ids válidos depois do ponto, por tipo ('necessidade' -> {fome, ...})."""
     kind = curves.input_kind(entry)
     if kind not in curves.INPUT_RANGES:
         return f"entrada '{entry}' desconhecida. Opções: {', '.join(sorted(curves.INPUT_RANGES))}"
-    if kind in ("necessidade", "alvo_necessidade"):
+    if kind in curves.DOTTED_INPUTS:
+        what = curves.DOTTED_INPUTS[kind]
         if "." not in entry:
-            return f"use '{kind}.<id>' (ex.: {kind}.fome)"
-        need = entry.split(".", 1)[1]
-        if need not in needs:
-            return f"necessidade '{need}' não existe em world.yaml"
+            return f"use '{kind}.<{what}>' (ex.: {kind}.{sorted(valid[what])[0] if valid[what] else 'x'})"
+        item = entry.split(".", 1)[1]
+        if item not in valid[what]:
+            return f"{what} '{item}' não existe"
     elif "." in entry:
         return f"a entrada '{kind}' não leva '.<algo>'"
-    if kind in ("afinidade", "alvo_necessidade") and not has_target:
+    if kind in curves.TARGET_INPUTS and not has_target:
         return f"a entrada '{kind}' só funciona em ações com 'condicoes.alvo'"
     return None
 

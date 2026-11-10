@@ -26,8 +26,10 @@ casa: houses
 rotina:
   - {das: "06:30", ate: "07:00", acao: comer, lugar: community_kitchen}
   - {das: "07:00", ate: "12:00", acao: trabalhar, lugar: town_hall, peso: 3}
+  - {das: "09:00", ate: "11:30", acao: patrulhar, peso: 4}
   - {das: "12:00", ate: "12:30", acao: comer, lugar: community_kitchen}
   - {das: "12:30", ate: "18:00", acao: trabalhar, lugar: town_hall, peso: 3}
+  - {das: "14:30", ate: "17:30", acao: patrulhar, peso: 4}
   - {das: "18:30", ate: "19:00", acao: comer, lugar: community_kitchen}
   - {das: "21:30", ate: "06:00", acao: dormir, lugar: houses}
 relacoes:

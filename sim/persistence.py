@@ -4,6 +4,10 @@
 - `characters`: estado vivo de cada personagem, POR ID (o nome nunca é salvo).
 - `events` (+ `event_actors`, `event_tags`): o Chat do Mundo inteiro.
 - `relations`: afinidade viva por par (só os pares que mudaram desde o YAML).
+- `memories` (F2): memórias de cada NPC (uma linha por memória, campos em JSON).
+- `structures` (F2): resistência e assinaturas (pichações) de cada estrutura.
+- O resto do estado da sociedade (leis, eventos sociais, objetivos, objetos
+  roubados, visitantes recentes) vai em `meta.society` (JSON).
 
 Migrações simples: uma lista de SQL por versão; o banco guarda a versão em
 `meta.schema_version` e aplica só as que faltam.
@@ -47,6 +51,23 @@ MIGRATIONS: list[str] = [
     CREATE INDEX IF NOT EXISTS actors_char ON event_actors(char_id);
     CREATE TABLE IF NOT EXISTS relations (a TEXT, b TEXT, affinity REAL NOT NULL, updated_at TEXT,
       PRIMARY KEY (a, b));
+    """,
+    # versão 2 (Fase 2: sociedade)
+    """
+    CREATE TABLE IF NOT EXISTS memories (
+      id INTEGER PRIMARY KEY,
+      owner TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      data TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS memories_owner ON memories(owner);
+    CREATE TABLE IF NOT EXISTS structures (
+      id TEXT PRIMARY KEY,
+      place TEXT NOT NULL,
+      hp REAL NOT NULL,
+      data TEXT NOT NULL DEFAULT '{}',
+      updated_at TEXT
+    );
     """,
 ]
 
@@ -102,21 +123,50 @@ class Storage:
                 "current": json.loads(row["current"]) if row["current"] else None,
                 "last_action": row["last_action"],
                 "flags": json.loads(row["flags"]),
+                "extra_traits": json.loads(row["extra_traits"] or "[]"),
             }
         return out
 
     def save_character(self, cid: str, *, alive: bool, place: str, needs: dict, current: dict | None,
-                       last_action: str | None, flags: dict) -> None:
+                       last_action: str | None, flags: dict, extra_traits: list[str] | None = None) -> None:
         now = datetime.now(timezone.utc).isoformat(timespec="seconds")
         self.conn.execute(
-            """INSERT INTO characters (id, alive, place, needs, current, last_action, flags, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """INSERT INTO characters (id, alive, place, needs, current, last_action, flags, extra_traits, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                ON CONFLICT(id) DO UPDATE SET alive=excluded.alive, place=excluded.place,
                  needs=excluded.needs, current=excluded.current, last_action=excluded.last_action,
-                 flags=excluded.flags, updated_at=excluded.updated_at""",
+                 flags=excluded.flags, extra_traits=excluded.extra_traits, updated_at=excluded.updated_at""",
             (cid, int(alive), place, json.dumps(needs), json.dumps(current) if current else None,
-             last_action, json.dumps(flags), now),
+             last_action, json.dumps(flags), json.dumps(extra_traits or []), now),
         )
+
+    # ------------------------------------------------------- memórias (F2)
+    def save_memories(self, rows: list[dict]) -> None:
+        """Regrava todas as memórias (são poucas: ~40 por NPC)."""
+        self.conn.execute("DELETE FROM memories")
+        self.conn.executemany(
+            "INSERT INTO memories (id, owner, kind, data) VALUES (?, ?, ?, ?)",
+            [(r["id"], r["owner"], r["kind"], json.dumps(r, ensure_ascii=False)) for r in rows],
+        )
+
+    def load_memories(self) -> list[dict]:
+        return [json.loads(r["data"]) for r in self.conn.execute("SELECT data FROM memories ORDER BY id")]
+
+    # ----------------------------------------------------- estruturas (F2)
+    def save_structures(self, rows: list[dict], world_ts: str) -> None:
+        for r in rows:
+            self.conn.execute(
+                """INSERT INTO structures (id, place, hp, data, updated_at) VALUES (?, ?, ?, ?, ?)
+                   ON CONFLICT(id) DO UPDATE SET place=excluded.place, hp=excluded.hp, data=excluded.data,
+                     updated_at=excluded.updated_at""",
+                (r["id"], r["place"], r["hp"], json.dumps({"marks": r.get("marks", [])}), world_ts),
+            )
+
+    def load_structures(self) -> list[dict]:
+        out = []
+        for r in self.conn.execute("SELECT * FROM structures ORDER BY id"):
+            out.append({"id": r["id"], "place": r["place"], "hp": r["hp"], **json.loads(r["data"])})
+        return out
 
     # -------------------------------------------------------------- relações
     def load_relations(self) -> dict[tuple[str, str], float]:

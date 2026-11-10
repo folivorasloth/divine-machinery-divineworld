@@ -1,0 +1,102 @@
+# Fofoca, confissão e o que se diz depois. Formato no topo de rotina.yaml.
+# Na fofoca: {terceiro} é de quem se fala e {fato} é o que se conta (pode
+# ter chegado torto!). Na confissão: {fato} é o que se confessa.
+situacoes:
+  fofoca:
+    - "{eu} cochicha pra {outro}: \"Sabia que {fato}?\""
+    - "{eu} puxa {outro} pelo braço: \"Você não ouviu isso de mim, mas {fato}.\""
+    - "{eu} conta pra {outro}, cheio de detalhes inventados, que {fato}."
+    - "{eu} olha pros lados e solta pra {outro}: \"{fato}. Juro.\""
+    - "{eu} conta pra {outro} que {fato}. E acrescenta: \"Sempre desconfiei d{terceiro:o|a} {terceiro}.\""
+    - "{eu} sussurra no ouvido de {outro}: \"Dizem que {fato}...\""
+    - "{eu} conta pra {outro} que {fato}. {outro} arregala os olhos."
+    - "{eu} finge que não quer contar, mas conta pra {outro}: {fato}."
+    - "{eu} diz pra {outro}: \"Não sou de fofoca, mas {fato}.\""
+    - "{eu} chama {outro} num canto: \"Segura essa: {fato}.\""
+    - "{eu} conta pra {outro}, com as mãos na cintura, que {fato}. \"Que absurdo!\""
+    - "{eu} jura pra {outro} que viu com os próprios olhos: {fato}. Não viu."
+    - "{eu} desenha no chão pra {outro} explicar como {fato}."
+    - "{eu} conta pra {outro} que {fato} e pede segredo. Vai contar pra mais cinco."
+    - "{eu} comenta com {outro}, como quem não quer nada: \"{fato}, né?\""
+    - texto: "{eu} conta pra {outro} que {fato}. \"{bordao}\""
+      peso: 2
+    - texto: "{eu} abana o leque e conta pra {outro}: \"Querida, {fato}. Que gentalha.\""
+      personagens: [lady]
+      peso: 3
+    - texto: "{eu} conta pra {outro} que {fato}, e jura que as vozes confirmaram."
+      personagens: [medium]
+      peso: 2
+    - texto: "{eu} conta pra {outro}, rindo, que {fato}. *FOM*"
+      personagens: [clown]
+      peso: 2
+    - texto: "{eu} sussurra pra {outro}: \"...isso é importante... {fato}...\""
+      personagens: [weirdo]
+      peso: 2
+    - texto: "{eu} conta pra {outro} que {fato}. \"Deus me livre e guarde, mas é verdade.\""
+      personagens: [priest]
+      peso: 2
+    - texto: "{eu} conta pra {outro}, no meio de um causo, que {fato}. \"Ô loco, sô.\""
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+      peso: 2
+
+  # o Padre contando, sem perceber, o que ouviu em confissão
+  fofoca_confissao:
+    - "{eu} comenta com {outro}, distraído: \"Coitad{terceiro:o|a} d{terceiro:o|a} {terceiro}, veio me confessar que {fato}...\" e só depois percebe o que disse."
+    - "{eu} conta pra {outro} que {fato}. \"Mas isso é segredo de confissão, viu?\" Tarde demais."
+    - "{eu} reza em voz alta, perto de {outro}: \"...e perdoai {terceiro}, que {fato}...\""
+    - "{eu} tapa a boca depois de contar pra {outro} que {fato}. \"Deus me livre e guarde!\""
+    - "{eu} pergunta pra {outro} se é pecado contar que {fato}. Já contou."
+    - "{eu} deixa escapar pra {outro}: \"Na confissão de hoje... ah, deixa pra lá. Bom, {fato}.\""
+    - "{eu} conta pra {outro}, em latim errado, que {fato}. {outro} entende tudo."
+    - "{eu} suspira pra {outro}: \"O que eu ouço naquele confessionário... imagina que {fato}.\""
+
+  reacao_fofoca:
+    - "{eu} arregala os olhos: \"NÃO!\""
+    - "{eu} leva a mão à boca: \"Mentira!\""
+    - "{eu} diz que já sabia. Não sabia."
+    - "{eu} fica de queixo caído."
+    - "{eu} pede mais detalhes. Muitos detalhes."
+    - "{eu} jura que não vai contar pra ninguém. Já está pensando pra quem contar."
+    - "{eu} balança a cabeça: \"Eu sempre soube que tinha alguma coisa.\""
+    - "{eu} não acredita, mas vai repetir mesmo assim."
+    - "{eu} ri nervos{o|a}: \"Você tá inventando.\""
+    - "{eu} fica em silêncio, digerindo a notícia."
+    - "{eu} anota mentalmente para usar depois."
+    - "{eu} diz \"que horror\" com cara de quem adorou."
+    - "{eu} conta uma fofoca de volta, só pra empatar."
+    - "{eu} pergunta: \"Quem te contou isso?\""
+    - "{eu} se benze."
+    - texto: "{eu} anota no bloquinho. Isso vai virar infração."
+      personagens: [inspector]
+      peso: 3
+    - texto: "{eu}: \"...\""
+      personagens: [mike]
+      peso: 3
+    - texto: "{eu} responde só: \"{bordao}\""
+      peso: 2
+
+  # {lembranca} é a coisa confessada, do ponto de vista de quem confessa
+  confissao:
+    - "{eu} se ajoelha diante de {outro}: \"Padre, eu confesso... foi sobre {lembranca}.\""
+    - "{eu} confessa baixinho pra {outro} a culpa que sente por {lembranca}."
+    - "{eu} chora no confessionário falando de {lembranca}. {outro} escuta com atenção demais."
+    - "{eu} conta tudo pra {outro} sobre {lembranca}, e pede segredo absoluto."
+    - "{eu} desabafa com {outro} sobre {lembranca}. Sai mais lev{o|a}. {outro} sai mais carregado."
+    - "{eu} confessa a {outro}: \"É sobre {lembranca}.\" \"Isso fica entre nós, né?\""
+    - "{eu} sussurra a {outro} um pecado: {lembranca}. Foi culpa del{o|a}."
+    - "{eu} confessa a {outro} {lembranca}. {outro} faz o sinal da cruz e uma anotação mental."
+    - "{eu} gagueja a confissão: {lembranca}... foi del{o|a} a culpa."
+    - "{eu} confessa, olhando pro chão, que não esquece {lembranca}. A culpa foi del{o|a}."
+    - texto: "{eu} confessa a {outro}: {lembranca}. Depois devolve uma coisa que estava no bolso. Não toda."
+      personagens: [greedy]
+      peso: 2
+
+  resposta_confissao:
+    - "{eu} ouve tudo e manda rezar dez ave-marias."
+    - "{eu} absolve, mas com uma cara de quem vai contar pra alguém."
+    - "{eu} faz o sinal da cruz três vezes. \"Deus me livre e guarde!\""
+    - "{eu} diz que está perdoad{outro:o|a} e repete a história em voz baixa, decorando."
+    - "{eu} manda {outro} em paz. E guarda a fofoca com carinho."
+    - "{eu} suspira: \"Essa cidade...\""
+    - "{eu} absolve {outro} e já pensa em quem vai encontrar na feira."
+    - "{eu} fala que segredo de confissão é sagrado. Pisca."

@@ -13,4 +13,4 @@ paleta:
 tem: [dunas, ruínas, buracos onde o Esquisito enterra coisas]
 conexoes:
   - {para: sea, tipo: caminho, minutos: 40}
-acoes: [rezar, ritual]
+acoes: [rezar, ritual, participar_ritual, espiar_seita]

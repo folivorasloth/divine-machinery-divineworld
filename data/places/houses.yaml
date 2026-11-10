@@ -17,4 +17,8 @@ conexoes:
   - {para: community_kitchen, tipo: caminho, minutos: 2}
   - {para: forge, tipo: caminho, minutos: 3}
   - {para: cemetery, tipo: caminho, minutos: 6}
-acoes: [cochilar, construir, quebrar, roubar]
+acoes: [cochilar, construir, quebrar, roubar, pichar]
+estruturas:
+  - {id: houses_walls, nome: os muros das casas}
+# coisas que o Ganancioso (ou quem for) pode roubar daqui
+objetos: [um varal de roupas, uma galinha de estimação, um vaso de flores]

@@ -13,3 +13,5 @@ conexoes:
   - {para: town_square, tipo: caminho, minutos: 3}
   - {para: town_hall, tipo: caminho, minutos: 2}
 acoes: [cochilar]
+estruturas:
+  - {id: prison_bars, nome: as grades da Prisão}

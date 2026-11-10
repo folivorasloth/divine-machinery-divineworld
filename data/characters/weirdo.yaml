@@ -30,6 +30,7 @@ rotina:
   - {das: "14:00", ate: "17:00", acao: perambular, peso: 1.5}
   - {das: "17:00", ate: "19:00", acao: encarar_tela, peso: 10}
   - {das: "23:00", ate: "07:00", acao: dormir, lugar: houses}
+faccao: seita
 relacoes:
   - {com: mike, afinidade: 50, tipo: amigo, nota: Tenta ser amigo do Mike.}
   - {com: medium, afinidade: 60, tipo: aliado}

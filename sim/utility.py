@@ -18,6 +18,7 @@ from __future__ import annotations
 import random
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import Any
 
 from sim import curves
 from sim.loader import WorldData
@@ -70,6 +71,15 @@ class DecisionContext:
     affinity: Callable[[str, str], float]
     blocked: frozenset[str] = frozenset()
     tension: float = DEFAULT_TENSION
+    # Fase 2: o mundo (memórias, estruturas, leis, facções) e os objetivos ativos.
+    # Pode ser None em testes simples: as entradas sociais valem 0.
+    world: Any = None
+    goals: list[dict] = field(default_factory=list)
+
+    def traits(self, char: Character) -> list[str]:
+        if self.world is None:
+            return list(char.traits)
+        return self.world.traits_of(char.id)
 
 
 # --------------------------------------------------------------------------
@@ -96,6 +106,34 @@ def read_input(entry: str, ctx: DecisionContext, me: CharacterState, place: str,
         return p.danger_night if (ctx.is_night and p.danger_night is not None) else p.danger
     if kind == "tensao":
         return ctx.tension
+    item = entry.split(".", 1)[1] if "." in entry else ""
+    if kind == "afinidade_inicial":
+        return float(ctx.data.affinity(me.id, target)) if target else 0.0
+    if kind == "afinidade_com":
+        return ctx.affinity(me.id, item) if item != me.id else 0.0
+    if kind == "presenca":
+        return 1.0 if item in ctx.present.get(place, []) and item != me.id else 0.0
+    if kind == "faccao":
+        return 1.0 if me.faction == item else 0.0
+    w = ctx.world
+    if w is None:
+        return 0.0
+    if kind == "conflito_alvo":
+        return w.memories.conflict_with(me.id, target) if target else 0.0
+    if kind == "memoria":
+        return w.memories.intensity(me.id, item)
+    if kind == "memoria_alvo":
+        return w.memories.intensity(me.id, item, involving=target) if target else 0.0
+    if kind == "fofoca":
+        return w.gossip_value(me.id, target) if target else 0.0
+    if kind == "denuncia":
+        return w.report_value(me.id)
+    if kind == "dano":
+        return w.structures.damage_at(place)
+    if kind == "dano_cidade":
+        return w.structures.worst()[1]
+    if kind == "mandado":
+        return 1.0 if target and target in w.law.warrants else 0.0
     return 0.0  # pragma: no cover - o validador impede entradas desconhecidas
 
 
@@ -108,7 +146,9 @@ def conditions_ok(action: Action, char: Character, me: CharacterState, ctx: Deci
         return False
     if cond.professions and char.profession not in cond.professions:
         return False
-    if cond.traits and not set(cond.traits) & set(char.traits):
+    if cond.traits and not set(cond.traits) & set(ctx.traits(char)):
+        return False
+    if cond.factions and me.faction not in cond.factions:
         return False
     if cond.characters and char.id not in cond.characters:
         return False
@@ -132,6 +172,17 @@ def active_routine(char: Character, minute_of_day: int):
 
 
 def candidate_places(action: Action, char: Character, me: CharacterState, ctx: DecisionContext) -> list[str]:
+    places = _candidate_places(action, char, me, ctx)
+    if me.jailed_until is not None and ctx.world is not None:
+        # preso: só a prisão (e "casa" é a cela)
+        prison = ctx.world.data.world.law.prison
+        if action.conditions.own_place == "casa" or action.id in ctx.world.data.world.law.prison_actions:
+            return [prison]
+        return [p for p in places if p == prison] or ([prison] if action.anywhere else [])
+    return places
+
+
+def _candidate_places(action: Action, char: Character, me: CharacterState, ctx: DecisionContext) -> list[str]:
     data = ctx.data
     own = action.conditions.own_place
     if own == "trabalho":
@@ -149,21 +200,37 @@ def candidate_places(action: Action, char: Character, me: CharacterState, ctx: D
     return [pid for pid, p in data.places.items() if action.id in p.actions]
 
 
-def social_targets(action: Action, me: CharacterState, ctx: DecisionContext) -> list[str]:
+def _available(ctx: DecisionContext, cid: str) -> bool:
+    """Acordado, parado, vivo, fora do Limbo."""
+    st = ctx.states[cid]
+    if not st.alive or st.frozen or st.away or st.moving:
+        return False
+    if st.activity is not None:
+        act = ctx.data.actions.get(st.activity.action)
+        if act is not None and act.sleeping:
+            return False  # ninguém conversa com quem está dormindo
+    return True
+
+
+def social_targets(action: Action, me: CharacterState, ctx: DecisionContext,
+                   place: str | None = None) -> list[str]:
+    """Alvos possíveis no lugar `place` (padrão: onde estou)."""
     rule = action.conditions.target
+    place = place or me.place
     out = []
-    for other in ctx.present.get(me.place, []):
-        if other == me.id:
+    for other in ctx.present.get(place, []):
+        if other == me.id or not _available(ctx, other):
             continue
-        st = ctx.states[other]
-        if st.activity is not None:
-            act = ctx.data.actions.get(st.activity.action)
-            if act is not None and act.sleeping:
-                continue  # ninguém conversa com quem está dormindo
+        if rule.characters and other not in rule.characters:
+            continue
+        if rule.professions and ctx.data.characters[other].profession not in rule.professions:
+            continue
         aff = ctx.affinity(me.id, other)
         if rule.affinity_min is not None and aff < rule.affinity_min:
             continue
         if rule.affinity_max is not None and aff > rule.affinity_max:
+            continue
+        if ctx.world is not None and not ctx.world.special_target_ok(action, me.id, other):
             continue
         out.append(other)
     return out
@@ -192,7 +259,7 @@ def score(
         f = curves.evaluate(cons.curve, raw, curves.input_range(cons.input))
         factors.append(Factor(f"{cons.input}={raw:.0f}→{f:.2f}", f))
         value *= f
-    for tid in char.traits:
+    for tid in ctx.traits(char):
         trait = data.traits.get(tid)
         mult = trait.effects.actions.get(action.id) if trait else None
         if mult is not None and mult != 1:
@@ -205,6 +272,10 @@ def score(
     if routine != 1.0:
         factors.append(Factor("rotina", routine))
         value *= routine
+    goal, source = goal_bonus(ctx, me.id, action.id, place)
+    if goal != 1.0:
+        factors.append(Factor(f"objetivo {source}", goal))
+        value *= goal
     if travel_minutes > 0:
         travel = 0.5 ** (travel_minutes / data.world.decision.travel_half_life_minutes)
         factors.append(Factor(f"viagem {travel_minutes:.0f}min", travel))
@@ -216,21 +287,47 @@ def score(
     return value, factors
 
 
+def goal_bonus(ctx: DecisionContext, cid: str, action_id: str, place: str) -> tuple[float, str]:
+    """Maior bônus entre os objetivos ativos agora para (quem, ação, lugar)."""
+    best, source = 1.0, ""
+    for g in ctx.goals:
+        if g["action"] != action_id or g["who"] not in (None, cid):
+            continue
+        if g["place"] is not None and g["place"] != place:
+            continue
+        if not g["start"] <= ctx.now_minutes < g["end"]:
+            continue
+        if g["bonus"] > best:
+            best, source = g["bonus"], g["source"]
+    return best, source
+
+
 def candidates(char: Character, me: CharacterState, ctx: DecisionContext) -> list[Candidate]:
     data = ctx.data
     dist, _came = shortest_paths(data, me.place, ctx.blocked)
     out: list[Candidate] = []
     for action in data.actions.values():
-        if not action.active or action.kind == "movimento":
+        if not action.active or action.kind == "movimento" or action.automatic:
             continue
         if not conditions_ok(action, char, me, ctx):
+            continue
+        if action.kind == "social" and action.seek_target and me.jailed_until is None:
+            # ir atrás: o alvo pode estar em qualquer lugar alcançável
+            for place in sorted(ctx.present):
+                if place not in dist:
+                    continue
+                for target in social_targets(action, me, ctx, place):
+                    s, f = score(action, char, me, place, target, dist[place], ctx)
+                    out.append(Candidate(action.id, place, target, dist[place], s, f))
             continue
         for place in candidate_places(action, char, me, ctx):
             if place not in dist:
                 continue  # inalcançável (especial, névoa, sem caminho)
+            if ctx.world is not None and not ctx.world.special_place_ok(action, me.id, place):
+                continue
             if action.kind == "social":
                 if place != me.place:
-                    continue  # ir atrás de alguém em outro lugar é da Fase 2
+                    continue  # (só ações com ir_atras vão atrás do alvo)
                 for target in social_targets(action, me, ctx):
                     s, f = score(action, char, me, place, target, 0.0, ctx)
                     out.append(Candidate(action.id, place, target, 0.0, s, f))

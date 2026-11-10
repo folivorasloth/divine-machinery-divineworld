@@ -108,9 +108,15 @@ afinidade_padrao: 10
 # Opcional. Relações iniciais. A afinidade vai de -100 (ódio) a 100 (amor).
 # É a afinidade DESTE personagem com o outro; a do outro com este fica
 # no arquivo do outro. "tipo" é livre (casal, irmao, amigo, rival...).
+# Alguns tipos têm efeito (Fase 2): "casal" = já são casados; irmao, pai,
+# mae, filho, aprendiz e mentor nunca casam entre si (eventos sociais).
 relacoes:
   - {com: florist, afinidade: 50, tipo: amigo, nota: Vendem flores juntos.}
   - {com: inspector, afinidade: -30, tipo: chato_oficial}
+
+# Opcional (Fase 2). Facção inicial: igreja ou seita (world.yaml > faccoes).
+# Muda sozinha com o tempo, pela afinidade com o Padre e com a Médium.
+# faccao: igreja
 
 # Opcional. Coisas especiais que o código conhece: criaturas, nevoa.
 imunidades: []

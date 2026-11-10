@@ -30,6 +30,7 @@ rotina:
   - {das: "16:00", ate: "17:30", acao: rezar, lugar: cathedral, peso: 2}
   - {das: "19:00", ate: "20:00", acao: comer, lugar: community_kitchen}
   - {das: "22:00", ate: "07:30", acao: dormir, lugar: houses}
+faccao: igreja
 relacoes:
   - {com: chief, afinidade: 20, tipo: tolerancia, nota: Tolera o Chefe.}
   - {com: cowboy_fat, afinidade: -60, tipo: desprezo}

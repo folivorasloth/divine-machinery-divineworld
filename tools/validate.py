@@ -38,7 +38,8 @@ def main(argv: list[str] | None = None) -> int:
             f"\n[bold]{data.world.name}[/]: {len(data.characters)} personagens, "
             f"{len(data.places)} lugares, {len(data.actions)} ações, {len(data.traits)} traços, "
             f"{len(data.professions)} profissões, {sum(len(v) for v in data.lines.values())} falas "
-            f"em {len(data.lines)} situações, {len(data.events)} eventos, {len(data.world.screens)} telas."
+            f"em {len(data.lines)} situações, {len(data.events)} eventos, {len(data.social_events)} eventos sociais, "
+            f"{len(data.world.memory.kinds)} tipos de memória, {len(data.world.screens)} telas."
         )
 
     failed = not report.ok or (args.estrito and report.warnings)

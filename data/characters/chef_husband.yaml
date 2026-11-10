@@ -32,6 +32,7 @@ rotina:
   - {das: "22:00", ate: "06:00", acao: dormir, lugar: houses}
 necessidades:
   medo: {taxa: 0.8}
+faccao: igreja
 relacoes:
   - {com: chef_wife, afinidade: 85, tipo: casal, nota: "Briga às três da tarde, pazes às três e cinco."}
   - {com: teen, afinidade: 75, tipo: pai}

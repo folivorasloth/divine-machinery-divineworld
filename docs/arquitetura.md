@@ -65,13 +65,16 @@ sim/                      simulação (Python puro, sem rede, exceto weather/llm
   engine.py         ✅ F1  World: monta tudo, tick(), run(), catch_up(), snapshot(), comandos
                            (o "executor de planos" planejado em actions.py ficou dentro do
                            engine: é pouco código e depende de tudo do World)
-  relations.py      📐 F2  afinidade viva por par
-  memory.py         📐 F2  memórias com intensidade e decaimento
-  gossip.py         📐 F2  repasse de memórias com distorção
-  structures.py     📐 F2  construções e objetos com estado (inteiro/danificado/destruído)
-  law.py            📐 F2  infrações, prisão, Limbo
-  factions.py       📐 F2  Igreja × Seita (fiéis, missas, rituais)
-  social_events.py  📐 F2  eventos organizados pelos NPCs (festa, rave, casamento, rodeio...)
+  relations.py      ✅ F2  afinidade viva por par, volta devagar ao valor inicial
+  memory.py         ✅ F2  memórias com intensidade, sentimento, decaimento e frases
+  gossip.py         ✅ F2  repasse de memórias com distorção; segredos de confissão
+  structures.py     ✅ F2  construções com estado (inteiro/danificado/destruído) e assinaturas
+  law.py            ✅ F2  infrações, pontos, advertência, mandado, prisão, Limbo
+  factions.py       ✅ F2  Igreja × Seita: entrar/sair pela afinidade com os líderes
+  social_events.py  ✅ F2  eventos organizados pelos NPCs (festa, rave, rodeio, procissão,
+                           casamento, mutirão)
+                           (ganância — roubo, esconderijo, sumiço, achado — e as
+                           perseguições ficaram no engine: dependem de tudo do World)
   lifecycle.py      📐 F3  morte, funeral, luto, fantasmas, nascimentos, sucessão
   creatures.py      📐 F3  criaturas noturnas e as da Sala do Servidor (homelab)
   weather.py        📐 F3  Open-Meteo com cache e fallback
@@ -179,17 +182,21 @@ novo; se tiver erro, manter o `WorldData` anterior e publicar evento `system` co
 2. avançar relógio; emitir period_changed se mudou           ✅ F1
 3. atualizar clima (cache; no máx. a cada atualizar_minutos) F3
 4. necessidades: para cada vivo, variar por taxa + efeito proporcional da ação em andamento  ✅ F1
-5. memórias e relações: decaimento lento (1×/hora do mundo)  F2
+5. memórias e relações: decaimento lento (1×/hora do mundo)  ✅ F2 (passo 9, junto do resto)
 6. ações em andamento: terminar as que acabaram (emite action_finished)                      ✅ F1
 7. movimento: avançar planos; chegadas e túneis; ao chegar, começa a ação                    ✅ F1
 8. decisões: cada NPC livre decide; quem está ocupado é reavaliado (seção 6.5)               ✅ F1
    (ordem embaralhada pelo RNG; quem decidiu entra na contagem de "presentes" dos próximos)
-9. sistemas: lei, estruturas, eventos sociais, criaturas, morte/nascimento, telas    F2-F3
+9. sistemas: solturas (prisão/Limbo) e eventos sociais a cada tick; de hora em hora:
+   memórias decaem, afinidades voltam, pontos da lei somem, facções, ideias de eventos ✅ F2
+   criaturas, morte/nascimento, telas                                                  F3
 10. diretor: 1× a cada 10 min do mundo                        F3
 11. snapshot para a API; commit dos eventos; salvar estado a cada salvar_a_cada_minutos (e ao sair)  ✅ F1
 ```
 (Na implementação, movimento vem antes das decisões — diferente do plano — para quem chega
-num lugar já começar a ação no mesmo tick e quem fica livre já decidir.)
+num lugar já começar a ação no mesmo tick e quem fica livre já decidir. Na F2 os sistemas
+(passo 9) rodam antes das decisões, pelo mesmo motivo: quem acabou de ser solto ou chegou
+numa festa já decide no mesmo tick.)
 
 ## 5. Necessidades ✅ F1
 
@@ -223,8 +230,18 @@ Para um NPC livre, gera pares (ação, lugar[, alvo]):
 - `condicoes`: `periodos`, `horarios` (qualquer janela), `profissoes`, `tracos` (tem algum),
   `personagens` (é um deles), `necessidades_min` (todas acima);
 - ações `social`: um candidato por alvo **presente no lugar atual**, acordado (não está numa
-  ação `dormindo`), parado (não está andando) e que passa em `afinidade_min/max`. (Ir atrás de
-  alguém em outro lugar é objetivo da Fase 2.)
+  ação `dormindo`), parado (não está andando), fora do Limbo, que passa em `afinidade_min/max`
+  e em `alvo.personagens`/`alvo.profissoes` (F2). Com `ir_atras: true` (F2) o alvo pode estar
+  em qualquer lugar alcançável: o candidato é (ação, lugar do alvo, alvo) com o custo da
+  viagem; se ao chegar o alvo já saiu, sai o evento `missed` ("procura e não acha");
+- ações `automatica: true` (F2: `fugir`, `perseguir`) nunca são candidatas: o mundo as dispara;
+- ações com `especial` (F2) têm uma regra de validade: só há `fofocar` se houver fofoca nova
+  para aquele ouvinte, `prender` se o alvo tem mandado, `denunciar` se lembro de uma infração
+  ainda não contada, `confessar` se tenho algo meu para confessar, `recrutar` se o alvo não é
+  da facção, `roubar` se o lugar ainda tem `objetos`, `mandar_reconstruir` se há estrago; ações
+  com `conserta` só valem em lugar com estrutura danificada;
+- **preso** (F2): só valem ações no lugar `leis.prisao` (a "casa" vira a cela e
+  `leis.acoes_na_prisao` — comer — vale lá);
 - ações `em_qualquer_lugar` (conversar, encarar a tela) e `vagar` (perambular) valem só no lugar
   atual — mais o lugar de um bloco de rotina ativo com essa ação, se o bloco der `lugar`;
 - `cooldown_minutos`: a ação não é candidata até passar esse tempo desde que terminou (o sino
@@ -237,7 +254,7 @@ nota = peso
      × Π curva_i(entrada_i)                    # considerações do YAML (cada uma 0..1)
      × Π traço.efeitos.acoes[ação]             # traços do personagem
      × rotina                                  # bloco ativo com essa ação (e lugar, se dado): × peso
-     × objetivos                               # objetivos temporários (diretor, Chefe, eventos)  F2+
+     × objetivos                               # maior bônus entre os objetivos ativos ✅ F2
      × viagem                                  # 0.5 ^ (minutos_de_viagem / meia_vida_viagem_minutos)
      × repetição                               # × penalidade_repeticao se foi a última ação
 ```
@@ -245,7 +262,22 @@ nota = peso
 Entradas (`sim.curves.INPUT_RANGES`): `necessidade.<id>` (0..100), `alvo_necessidade.<id>`
 (0..100), `afinidade` (−100..100), `hora` (0..24 com fração), `presentes` (0..20), `perigo`
 (0..100; usa `perigo_noite` à noite), `tensao` (0..100; 50 até a Fase 3). Novas entradas
-(ex.: `memoria.<tag>`, `clima`) entram em `INPUT_RANGES` + `utility.read_input` + validador.
+(ex.: `clima`) entram em `INPUT_RANGES` + `utility.read_input` + validador
+(`curves.DOTTED_INPUTS`/`TARGET_INPUTS`).
+
+Entradas da F2 ✅: `afinidade_inicial` (a do YAML com o alvo: o "amor de fundo"),
+`afinidade_com.<id>`, `presenca.<id>` (0/1: alguém está no lugar candidato), `faccao.<id>`
+(0/1), `conflito_alvo` (minha memória ruim mais forte de algo entre mim e o alvo),
+`memoria.<tipo>`, `memoria_alvo.<tipo>`, `fofoca` (suculência da melhor fofoca para o alvo),
+`denuncia` (memória de infração ainda não contada), `dano` (estrago do lugar candidato),
+`dano_cidade` (pior estrago do mundo), `mandado` (0/1).
+
+**Objetivos** (F2 ✅): `World.goals` é uma lista de `{who, action, place, bonus, start, end,
+source}` (`who`/`place` = None vale para todos/qualquer lugar). Na nota entra o **maior** bônus
+ativo para (quem, ação, lugar). Quem cria: os convites dos eventos sociais e a ordem do Chefe
+(`mandar_reconstruir`); o diretor (F3) e os comandos (F4) vão usar o mesmo mecanismo. No minuto
+em que um objetivo começa, quem ele cobre é reavaliado (é assim que os convidados largam o que
+fazem e vão para a festa).
 
 ### 6.3 Curvas (`sim.curves`)
 
@@ -324,10 +356,21 @@ da sua rotina ou uma janela `horarios` de ação que ele pode fazer (é isso que
   `alvo_necessidades` e as afinidades são aplicados proporcionalmente ao tempo que durou.
 - Afinidade viva: `World.affinities` guarda só os pares que mudaram desde o YAML (tabela
   `relations`, já criada na F1). A F2 cuida do retorno lento e da memória.
-- Interrupção: eventos fortes (briga começando no lugar, criatura, funeral) podem cancelar a
-  ação atual (F2/F3) — o NPC decide de novo no tick seguinte.
-- Ações `ativa: false` existem nos dados mas são ignoradas até a fase que as implementa
-  (hoje: `ritual`, `brigar`, `fofocar`, `consolar`, `roubar`, `construir`, `quebrar` → F2).
+- Interrupção (F2 ✅): ação com `interrompe_alvo: true` (discutir, brigar, pregar uma peça)
+  faz o alvo largar o que estava fazendo e aplica `alvo_necessidades` na hora; o alvo decide de
+  novo no mesmo tick (e pode revidar, fugir, pedir ajuda...). Prisão, Limbo, fuga e perseguição
+  também interrompem.
+- `falha` (F2 ✅): sorteada no começo com `chance × Π traço.efeitos.falha` (máx. 95%). Se falha:
+  evento `slapstick`, fala `falha.fala`, `falha.efeitos` no lugar dos efeitos normais, nada no
+  alvo, memória `falha.memoria` (ex.: `tombo`) para quem viu.
+- Campos novos das ações (F2), todos no YAML: `ir_atras`, `memoria`, `infracao`,
+  `interrompe_alvo`, `reconcilia`, `chance_perseguicao`, `conserta`, `assina`, `automatica`,
+  `especial`, `faccao`, `observa: {memoria, tag}`, `efeitos.afinidade_com`,
+  `efeitos.por_traco`, `efeitos.dano_estrutura`, e `evento` aceita `fight, argument,
+  reconcile, gossip, prank, theft, arrest, faction, chase, ritual, slapstick`. Explicação de
+  cada um no topo de `data/actions/sociais.yaml`.
+- Hoje nenhuma ação está `ativa: false` (a F2 ligou `ritual`, `brigar`, `fofocar`, `consolar`,
+  `roubar`, `construir`, `quebrar`).
 
 ## 8. Eventos ✅ F1
 
@@ -367,12 +410,21 @@ fala junto) · `action_finished`: `action, interrupted, minutes` · `speech`: `s
 entre os centros das telas ÷ `velocidade_led_cm_por_s`, mínimo `duracao_minima_s`) ·
 `period_changed`: `period, is_night` · `system`: livre.
 
+`data` da F2: começo de ação com `evento` (`fight`, `argument`...): o mesmo de `action_started`
++ `failed` · `gossip`: `memory_kind, about, true_subject, distorted, secret` · `infraction`:
+`infraction, offender, how (flagrante|assinatura|denuncia), reporter, points, verdict`
+(a advertência que segue traz `warning: true`) · `arrest`/`limbo_in`: `offender, infraction` ·
+`suspicion`: `object, suspect, thief, right` (o suspeito acertou?) · `structure_changed`:
+`structure, from, to, hp` · `faction`: `faction, change (join|leave)` · `social_event_*`:
+`social_event, instance, organizer, guests, start, participants, result (sucesso|fracasso)` ·
+`relation_changed`: `affinity, initial, mark (amigos|inimigos)`.
+
 Tipos (`type`) planejados:
 
 | Fase | Tipos |
 |---|---|
 | F1 | `system`, `period_changed`, `decision` (debug), `action_started`, `action_finished`, `speech`, `move_started`, `move_arrived`, `teleport_started`, `teleport_finished`, `bell` |
-| F2 | `relation_changed`, `memory_formed`, `gossip`, `fight`, `reconcile`, `slapstick`, `structure_changed`, `infraction`, `arrest`, `released`, `limbo_in`, `limbo_out`, `faction`, `social_event_planned`, `social_event_started`, `social_event_ended` |
+| F2 ✅ | `relation_changed`, `gossip`, `argument`, `fight`, `reconcile`, `prank`, `slapstick`, `chase`, `theft`, `suspicion`, `found`, `missed`, `structure_changed`, `infraction`, `arrest`, `released`, `limbo_in`, `limbo_out`, `faction`, `ritual`, `social_event_planned`, `social_event_started`, `social_event_ended` (o `memory_formed` planejado não foi criado: cada briga gera memórias em todas as testemunhas e inundaria o Chat; as memórias ficam no banco e aparecem nas falas) |
 | F3 | `death`, `funeral_started`, `funeral_ended`, `grief`, `ghost`, `birth`, `succession`, `creature_spawned`, `creature_gone`, `weather_changed`, `fog_on`, `fog_off`, `director_event`, `tension` |
 | F4 | `creator_command`, `creator_order`, `creator_voice`, `resurrection`, `stare`, `apparition` |
 
@@ -394,6 +446,19 @@ foram usadas recentemente, aceita repetir. Clima na F1: `clima.clima_padrao` (re
 Variáveis (`sim.text.TEMPLATE_VARS`): `{eu} {outro} {lugar} {hora} {periodo} {clima} {humor}
 {bordao} {bordao_outro} {trabalho} {morto} {objeto}` e `{@id}` para citar alguém pelo id. Se não
 sair fala (chance ou falta de template), o Chat do Mundo mostra a `narracao` da ação.
+
+F2 ✅:
+- variáveis de situação `{terceiro}` (de quem se fala), `{fato}` (o que a fofoca conta),
+  `{lembranca}`, `{objeto}`, `{evento}`, `{infracao}`, `{faccao}`, `{traco}`, `{convidados}`.
+  Fala que usa uma variável que a situação não tem é pulada;
+- filtro `memoria: [briga, discussao]`: a fala só sai se quem fala lembra de algo desses tipos
+  envolvendo o alvo; a frase `lembranca` do tipo (world.yaml) vira `{lembranca}` ("Desde
+  aquela briga na Cozinha Comunitária...");
+- **concordância de gênero**: `{o|a}` escolhe pela `pronome` de quem fala, `{outro:o|a}` pelo
+  do alvo, `{terceiro:o|a}` pelo de quem se fala ("meio perdid{o|a}" → "meio perdida"). Sem
+  pronome, fica a primeira forma. Vale nas falas, narrações e textos dos eventos sociais;
+- `World.say(...)` é o atalho que os sistemas usam: escolhe a fala de uma situação, cai num
+  `fallback` se não houver nenhuma e publica o evento do tipo pedido.
 
 LLM (F4): `sim.llm.enrich(evento, contexto)` reescreve só falas de `importance >= 1` em situações
 listadas no `world.yaml`, com timeout `ollama.timeout_segundos` e limite `max_por_hora`. Falhou →
@@ -434,20 +499,19 @@ CREATE TABLE event_tags (event_id INTEGER, tag TEXT, PRIMARY KEY (event_id, tag)
 CREATE INDEX events_ts ON events(ts);  CREATE INDEX actors_char ON event_actors(char_id);
 CREATE TABLE relations (a TEXT, b TEXT, affinity REAL NOT NULL, updated_at TEXT, PRIMARY KEY (a, b));
   -- criada já na F1 (as conversas mudam a afinidade); só os pares que mudaram desde o YAML
--- F2
-CREATE TABLE memories (
-  id INTEGER PRIMARY KEY AUTOINCREMENT, owner TEXT NOT NULL, kind TEXT NOT NULL,
-  about TEXT NOT NULL DEFAULT '[]',  -- ids envolvidos
-  place TEXT, intensity REAL NOT NULL, sentiment REAL NOT NULL,   -- intensidade 0..100, sentimento -1..1
-  permanent INTEGER NOT NULL DEFAULT 0, source_event INTEGER, heard_from TEXT,  -- fofoca
-  distorted INTEGER NOT NULL DEFAULT 0, created_ts TEXT NOT NULL
-);
-CREATE TABLE structures (id TEXT PRIMARY KEY, place TEXT NOT NULL, kind TEXT NOT NULL,
-  state TEXT NOT NULL, hp REAL NOT NULL, updated_at TEXT);
-CREATE TABLE objects (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, owner TEXT, holder TEXT,
-  place TEXT, hidden INTEGER DEFAULT 0, sacred INTEGER DEFAULT 0, origin TEXT);
-CREATE TABLE goals (id INTEGER PRIMARY KEY AUTOINCREMENT, source TEXT, action TEXT, place TEXT,
-  who TEXT, bonus REAL, until_ts TEXT, data TEXT DEFAULT '{}');
+-- F2 ✅ (migração 2) — mais simples que o plano: os campos ficam em JSON
+CREATE TABLE memories (id INTEGER PRIMARY KEY, owner TEXT NOT NULL, kind TEXT NOT NULL,
+  data TEXT NOT NULL);   -- json do sim.memory.Memory: subject, object, place, intensity,
+                         -- sentiment, permanent, ts, minute, heard_from, distorted, detail,
+                         -- reported, secret. Regravada inteira a cada save (~40 por NPC).
+CREATE INDEX memories_owner ON memories(owner);
+CREATE TABLE structures (id TEXT PRIMARY KEY, place TEXT NOT NULL, hp REAL NOT NULL,
+  data TEXT NOT NULL DEFAULT '{}',   -- {"marks": [[quem, infração], ...]} (pichações assinadas)
+  updated_at TEXT);
+-- objetos roubados, objetivos, leis (pontos, mandados, reincidência), eventos sociais ativos,
+-- visitantes recentes por lugar, amizades/inimizades já anunciadas e a próxima "hora":
+-- tudo em meta.society (JSON). As tabelas objects/goals planejadas não foram criadas.
+-- characters.flags ganhou: faction, jailed_until, limbo_until, spouse; extra_traits passa a ser usado.
 -- F3
 CREATE TABLE graves (char_id TEXT PRIMARY KEY, born_ts TEXT, died_ts TEXT, cause TEXT, epitaph TEXT);
 CREATE TABLE cooldowns (key TEXT PRIMARY KEY, until_ts TEXT NOT NULL);
@@ -465,31 +529,113 @@ Personagem morto **continua com o YAML** em `data/characters/` (a lápide mostra
 Personagem que está no SQLite mas sumiu do YAML: fica congelado e gera aviso (não apaga nada).
 Personagem novo no YAML: entra no mundo na `casa`, com as necessidades iniciais.
 
-## 11. Fase 2 — sociedade 📐
+## 11. Fase 2 — sociedade ✅
 
-- **Relações** (`relations.py`): afinidade viva −100..100 por par direcionado, iniciada por
-  `WorldData.affinity`. Variação por efeitos de ação, memórias e eventos; leve retorno ao valor
-  inicial (bem lento) para rancores não sumirem rápido.
-- **Memória** (`memory.py`): `Memory(owner, kind, about, intensity, sentiment, permanent)`.
-  Intensidade decai por hora (taxa configurável por `kind` em `world.yaml`); `permanent` para morte,
-  traição, casamento, Aparição, ressurreição. Memórias viram entrada da Utility AI
-  (`memoria.<kind>`) e variáveis de fala (`{lembranca}`).
-- **Fofoca** (`gossip.py`): `fofocar` escolhe uma memória do falante sobre um terceiro e cria uma
-  cópia no alvo (`heard_from`), com chance de distorção (troca o `about` ou o sinal). O traço
-  `fofoqueiro` (Padre: segredos de confissão) aumenta chance e alcance.
-- **Conflito**: `brigar`, `discutir`, `perseguir`, `pedir_desculpas`, `abracar`; o casal tem
-  bloco de rotina às 15:00 com `brigar` e `abracar` logo depois (pesos, não roteiro).
-- **Pastelão**: `falha` nas ações + traços (`desastrado`, `imprevisivel`); falas `tombo`.
-- **Construções**: `structures` com `state`; `quebrar`/criaturas reduzem `hp`; `construir` sobe;
-  objetivo `reconstruir` (Chefe/F4) e liderança do Ferreiro (bônus para quem está perto).
-- **Lei**: o Fiscal observa ações com tag de infração (`pichar`, `roubar`, `barulho`, `brigar`);
-  `infraction` → `arrest` (lugar = `prison`, `flags.preso_ate`); grave → Limbo (`limbo`, some das
-  telas, volta com traço sorteado de `traits.yaml`).
-- **Facções**: fiéis = afinidade com Padre × Médium + fé; missas (Catedral, dia) e rituais (noite).
-- **Eventos sociais** (`social_events.py`): NPC com necessidade alta (tédio, social, fé) e traço
-  adequado planeja (`social_event_planned`: tipo, lugar, hora); convida por afinidade (cria `goals`
-  para os convidados); acontece se houver quórum, senão fracassa. Tipos em `data/events/sociais.yaml`.
-- **Falas**: ≥ 15 variações por situação comum em `data/lines/`.
+Tudo o que é número, texto ou regra de conteúdo está nos YAML (`world.yaml > memoria, fofoca,
+relacoes, leis, faccoes, estruturas, roubos`; `data/actions/*.yaml`; `data/events/sociais.yaml`;
+`data/lines/*.yaml`; `estruturas`/`objetos` nos lugares; `faccao` nos personagens). O código só
+tem as regras genéricas abaixo.
+
+### 11.1 Relações (`sim.relations`)
+Afinidade −100..100 por par **direcionado** (a de A com B ≠ a de B com A), começa pelo YAML.
+Muda por: efeitos das ações (`afinidade`, `afinidade_do_alvo`, `afinidade_com`), memórias que se
+formam (`memoria.tipos.<t>.afinidade` × força), fofocas, eventos sociais (+3 com quem organizou),
+prisão (−5 com o Fiscal). Volta para o valor inicial a `relacoes.retorno_por_hora` (0,2/h: um
+rancor de −40 leva ~8 dias). Cruzar `inimigos_abaixo`/`amigos_acima` vindo do outro lado gera
+`relation_changed` (uma vez por par).
+
+### 11.2 Memória (`sim.memory`)
+`Memory(owner, kind, subject, object, place, intensity, sentiment, permanent, ts, heard_from,
+distorted, detail, reported, secret)`. Tipos em `memoria.tipos` (24 hoje). Quem forma:
+- **quem fez e com quem foi** (força 1) e **testemunhas** acordadas no lugar
+  (`fator_testemunha`, 0,6): ação com `memoria`, falha com `falha.memoria`, eventos sociais;
+- **quem ouviu** (fofoca, denúncia, confissão): `fator_fofoca`, com `heard_from`.
+A mesma coisa (tipo + pessoas) no mesmo dia reforça em vez de duplicar. Decai
+`decai_por_dia`; some abaixo de `esquecer_abaixo`; `permanente` fica (Limbo, casamento; F3:
+mortes). No máximo `max_por_npc` (esquece a mais fraca). As frases `fato` (3ª pessoa, para
+fofoca) e `lembranca` (para quem lembra) usam `{quem} {alvo} {lugar} {objeto}`.
+
+### 11.3 Fofoca (`sim.gossip`)
+`fofocar` (`especial: fofoca`) escolhe a memória mais suculenta
+(`intensidade × (0,5 + |sentimento|) × 1,3 se é infração`) sobre um terceiro que o ouvinte ainda
+não sabe. Com `fofoca.chance_distorcao` (o dobro para o traço `fofoqueiro`) quem fez vira outra
+pessoa → acusação errada. Segredos de confissão (`confessar` → memória `secret` no Padre) só
+saem de quem é fofoqueiro, na situação `fofoca_confissao`. Contar ao Fiscal uma infração vira
+denúncia. **Não existe Carteiro na bible**: quem "espalha mais" é o traço `fofoqueiro` (Padre e
+Dama); um Carteiro futuro é só dar esse traço a ele.
+
+### 11.4 Conflito, reconciliação e pastelão (só YAML + 3 regras)
+Ações: `discutir` (afinidade em U: briga-se com quem se odeia e com quem se ama), `brigar`
+(pastelão, infração, falha = tombo, `chance_perseguicao`), `pedir_desculpas` (`ir_atras`),
+`abracar`, `consolar`, `pregar_peca` (falha 45%: dá errado nele), `andar_de_skate`,
+`fazer_malabarismo`, `fucar` (choque no Aprendiz), `fugir`/`perseguir` (automáticas). As pazes
+dependem de `conflito_alvo` × `afinidade_inicial` × pouca raiva: o casal e os Cowboys (afinidade
+inicial alta) fazem as pazes rápido; o Ganancioso e os Cozinheiros, não. A "briga das três da
+tarde" é só um bloco de rotina `discutir` às 15:00 na Cozinha (peso 12): com quem, se escala e
+quando fazem as pazes sai da simulação. Raiva vem de: discussões, brigas, pegadinhas, sumiços
+percebidos (`roubos.raiva_ao_perceber`), advertências, festa furada e efeitos por traço
+(`festejar` deixa o `briguento` esquentado; `trabalhar` irrita o `irritado`).
+Regras no código: `interrompe_alvo`, `reconcilia` (memórias ruins entre os dois ×0,3) e a
+perseguição (o alvo foge para um vizinho por caminho, quem fez vai atrás com `perseguir`).
+
+### 11.5 Estruturas (`sim.structures`)
+`estruturas` em cada lugar (17 hoje). Resistência 0..100; estados `inteiro` (≥ 70),
+`danificado`, `destruido` (0). Dano: `efeitos.dano_estrutura` ao terminar (brigar 18, quebrar
+35, festejar 4, pichar 6; falha de `construir` 12), numa estrutura sorteada do lugar. Conserto:
+`construir` (`conserta: 45` por ação, aos poucos). Mudou de estado → `structure_changed`.
+`mandar_reconstruir` (Chefe) cria um objetivo para todos (`construir` no pior lugar, ×3 por
+8 h). O `mutirao` (evento social do Ferreiro e de quem é `protetor`/`perfeccionista`) marca
+hora e chama gente.
+
+### 11.6 Leis (`sim.law`)
+Infrações em `leis.infracoes` (nome, gravidade, `horarios` opcionais — barulho só 22h–6h).
+Chegam ao Fiscal (profissão `leis.profissao_fiscal`) por flagrante (está acordado no lugar
+quando começa, ou chega e ainda está acontecendo; máximo `max_por_olhada`), assinatura
+(`assina: true` deixa marca na estrutura) ou denúncia (`denunciar` com `ir_atras`, ou fofoca
+contada a ele). Mesma pessoa e infração: só uma vez a cada `reincidencia_horas`. Pontos somam a
+gravidade e somem `pontos_somem_por_dia`: < `pontos_para_prisao` = advertência; ≥ = prisão
+(`limites.horas_de_prisao`); ≥ `pontos_para_limbo` = Limbo (`limites.dias_no_limbo`, pontos
+zeram). Infrator longe → mandado (`mandado_horas`) e o Fiscal vai atrás (`prender`); a falha de
+`prender` (30%) é a fuga. Preso: só faz coisas na Prisão. No Limbo: `away` (fora das telas, sem
+decidir, necessidades congeladas); volta em `volta_do_limbo` com um traço sorteado de
+`traits.yaml` (`sorteavel`, sem `opostos`) em `extra_traits` e memória permanente.
+
+### 11.7 Facções (`sim.factions`)
+`faccoes` no world.yaml (Igreja: `priest`; Seita: `medium`). Começa pelo `faccao` do YAML.
+Entra quem passa de `afinidade_para_entrar` com o líder e gosta mais dele que do líder rival;
+sai quem cai abaixo de `afinidade_para_sair`. Conferido de hora em hora e depois de
+`recrutar`/`pregar` (`especial: recrutar`). A afinidade sobe indo à `missa` (dia, Catedral, com
+o Padre presente) e a `participar_ritual` (noite, onde a Médium está: `presenca.medium`). O
+`ritual` em si é da Médium (rotina: floresta 21h–2h, subterrâneo 2h–4h). O Padre espia
+(`espiar_seita`, `observa`) e vira fofoca. O Adolescente começa sem facção (o traço `rebelde`
+e a afinidade com a Médium o puxam; entrar exige 62).
+
+### 11.8 Ganância e sumiços (engine)
+`roubar` (traço `ganancioso`) pega um dos `objetos` do lugar; testemunhas notam com
+`roubos.chance_testemunha_notar`. Ao terminar, esconde num lugar sorteado e, com
+`chance_esquecer`, esquece onde (objeto perdido). Quem `perambular` por lá pode achar
+(`chance_achar`); quem tem traço de `tracos_que_acham_sagrado` declara sagrado. Quem começa a
+`trabalhar` no próprio local de trabalho percebe o sumiço e escolhe um **suspeito** entre quem
+passou por lá desde o roubo, com peso `40 − afinidade` (o culpado é provável, não garantido):
+memória `sumico` → raiva, fofoca, denúncia, prisão — às vezes do inocente.
+
+### 11.9 Eventos sociais (`sim.social_events`)
+Ver o topo de `data/events/sociais.yaml`. De hora em hora, para cada tipo sem evento ativo e
+fora do cooldown, cada NPC que bate com `organizadores` (qualquer de: personagens, traços,
+profissões, grupos, facções) e com `vontade` tem `chance_por_hora` de ter a ideia. Marca hora
+(`antecedencia_horas`, dentro de `comeca_entre`), convida os `max_convidados` de maior afinidade
+(≥ `convite_afinidade_min`) e cria objetivos (`bonus`, ×1,5 para quem organiza) de 30 min antes
+até o fim. Começa se houver `quorum` pessoas no lugar (com o organizador, ou 15 min depois sem
+ele); 45 min sem quórum = fracasso (memória `memoria_fracasso`, raiva, −4 de afinidade com
+convidados que faltaram). Fim: `memoria` para todos que passaram por lá, +3 com quem organizou.
+Casamento: precisa de par com afinidade mútua ≥ `par_afinidade_min`, sem relação proibida
+(`par_tipos_proibidos`) e fora de `excluidos`; o casal vira `spouse`. Tipos: festa na Taverna,
+rave secreta, rodeio, procissão, casamento, mutirão.
+
+### 11.10 Verificação
+`tools.run --resumo` mostra a tabela "Resumo da sociedade" (contagens por tipo e a lista de
+eventos organizados com o resultado). `tests/test_society.py` cobre cada sistema e roda uma
+semana (seed 42) conferindo o critério de aceite.
 
 ## 12. Fase 3 — vida, morte e diretor 📐
 
@@ -646,9 +792,12 @@ O viewer (F5) é servido como estático pelo próprio FastAPI (`viewer/dist`), s
 ## 16. Decisões em aberto (para as próximas fases)
 
 - Layout interno dos lugares numa tela (posições 3D) — F5 decide; pode ganhar campo no YAML.
-- Esquema das criaturas e dos eventos sociais — F2/F3 criam e documentam aqui.
+- Esquema das criaturas — F3 cria e documenta aqui (o dos eventos sociais está na seção 11.9).
 - Lista de situações reescritas pelo LLM — F4.
 - Técnicos: na F1 trabalham na Sala do Servidor como qualquer profissão (manhã/tarde). Quando a F4
   ligar `homelab/servicos/#`, o trabalho deles deve depender de objetivo (problema real aberto).
-- Médium: sem `ritual` (F2), as noites dela são de `rezar` na floresta (bloco de rotina provisório
-  no YAML) e ela ainda dorme mais à noite do que a bible pede; a F2 ajusta com o ritual.
+- Médium: com o `ritual` (F2) as noites dela são de ritual; o bloco provisório de `rezar` saiu.
+- Diretor (F3) deve usar `World.add_goal` e `World.say` (mesmo mecanismo dos convites) e pode
+  medir a tensão pelas contagens de `fight`/`argument`/`arrest` recentes.
+- Limbo é raro numa semana (precisa de 6 pontos de infração); se o João quiser mais, baixe
+  `leis.pontos_para_limbo`.

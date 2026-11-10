@@ -3,7 +3,11 @@
 # =====================================================================
 # TRAÇOS: cada personagem lista os seus em `tracos:`. Um traço pode:
 #   efeitos.necessidades: multiplicar a taxa de uma necessidade
-#                         (1.5 = sobe 50% mais rápido; 0.5 = metade)
+#                         (1.5 = sobe 50% mais rápido; 0.5 = metade).
+#                         ATENÇÃO: raiva e medo são do modo "retorna" (voltam
+#                         sozinhos para a base): para elas, maior = PASSA mais
+#                         rápido; menor = a pessoa fica remoendo.
+#   efeitos.falha:        multiplica a chance de pastelão (ações com `falha`)
 #   efeitos.acoes:        multiplicar a nota de uma ação
 #                         (2.0 = o dobro de vontade; 0.3 = quase nunca)
 #   sorteavel: false      não sai em nascimentos automáticos
@@ -69,7 +73,7 @@ tracos:
     nome: Tranquilo
     opostos: [bravo, irritado]
     efeitos:
-      necessidades: {raiva: 0.6}
+      necessidades: {raiva: 1.6}   # a raiva passa rápido
       acoes: {brigar: 0.5}
   - id: sonhador
     nome: Sonhador
@@ -90,8 +94,8 @@ tracos:
     nome: Ranzinza
     opostos: [alegre]
     efeitos:
-      necessidades: {raiva: 1.3}
-      acoes: {festejar: 0.6}
+      necessidades: {raiva: 0.8}
+      acoes: {festejar: 0.6, discutir: 1.4}
   - id: fofoqueiro
     nome: Fofoqueiro
     efeitos:
@@ -102,8 +106,8 @@ tracos:
     nome: Bravo
     opostos: [tranquilo, calmo]
     efeitos:
-      necessidades: {raiva: 1.4}
-      acoes: {brigar: 1.4}
+      necessidades: {raiva: 0.8}   # (raiva "retorna": menor = demora mais a passar)
+      acoes: {brigar: 1.4, discutir: 1.6}
   - id: carinhoso
     nome: Carinhoso
     efeitos:
@@ -117,7 +121,7 @@ tracos:
   - id: sensivel
     nome: Sensível
     efeitos:
-      necessidades: {medo: 1.2}
+      necessidades: {medo: 0.8}   # o medo demora a passar
       acoes: {consolar: 1.2}
   - id: perfeccionista
     nome: Perfeccionista
@@ -127,7 +131,7 @@ tracos:
   - id: dramatico
     nome: Dramático
     efeitos:
-      acoes: {brigar: 1.2}
+      acoes: {brigar: 1.2, discutir: 1.5, pedir_desculpas: 1.5}
 
   # --- O Adolescente
   - id: rebelde
@@ -141,14 +145,14 @@ tracos:
   - id: inseguro
     nome: Inseguro
     efeitos:
-      necessidades: {medo: 1.2}
+      necessidades: {medo: 0.8}   # o medo demora a passar
 
   # --- Os Cowboys
   - id: briguento
     nome: Briguento
     efeitos:
-      necessidades: {raiva: 1.3}
-      acoes: {brigar: 1.6}
+      necessidades: {raiva: 0.7}   # raiva demora a passar
+      acoes: {brigar: 1.6, discutir: 2.0, abracar: 1.5}
   - id: leal
     nome: Leal
     efeitos:
@@ -192,12 +196,12 @@ tracos:
     sorteavel: false
     efeitos:
       necessidades: {social: 0.2, tedio: 0.3}
-      acoes: {perambular: 3.0, conversar: 0.3, festejar: 0.2, rezar: 0.2}
+      acoes: {perambular: 3.0, conversar: 0.3, festejar: 0.2, rezar: 0.2, missa: 0.2, fofocar: 0, discutir: 0.1}
   - id: calmo
     nome: Calmo
     opostos: [bravo, irritado]
     efeitos:
-      necessidades: {raiva: 0.5, medo: 0.5}
+      necessidades: {raiva: 2.0, medo: 2.0}   # raiva e medo passam rápido
   - id: indecifravel
     nome: Indecifrável
     sorteavel: false
@@ -209,7 +213,7 @@ tracos:
     nome: Soberbo
     opostos: [autodepreciativo]
     efeitos:
-      acoes: {conversar: 0.8, consolar: 0.4}
+      acoes: {conversar: 0.8, consolar: 0.4, construir: 0.2}   # nunca se abaixa
   - id: vaidoso
     nome: Vaidoso
     efeitos:
@@ -235,8 +239,9 @@ tracos:
     nome: Irritado
     opostos: [tranquilo, calmo]
     efeitos:
-      necessidades: {raiva: 1.5}
-      acoes: {brigar: 1.3, quebrar: 1.3}
+      necessidades: {raiva: 0.7}   # demora a esfriar
+      acoes: {brigar: 1.5, quebrar: 1.5, discutir: 1.3}
+      falha: 1.6   # quebra justamente o que estava consertando
   - id: honesto
     nome: Honesto
     opostos: [ganancioso, manipulador]
@@ -258,7 +263,7 @@ tracos:
     nome: Otimista
     opostos: [melancolico]
     efeitos:
-      necessidades: {medo: 0.7}
+      necessidades: {medo: 1.5}   # o medo passa rápido
   - id: ingenuo
     nome: Ingênuo
     efeitos:
@@ -273,7 +278,7 @@ tracos:
   - id: desconfiado
     nome: Desconfiado
     efeitos:
-      necessidades: {medo: 1.2}
+      necessidades: {medo: 0.8}   # o medo demora a passar
       acoes: {conversar: 0.8}
   - id: astuto
     nome: Astuto
@@ -291,9 +296,10 @@ tracos:
       necessidades: {sono: 1.3}
   - id: desastrado
     nome: Desastrado
-    descricao: Mais chance de falha nas ações (Fase 2 usa este traço nas falhas).
+    descricao: Mais chance de falha (pastelão) em qualquer ação que pode dar errado.
     efeitos:
       acoes: {quebrar: 1.3}
+      falha: 1.8
   - id: empolgado
     nome: Empolgado
     opostos: [preguicoso, cansado]

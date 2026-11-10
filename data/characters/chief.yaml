@@ -34,6 +34,7 @@ rotina:
 necessidades:
   sono: {inicial: 40, taxa: 1.2}
   fome: {taxa: 1.1}
+faccao: igreja
 relacoes:
   - {com: chef_wife, afinidade: 60, tipo: amigo, nota: Almoça todo dia na cozinha do casal.}
   - {com: chef_husband, afinidade: 55, tipo: amigo}

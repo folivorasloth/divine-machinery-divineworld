@@ -1,0 +1,233 @@
+# =====================================================================
+# Eventos sociais ORGANIZADOS PELOS NPCs (Fase 2)
+# =====================================================================
+# Ninguém manda acontecer: de hora em hora, quem bate com `organizadores`
+# e está com as `vontade` altas tem `chance_por_hora` de ter a ideia.
+# Aí marca lugar e hora, convida quem mais gosta, e os convidados ficam
+# com mais vontade de fazer a `acao` naquele lugar e hora (`bonus`).
+# Na hora: com `quorum` pessoas no lugar, acontece; senão, fracassa.
+#
+# Campos:
+#   acao / lugar          o que se faz e onde (onde: dano = no lugar mais estragado)
+#   organizadores         quem pode ter a ideia: personagens, tracos, profissoes,
+#                         grupos, faccoes (vale quem bater com QUALQUER item)
+#   vontade               necessidades mínimas de quem organiza: {tedio: 55}
+#   chance_por_hora       chance de cada organizador ter a ideia, por hora
+#   comeca_entre          a hora marcada fica dentro desta janela
+#   antecedencia_horas    [min, max] entre a ideia e a hora marcada
+#   duracao_horas         [min, max]
+#   convite_afinidade_min / max_convidados
+#   quorum                quantas pessoas no lugar para dar certo
+#   bonus                 multiplica a vontade dos convidados (×1.5 para quem organiza)
+#   cooldown_horas        tempo até poder ter outro evento deste tipo
+#   par_afinidade_min     (casamento) precisa de um par com afinidade mútua assim
+#   par_tipos_proibidos   (casamento) tipos de relação que impedem o par (irmao, mae...)
+#   excluidos             quem nunca organiza nem entra como par neste evento
+#   memoria / memoria_fracasso   o que os participantes / quem organizou lembram
+#   textos                planejado, comeca, fracassa, termina (sorteia um de cada)
+#     variáveis: {eu} (quem organiza) {outro} (o par, no casamento) {lugar}
+#                {hora} (hora marcada) {evento} (nome) {convidados}
+# =====================================================================
+
+eventos_sociais:
+  - id: festa_taverna
+    nome: festa na Taverna
+    acao: festejar
+    lugar: tavern
+    organizadores:
+      tracos: [alegre, carismatico, carente, contador_de_causo, vaidoso, debochado]
+    vontade: {tedio: 50}
+    chance_por_hora: 0.06
+    comeca_entre: {das: "19:00", ate: "22:30"}
+    antecedencia_horas: [1, 5]
+    duracao_horas: [2, 4]
+    convite_afinidade_min: 20
+    max_convidados: 9
+    quorum: 4
+    bonus: 5
+    cooldown_horas: 30
+    memoria: festa
+    memoria_fracasso: festa_fracassada
+    importancia: 2
+    textos:
+      planejado:
+        - "{eu} sai espalhando que vai ter {evento} hoje às {hora}. Chama {convidados}."
+        - "{eu} sobe numa cadeira e anuncia: {evento}, às {hora}! Convida {convidados}."
+        - "{eu} decide que a cidade está muito parada e marca uma {evento} para as {hora}. Convidados: {convidados}."
+        - "{eu} passa de porta em porta avisando da {evento} das {hora}: {convidados}."
+      comeca:
+        - "A {evento} de {eu} começou! Tem {convidados} dançando em {lugar}."
+        - "{eu} abre a {evento} com um grito. Estão lá: {convidados}."
+        - "Lampião aceso, viola afinada: a {evento} de {eu} pegou fogo com {convidados}."
+      fracassa:
+        - "{eu} esperou em {lugar} a noite toda. Ninguém apareceu na {evento}."
+        - "A {evento} de {eu} flopou: duas cadeiras, um copo e um silêncio constrangedor."
+        - "{eu} guarda as bandeirinhas da {evento}. Ninguém veio."
+      termina:
+        - "Acabou a {evento} de {eu}. {convidados} vão lembrar dessa por dias."
+        - "A {evento} de {eu} termina com gente dormindo em cima da mesa: {convidados}."
+        - "Fim da {evento}. {eu} varre os cacos e sorri."
+
+  - id: rave_secreta
+    nome: rave secreta no Subterrâneo
+    acao: festejar
+    lugar: underground
+    organizadores:
+      tracos: [rebelde]
+      personagens: [musician]
+    vontade: {tedio: 55}
+    chance_por_hora: 0.08
+    comeca_entre: {das: "22:00", ate: "01:30"}
+    antecedencia_horas: [1, 4]
+    duracao_horas: [2, 4]
+    convite_afinidade_min: 30
+    max_convidados: 6
+    quorum: 3
+    bonus: 10   # tem que valer mais que a festa de sempre na Taverna
+    cooldown_horas: 40
+    memoria: festa
+    memoria_fracasso: festa_fracassada
+    importancia: 2
+    textos:
+      planejado:
+        - "{eu} cochicha: {evento} hoje, {hora}, não conta pro Fiscal. Só pra {convidados}."
+        - "Bilhetinho passado de mão em mão: {evento}, {hora}. {eu} convidou {convidados}."
+      comeca:
+        - "Grave batendo em {lugar}: a {evento} de {eu} começou com {convidados}."
+        - "Luz roxa, caixa de som improvisada, {convidados} pulando. A {evento} de {eu} é real."
+      fracassa:
+        - "{eu} ligou as caixas de som da {evento} para ninguém. Só o eco respondeu."
+        - "A {evento} de {eu} não rolou. {lugar} ficou só com as pichações antigas."
+      termina:
+        - "A {evento} de {eu} acaba com o dia nascendo lá fora. {convidados} saem de óculos escuros."
+        - "Fim da {evento}. {eu} desliga tudo antes que o Fiscal acorde."
+
+  - id: rodeio
+    nome: rodeio dos Cowboys
+    acao: festejar
+    lugar: fields
+    organizadores:
+      grupos: [cowboys]
+    vontade: {tedio: 45}
+    chance_por_hora: 0.05
+    comeca_entre: {das: "14:00", ate: "17:00"}
+    antecedencia_horas: [2, 6]
+    duracao_horas: [2, 3]
+    convite_afinidade_min: 30
+    max_convidados: 8
+    quorum: 4
+    bonus: 10   # tem que valer mais que a festa de sempre na Taverna
+    cooldown_horas: 72
+    memoria: festa
+    memoria_fracasso: festa_fracassada
+    importancia: 2
+    textos:
+      planejado:
+        - "{eu} arruma a cerca do curral e anuncia: {evento} às {hora}! Chama {convidados}."
+        - "\"Ê trem bão!\" {eu} marca um {evento} para as {hora} e chama {convidados}."
+      comeca:
+        - "Começou o {evento}! {eu} monta num bezerro bravo enquanto {convidados} gritam."
+        - "Poeira subindo em {lugar}: o {evento} de {eu} tem {convidados} na cerca."
+      fracassa:
+        - "{eu} ficou sozinho no curral com o bezerro. O {evento} não teve plateia."
+        - "Ninguém veio pro {evento}. {eu} cospe no chão e volta pra taverna."
+      termina:
+        - "Fim do {evento}. {eu} sai mancando e feliz. {convidados} aplaudem."
+        - "O {evento} acaba com o bezerro vencendo. {convidados} vão contar esse causo pra sempre."
+
+  - id: procissao
+    nome: procissão
+    acao: missa
+    lugar: cathedral
+    organizadores:
+      personagens: [priest]
+    vontade: {fe: 35}
+    chance_por_hora: 0.04
+    comeca_entre: {das: "08:00", ate: "16:00"}
+    antecedencia_horas: [2, 6]
+    duracao_horas: [1, 2]
+    convite_afinidade_min: 30
+    max_convidados: 8
+    quorum: 4
+    bonus: 3
+    cooldown_horas: 96
+    memoria: missa
+    memoria_fracasso: festa_fracassada
+    importancia: 2
+    textos:
+      planejado:
+        - "{eu} anuncia do púlpito: {evento} às {hora}! Espera {convidados}. \"Deus me livre de faltarem.\""
+        - "{eu} pendura um cartaz torto na porta da Catedral: {evento}, {hora}. Recado para {convidados}."
+      comeca:
+        - "Começa a {evento}: {eu} na frente com o crucifixo enorme, e atrás {convidados}, cantando desafinado."
+        - "Velas, andor e passinhos curtos: a {evento} de {eu} sai com {convidados}."
+      fracassa:
+        - "{eu} ergueu o crucifixo para a {evento}... e só os pombos vieram."
+        - "A {evento} de {eu} teve zero fiéis. Ele culpa a seita."
+      termina:
+        - "A {evento} termina. {eu} conta os fiéis, satisfeito: {convidados}."
+        - "Fim da {evento}. {eu} tropeça na batina na última curva, mas ninguém ri. Quase ninguém."
+
+  - id: casamento
+    nome: casamento
+    acao: missa
+    lugar: cathedral
+    organizadores:
+      tracos: [alegre, carente, sensivel, vaidoso, sonhador, gentil, carinhoso, leal, ingenuo]
+    vontade: {social: 30}
+    par_afinidade_min: 92
+    # irmãos, pais e filhos não casam entre si; o Adolescente é novo demais
+    par_tipos_proibidos: [irmao, pai, mae, filho, aprendiz, mentor]
+    excluidos: [teen]
+    chance_por_hora: 0.05
+    comeca_entre: {das: "10:00", ate: "17:00"}
+    antecedencia_horas: [6, 20]
+    duracao_horas: [1, 2]
+    convite_afinidade_min: 25
+    max_convidados: 10
+    quorum: 4
+    bonus: 5
+    cooldown_horas: 120
+    memoria: casamento
+    memoria_fracasso: festa_fracassada
+    importancia: 3
+    textos:
+      planejado:
+        - "{eu} pede {outro} em casamento! A cerimônia é às {hora} em {lugar}. Convidados: {convidados}."
+        - "{eu} e {outro} vão casar! {hora}, em {lugar}. {convidados} já estão chorando."
+      comeca:
+        - "Começa o {evento} de {eu} e {outro}. Na plateia: {convidados}."
+      fracassa:
+        - "{eu} esperou no altar. {outro} e os convidados não apareceram. O {evento} ficou para outro dia."
+      termina:
+        - "{eu} e {outro} estão casados! {convidados} jogam arroz (e uma cadeira)."
+
+  - id: mutirao
+    nome: mutirão
+    acao: construir
+    onde: dano
+    organizadores:
+      personagens: [blacksmith]
+      tracos: [protetor, perfeccionista]
+    vontade: {}
+    chance_por_hora: 0.15
+    comeca_entre: {das: "07:00", ate: "16:00"}
+    antecedencia_horas: [0.5, 2]
+    duracao_horas: [1.5, 3]
+    convite_afinidade_min: 20
+    max_convidados: 6
+    quorum: 3
+    bonus: 5
+    cooldown_horas: 18
+    memoria: mutirao
+    importancia: 2
+    textos:
+      planejado:
+        - "{eu} bufa: \"Isso não fica assim.\" Marca um {evento} em {lugar} às {hora} e chama {convidados}."
+        - "{eu} bate o martelo na bigorna: {evento} às {hora} em {lugar}! Vêm {convidados}."
+      comeca:
+        - "Começa o {evento} em {lugar}: {eu} manda, {convidados} carregam tábua."
+      fracassa:
+        - "{eu} apareceu em {lugar} com a caixa de ferramentas. O {evento} foi só ele e um martelo."
+      termina:
+        - "Fim do {evento}. {eu} e {convidados} olham o serviço com orgulho (e um dedo machucado)."

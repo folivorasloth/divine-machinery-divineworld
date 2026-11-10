@@ -19,6 +19,9 @@ class Activity:
     elapsed: float = 0.0
     target: str | None = None
     score: float = 0.0  # nota na hora da decisão (para o log)
+    failed: bool = False  # Fase 2: deu errado (pastelão): vale `falha.efeitos`
+    target_applied: bool = False  # efeitos no alvo já aplicados no começo (interrompe_alvo)
+    seen_by_law: bool = False  # o Fiscal já registrou esta infração
 
     @property
     def done(self) -> bool:
@@ -69,6 +72,18 @@ class CharacterState:
     # última explicação de decisão (para o `quem <id>` da Fase 4)
     last_explanation: str = ""
     frozen: bool = False  # está no banco mas sumiu do YAML
+    # Fase 2 ------------------------------------------------------------------
+    extra_traits: list[str] = field(default_factory=list)  # ganhos em vida (Limbo)
+    faction: str | None = None  # igreja, seita... (começa pelo YAML)
+    jailed_until: float | None = None  # minuto do mundo em que sai da prisão
+    limbo_until: float | None = None  # minuto do mundo em que volta do Limbo
+    spouse: str | None = None  # casou numa festa de casamento
+    prev_place: str | None = None  # de onde veio (perambular evita voltar direto)
+
+    @property
+    def away(self) -> bool:
+        """No Limbo: some das telas, não decide, necessidades congeladas."""
+        return self.limbo_until is not None
 
     @property
     def moving(self) -> bool:

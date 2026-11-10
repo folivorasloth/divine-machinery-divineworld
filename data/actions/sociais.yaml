@@ -1,7 +1,26 @@
 # Ações sociais e de conflito. Formato explicado no topo de basicas.yaml.
 # Ações "social" precisam de um alvo no mesmo lugar (condicoes.alvo) e
 # podem usar as entradas `afinidade` e `alvo_necessidade.<id>`.
-# As marcadas com `ativa: false` são da Fase 2 (sociedade).
+#
+# Campos da Fase 2 (sociedade) — todos opcionais:
+#   ir_atras: true        ← vale ir atrás do alvo em outro lugar (desculpas, prender)
+#   memoria: briga        ← o alvo e quem viu lembram disso (world.yaml > memoria.tipos)
+#   infracao: brigar      ← é infração: o Fiscal registra se vir (world.yaml > leis)
+#   interrompe_alvo: true ← o alvo larga o que fazia e sente o efeito na hora
+#   reacao_alvo: emburrar ← ...e reage com esta ação automática (fica emburrado uns minutos)
+#   reconcilia: true      ← faz as pazes: as memórias ruins entre os dois enfraquecem
+#   chance_perseguicao: 0.3  ← no fim, o alvo sai correndo e quem fez vai atrás
+#   falha: {chance, efeitos, fala, memoria}  ← pastelão: dá errado (traços mudam a chance)
+#   evento: fight | argument | reconcile | gossip | prank | theft | faction | ritual...
+#           ← tipo do evento no Chat do Mundo (para filtros e contagens)
+#   especial: fofoca | confissao | denuncia | prender | roubar | recrutar | ordem_reconstruir
+#           ← regra pronta no código (ver docs/arquitetura.md, seção 11)
+#   efeitos.afinidade_com: {priest: 2}   ← muda a afinidade com alguém específico
+#   efeitos.por_traco: {briguento: {raiva: 30}}  ← efeito extra para quem tem o traço
+#   efeitos.dano_estrutura: 10  ← estraga uma estrutura do lugar (ao terminar)
+# Entradas novas das considerações: afinidade_inicial, afinidade_com.<id>,
+# presenca.<id>, faccao.<id>, conflito_alvo, memoria.<tipo>, memoria_alvo.<tipo>,
+# fofoca, denuncia, dano, dano_cidade, mandado.
 
 acoes:
   - id: conversar
@@ -45,134 +64,590 @@ acoes:
         curva: {tipo: pontos, pontos: [[0, 0.8], [3, 0.4], [6, 0.05], [17, 0.2], [20, 1], [24, 1]]}
     efeitos:
       necessidades: {tedio: -40, social: -30, sono: 10, fome: 5}
+      # cerveja deixa o briguento esquentado (é daí que sai a briga "por nada")
+      por_traco:
+        briguento: {raiva: 45}
+        ranzinza: {raiva: 15}
+      dano_estrutura: 4   # festa boa sempre quebra alguma coisa
+    infracao: barulho
     narracao: "{eu} cai na festa em {lugar}."
     fala: festejar
     chance_fala: 0.5
     tags: [evento]
 
-  - id: brigar
-    nome: Brigar
-    descricao: Discussão aos gritos ou briga de pastelão.
+  # ------------------------------------------------------------ conflito
+  - id: discutir
+    nome: Discutir
+    descricao: Bate-boca aos gritos. Casais e amigos discutem mais que estranhos.
     tipo: social
-    ativa: false
-    peso: 0.6
-    duracao_minutos: [3, 15]
+    peso: 1.0
+    duracao_minutos: [4, 12]
     em_qualquer_lugar: true
     condicoes:
-      alvo: {obrigatorio: true, afinidade_max: 20}
+      alvo: {obrigatorio: true}
     consideracoes:
       - entrada: necessidade.raiva
-        curva: {tipo: logistica, meio: 70, inclinacao: 0.12}
+        curva: {tipo: pontos, pontos: [[0, 0.08], [15, 0.12], [35, 0.35], [55, 0.75], [80, 1]]}
       - entrada: afinidade
-        curva: {tipo: pontos, pontos: [[-100, 1], [-30, 0.6], [20, 0.1]]}
+        nota: briga-se com quem se odeia... e com quem se ama
+        curva: {tipo: pontos, pontos: [[-100, 1], [-40, 0.6], [10, 0.12], [60, 0.3], [100, 0.7]]}
     efeitos:
-      necessidades: {raiva: -40, sono: 5}
-      alvo_necessidades: {raiva: 25, medo: 10}
+      necessidades: {raiva: -35, tedio: -10}
+      alvo_necessidades: {raiva: 15}
+      afinidade: -3
+      afinidade_do_alvo: -4
+    cooldown_minutos: 90
+    interrompe_alvo: true
+    # quem levou a bronca fica uns minutos emburrado antes de decidir o que fazer
+    reacao_alvo: emburrar
+    memoria: discussao
+    evento: argument
+    narracao: "{eu} bate boca com {outro} em {lugar}."
+    fala: discussao
+    chance_fala: 0.95
+    fala_alvo: resposta_discussao
+    chance_fala_alvo: 0.8
+    tags: [briga]
+    importancia: 1
+
+  - id: brigar
+    nome: Brigar
+    descricao: Briga de pastelão (tapa, torta, cadeira). Infração.
+    tipo: social
+    peso: 1.6
+    duracao_minutos: [3, 12]
+    em_qualquer_lugar: true
+    condicoes:
+      alvo: {obrigatorio: true}
+    consideracoes:
+      - entrada: necessidade.raiva
+        curva: {tipo: logistica, meio: 60, inclinacao: 0.13}
+      - entrada: afinidade
+        curva: {tipo: pontos, pontos: [[-100, 1], [-30, 0.6], [30, 0.2], [70, 0.15], [100, 0.08]]}
+      - entrada: necessidade.medo
+        nota: quem está com medo não parte pra cima de ninguém
+        curva: {tipo: pontos, pontos: [[0, 1], [30, 0.6], [60, 0.1]]}
+    efeitos:
+      necessidades: {raiva: -55, sono: 5}
+      alvo_necessidades: {raiva: 15, medo: 30}
       afinidade: -10
       afinidade_do_alvo: -15
+      dano_estrutura: 18
     falha:
       chance: 0.25
       efeitos:
         necessidades: {raiva: 15}
       fala: tombo
+      memoria: tombo
+    interrompe_alvo: true
+    cooldown_minutos: 180
+    chance_perseguicao: 0.3
+    memoria: briga
+    infracao: brigar
+    evento: fight
+    narracao: "{eu} parte pra cima de {outro} em {lugar}!"
     fala: briga
-    chance_fala: 0.9
+    chance_fala: 0.95
+    fala_alvo: resposta_briga
+    chance_fala_alvo: 0.7
     tags: [briga]
+    importancia: 2
+
+  - id: pedir_desculpas
+    nome: Pedir desculpas
+    descricao: Vai atrás de quem brigou com ele e pede desculpas (às vezes não colam).
+    tipo: social
+    peso: 1.2
+    duracao_minutos: [3, 10]
+    em_qualquer_lugar: true
+    ir_atras: true
+    condicoes:
+      alvo: {obrigatorio: true}
+    consideracoes:
+      - entrada: conflito_alvo
+        curva: {tipo: pontos, pontos: [[0, 0], [8, 0.2], [30, 0.8], [60, 1]]}
+      - entrada: afinidade_inicial
+        nota: quem se ama de verdade faz as pazes rápido (quem nunca se gostou, não)
+        curva: {tipo: pontos, pontos: [[-100, 0], [-10, 0], [10, 0.1], [40, 0.4], [80, 1]]}
+      - entrada: necessidade.raiva
+        nota: ainda bufando, ninguém pede desculpas
+        curva: {tipo: pontos, pontos: [[0, 1], [40, 0.7], [70, 0.15], [90, 0.02]]}
+    efeitos:
+      necessidades: {raiva: -10}
+      alvo_necessidades: {raiva: -25}
+      afinidade: 8
+      afinidade_do_alvo: 10
+    falha:
+      chance: 0.25
+      efeitos:
+        necessidades: {raiva: 10}
+      fala: desculpas_recusadas
+    reconcilia: true
+    memoria: pazes
+    evento: reconcile
+    narracao: "{eu} pede desculpas para {outro}."
+    fala: desculpas
+    chance_fala: 0.9
+    fala_alvo: aceita_desculpas
+    chance_fala_alvo: 0.7
+    tags: [conversa]
     importancia: 1
+
+  - id: abracar
+    nome: Abraçar
+    descricao: Abraço de reconciliação (os Cowboys sempre terminam assim).
+    tipo: social
+    peso: 1.3
+    duracao_minutos: [2, 5]
+    em_qualquer_lugar: true
+    condicoes:
+      alvo: {obrigatorio: true}
+    consideracoes:
+      - entrada: conflito_alvo
+        curva: {tipo: pontos, pontos: [[0, 0], [8, 0.3], [30, 1]]}
+      - entrada: afinidade_inicial
+        curva: {tipo: pontos, pontos: [[-100, 0], [0, 0], [20, 0.1], [50, 0.6], [80, 1]]}
+      - entrada: necessidade.raiva
+        curva: {tipo: pontos, pontos: [[0, 1], [50, 0.5], [80, 0.05]]}
+    efeitos:
+      necessidades: {raiva: -15, social: -10}
+      alvo_necessidades: {raiva: -25}
+      afinidade: 7
+      afinidade_do_alvo: 7
+    reconcilia: true
+    memoria: pazes
+    evento: reconcile
+    narracao: "{eu} abraça {outro}."
+    fala: abraco
+    chance_fala: 0.9
+    fala_alvo: resposta_abraco
+    chance_fala_alvo: 0.5
+    tags: [conversa]
+    importancia: 1
+
+  - id: consolar
+    nome: Consolar
+    descricao: Tenta acalmar alguém nervoso ou com medo.
+    tipo: social
+    peso: 0.9
+    duracao_minutos: [5, 15]
+    em_qualquer_lugar: true
+    condicoes:
+      alvo: {obrigatorio: true, afinidade_min: 10}
+    consideracoes:
+      - entrada: alvo_necessidade.raiva
+        curva: {tipo: pontos, pontos: [[0, 0.01], [35, 0.2], [60, 0.8], [85, 1]]}
+      - entrada: afinidade
+        curva: {tipo: pontos, pontos: [[10, 0.2], [60, 0.8], [100, 1]]}
+      - entrada: necessidade.raiva
+        nota: quem está nervoso não consola ninguém
+        curva: {tipo: pontos, pontos: [[0, 1], [50, 0.4], [80, 0.05]]}
+    efeitos:
+      necessidades: {social: -10}
+      alvo_necessidades: {raiva: -30, medo: -25, social: -15}
+      afinidade: 3
+      afinidade_do_alvo: 6
+    memoria: consolo
+    narracao: "{eu} tenta acalmar {outro}."
+    fala: consolar
+    chance_fala: 0.85
+    fala_alvo: resposta_consolo
+    chance_fala_alvo: 0.5
+    tags: [conversa]
 
   - id: fofocar
     nome: Fofocar
     descricao: Conta para alguém o que sabe (ou acha que sabe) sobre um terceiro.
     tipo: social
-    ativa: false
-    peso: 0.7
+    peso: 0.5
     duracao_minutos: [5, 15]
     em_qualquer_lugar: true
+    cooldown_minutos: 45
+    especial: fofoca
     condicoes:
       alvo: {obrigatorio: true, afinidade_min: -20}
     consideracoes:
+      - entrada: fofoca
+        nota: quão boa é a fofoca que tenho para essa pessoa
+        curva: {tipo: pontos, pontos: [[0, 0], [10, 0.3], [40, 0.8], [80, 1]]}
       - entrada: necessidade.tedio
-        curva: {tipo: linear, minimo: 0.1}
+        curva: {tipo: linear, minimo: 0.25}
       - entrada: afinidade
         curva: {tipo: pontos, pontos: [[-20, 0.2], [50, 1]]}
     efeitos:
       necessidades: {tedio: -20, social: -15}
       afinidade: 2
+      afinidade_do_alvo: 1
+    evento: gossip
+    narracao: "{eu} cochicha uma fofoca no ouvido de {outro}."
     fala: fofoca
-    chance_fala: 0.9
+    chance_fala: 1
+    fala_alvo: reacao_fofoca
+    chance_fala_alvo: 0.6
     tags: [conversa]
 
-  - id: consolar
-    nome: Consolar
-    descricao: Tenta animar alguém triste ou com medo.
+  - id: pregar_peca
+    nome: Pregar uma peça
+    descricao: Pegadinha. Dá errado nele mesmo com frequência. Infração (baderna).
     tipo: social
-    ativa: false
-    peso: 0.8
-    duracao_minutos: [5, 20]
+    peso: 0.6
+    duracao_minutos: [3, 8]
     em_qualquer_lugar: true
     condicoes:
-      alvo: {obrigatorio: true, afinidade_min: 0}
+      tracos: [debochado]
+      alvo: {obrigatorio: true, afinidade_max: 40}
     consideracoes:
-      - entrada: alvo_necessidade.medo
-        curva: {tipo: pontos, pontos: [[0, 0.05], [50, 0.6], [100, 1]]}
+      - entrada: necessidade.tedio
+        curva: {tipo: pontos, pontos: [[0, 0.05], [40, 0.4], [80, 1]]}
       - entrada: afinidade
-        curva: {tipo: linear}
+        nota: o alvo favorito é quem ele menos gosta
+        curva: {tipo: pontos, pontos: [[-100, 1], [-30, 0.8], [40, 0.15]]}
     efeitos:
-      necessidades: {social: -10}
-      alvo_necessidades: {medo: -25, social: -15}
-      afinidade: 3
-      afinidade_do_alvo: 6
-    fala: consolar
-    chance_fala: 0.8
-    tags: [conversa]
+      necessidades: {tedio: -35, social: -10}
+      alvo_necessidades: {raiva: 35}
+      afinidade_do_alvo: -10
+    falha:
+      chance: 0.45
+      efeitos:
+        necessidades: {tedio: -10, raiva: 10}
+      fala: pegadinha_errada
+      memoria: tombo
+    interrompe_alvo: true
+    chance_perseguicao: 0.35
+    memoria: pegadinha
+    infracao: baderna
+    cooldown_minutos: 60
+    evento: prank
+    narracao: "{eu} prepara uma pegadinha para {outro}."
+    fala: pegadinha
+    chance_fala: 0.95
+    fala_alvo: resposta_pegadinha
+    chance_fala_alvo: 0.8
+    tags: [briga]
+    importancia: 1
 
+  - id: emburrar
+    nome: Emburrar
+    descricao: Cruza os braços e fica uns minutos remoendo (depois de levar uma bronca). Automática.
+    tipo: individual
+    automatica: true
+    peso: 0
+    duracao_minutos: [3, 8]
+    em_qualquer_lugar: true
+    efeitos:
+      necessidades: {raiva: -5}
+    narracao: "{eu} cruza os braços e fica emburrad{o|a}."
+    fala: emburrar
+    chance_fala: 0.5
+    tags: [briga]
+
+  - id: fugir
+    nome: Fugir
+    descricao: Sai correndo (depois de uma briga, de uma pegadinha, do Fiscal). Automática.
+    tipo: individual
+    automatica: true
+    peso: 0
+    duracao_minutos: [3, 6]
+    em_qualquer_lugar: true
+    efeitos:
+      necessidades: {medo: -10, sono: 2}
+    narracao: "{eu} chega correndo em {lugar}, sem fôlego."
+    tags: [briga]
+
+  - id: perseguir
+    nome: Perseguir
+    descricao: Corre atrás de quem fugiu. Automática.
+    tipo: social
+    automatica: true
+    peso: 0
+    duracao_minutos: [2, 5]
+    em_qualquer_lugar: true
+    condicoes:
+      alvo: {obrigatorio: true}
+    efeitos:
+      necessidades: {raiva: -10}
+      alvo_necessidades: {medo: 10}
+    narracao: "{eu} alcança {outro} em {lugar}, bufando."
+    fala: alcancou
+    chance_fala: 0.7
+    tags: [briga]
+
+  # ------------------------------------------------------------- ganância
   - id: roubar
     nome: Roubar
-    descricao: Pega o que não é seu e esconde. Infração.
+    descricao: Pega o que não é seu e esconde (e às vezes esquece onde). Infração.
     tipo: individual
-    ativa: false
-    peso: 0.3
-    duracao_minutos: [2, 10]
+    peso: 0.5
+    duracao_minutos: [2, 8]
+    especial: roubar
+    condicoes:
+      tracos: [ganancioso]
     consideracoes:
       - entrada: presentes
         nota: melhor sem testemunhas
-        curva: {tipo: pontos, pontos: [[0, 1], [2, 0.4], [6, 0.05]]}
+        curva: {tipo: pontos, pontos: [[0, 1], [2, 0.5], [5, 0.1]]}
+      - entrada: necessidade.tedio
+        curva: {tipo: pontos, pontos: [[0, 0.15], [60, 1]]}
     efeitos:
-      necessidades: {tedio: -15, medo: 10}
+      necessidades: {tedio: -25, medo: 10}
+    cooldown_minutos: 300
+    infracao: roubar
+    evento: theft
+    narracao: "{eu} enfia {objeto} no casaco, de fininho."
     fala: roubo
-    chance_fala: 0.4
+    chance_fala: 0.5
     tags: [evento]
+    importancia: 1
 
+  # ----------------------------------------------------------------- lei
+  - id: denunciar
+    nome: Denunciar
+    descricao: Vai até o Fiscal contar o que viu (ou ouviu dizer).
+    tipo: social
+    peso: 0.5
+    duracao_minutos: [3, 8]
+    em_qualquer_lugar: true
+    ir_atras: true
+    especial: denuncia
+    condicoes:
+      periodos: [manha, tarde]
+      alvo: {obrigatorio: true, profissoes: [fiscal]}
+    consideracoes:
+      - entrada: denuncia
+        curva: {tipo: pontos, pontos: [[0, 0], [25, 0.15], [50, 0.6], [80, 1]]}
+      - entrada: necessidade.raiva
+        curva: {tipo: pontos, pontos: [[0, 0.4], [50, 1]]}
+    efeitos:
+      necessidades: {raiva: -15}
+      afinidade_do_alvo: 3
+    narracao: "{eu} vai até {outro} contar uma coisa."
+    fala: denuncia
+    chance_fala: 1
+    fala_alvo: resposta_fiscal
+    chance_fala_alvo: 0.6
+    tags: [briga]
+
+  - id: prender
+    nome: Prender
+    descricao: O Fiscal vai atrás de quem tem mandado. O infrator pode fugir.
+    tipo: social
+    peso: 3
+    duracao_minutos: [3, 8]
+    em_qualquer_lugar: true
+    ir_atras: true
+    especial: prender
+    condicoes:
+      profissoes: [fiscal]
+      alvo: {obrigatorio: true}
+    consideracoes:
+      - entrada: mandado
+        curva: {tipo: degrau, limite: 1}
+    efeitos:
+      necessidades: {tedio: -20}
+    falha:
+      chance: 0.3
+      efeitos:
+        necessidades: {raiva: 20}
+      fala: fuga
+    narracao: "{eu} encontra {outro} e tira o apito do bolso."
+    fala: prender
+    chance_fala: 0.8
+    tags: [briga]
+    importancia: 1
+
+  - id: patrulhar
+    nome: Patrulhar
+    descricao: O Fiscal faz a ronda, medindo tudo com a régua.
+    tipo: individual
+    peso: 0.6
+    duracao_minutos: [15, 40]
+    vagar: true
+    condicoes:
+      profissoes: [fiscal]
+      periodos: [manha, tarde]
+    consideracoes:
+      - entrada: necessidade.tedio
+        curva: {tipo: linear, minimo: 0.4}
+    efeitos:
+      necessidades: {tedio: -15}
+    narracao: "{eu} faz a ronda por {lugar}, medindo tudo com a régua."
+    fala: patrulha
+    chance_fala: 0.3
+    tags: [trabalho]
+
+  # ------------------------------------------------------------- pastelão
+  - id: andar_de_skate
+    nome: Andar de skate
+    descricao: O Adolescente de skate. Cai em toda escada.
+    tipo: individual
+    peso: 0.5
+    duracao_minutos: [10, 30]
+    condicoes:
+      personagens: [teen]
+      periodos: [manha, tarde, noite]
+    consideracoes:
+      - entrada: necessidade.tedio
+        curva: {tipo: linear, minimo: 0.2}
+    efeitos:
+      necessidades: {tedio: -25}
+    falha:
+      chance: 0.35
+      efeitos:
+        necessidades: {raiva: 15, tedio: -5}
+      fala: tombo_skate
+      memoria: tombo
+    narracao: "{eu} anda de skate por {lugar}."
+    fala: skate
+    chance_fala: 0.4
+    tags: [rotina]
+
+  - id: fazer_malabarismo
+    nome: Fazer malabarismo
+    descricao: Faz malabarismo e deixa tudo cair.
+    tipo: individual
+    peso: 0.5
+    duracao_minutos: [10, 25]
+    condicoes:
+      personagens: [fool, clown]
+      periodos: [manha, tarde]
+    consideracoes:
+      - entrada: necessidade.tedio
+        curva: {tipo: linear, minimo: 0.2}
+      - entrada: presentes
+        curva: {tipo: pontos, pontos: [[0, 0.3], [3, 1]]}
+    efeitos:
+      necessidades: {tedio: -20, social: -5}
+    falha:
+      chance: 0.5
+      efeitos:
+        necessidades: {tedio: -10}
+      fala: malabarismo_errado
+      memoria: tombo
+    narracao: "{eu} faz malabarismo em {lugar}."
+    fala: malabarismo
+    chance_fala: 0.5
+    tags: [rotina]
+
+  - id: fucar
+    nome: Fuçar onde não deve
+    descricao: O Aprendiz encosta onde não deve na Sala do Servidor.
+    tipo: individual
+    peso: 0.4
+    duracao_minutos: [5, 15]
+    condicoes:
+      personagens: [tech_apprentice]
+      periodos: [manha, tarde]
+    consideracoes:
+      - entrada: necessidade.tedio
+        curva: {tipo: linear, minimo: 0.3}
+    efeitos:
+      necessidades: {tedio: -25}
+    falha:
+      chance: 0.5
+      efeitos:
+        necessidades: {medo: 30, sono: -10}
+      fala: choque
+      memoria: choque
+    cooldown_minutos: 360
+    narracao: "{eu} abre um painel em {lugar} só pra ver o que tem dentro."
+    fala: fucar
+    chance_fala: 0.6
+    tags: [misterio]
+
+  - id: pichar
+    nome: Pichar
+    descricao: Picha os muros da cidade e assina o próprio nome. Infração.
+    tipo: individual
+    peso: 0.4
+    duracao_minutos: [5, 15]
+    condicoes:
+      tracos: [rebelde]
+    consideracoes:
+      - entrada: necessidade.tedio
+        curva: {tipo: pontos, pontos: [[0, 0.03], [50, 0.4], [85, 1]]}
+      - entrada: presentes
+        curva: {tipo: pontos, pontos: [[0, 1], [3, 0.4], [8, 0.1]]}
+    efeitos:
+      necessidades: {tedio: -35}
+      dano_estrutura: 6
+    assina: true
+    cooldown_minutos: 240
+    memoria: pichacao
+    infracao: pichar
+    narracao: "{eu} picha um muro de {lugar} e assina o próprio nome, bem grande."
+    fala: pichar
+    chance_fala: 0.5
+    tags: [briga]
+    importancia: 1
+
+  # ---------------------------------------------------- construir e quebrar
   - id: construir
     nome: Construir ou consertar
-    descricao: Reconstrói o que foi destruído (mutirão do Ferreiro, ordem do Chefe).
+    descricao: Conserta o que está estragado (mutirão do Ferreiro, ordem do Chefe).
     tipo: individual
-    ativa: false
-    peso: 0.5
-    duracao_minutos: [60, 180]
+    peso: 0.7
+    duracao_minutos: [40, 120]
+    conserta: 45
     condicoes:
       periodos: [manha, tarde]
     consideracoes:
+      - entrada: dano
+        curva: {tipo: pontos, pontos: [[0, 0], [10, 0.3], [40, 1]]}
       - entrada: necessidade.sono
         curva: {tipo: linear, inverter: true, minimo: 0.1}
     efeitos:
-      necessidades: {sono: 10, fome: 10, tedio: -10}
+      necessidades: {sono: 8, fome: 10, tedio: -15}
+    falha:
+      chance: 0.12
+      efeitos:
+        necessidades: {raiva: 25}
+        dano_estrutura: 12
+      fala: construir_errado
+      memoria: tombo
+    narracao: "{eu} arregaça as mangas e conserta o que dá em {lugar}."
     fala: construir
-    chance_fala: 0.3
+    chance_fala: 0.4
     tags: [trabalho]
 
   - id: quebrar
     nome: Quebrar
-    descricao: Quebra alguma coisa, de raiva ou sem querer. Infração.
+    descricao: Quebra alguma coisa de raiva. Infração.
     tipo: individual
-    ativa: false
-    peso: 0.3
-    duracao_minutos: [2, 10]
+    peso: 0.35
+    duracao_minutos: [2, 8]
     consideracoes:
       - entrada: necessidade.raiva
         curva: {tipo: potencia, expoente: 2}
     efeitos:
-      necessidades: {raiva: -30}
+      necessidades: {raiva: -35}
+      dano_estrutura: 35
+    memoria: quebra
+    infracao: quebrar
+    narracao: "{eu} desconta a raiva nas coisas de {lugar}."
     fala: quebrar
-    chance_fala: 0.6
+    chance_fala: 0.7
     tags: [briga]
+    importancia: 1
+
+  - id: mandar_reconstruir
+    nome: Mandar reconstruir
+    descricao: O Chefe manda a cidade consertar o que está estragado.
+    tipo: individual
+    peso: 2
+    duracao_minutos: [10, 20]
+    especial: ordem_reconstruir
+    cooldown_minutos: 480
+    condicoes:
+      personagens: [chief]
+      periodos: [manha, tarde]
+      lugar_proprio: trabalho
+    consideracoes:
+      - entrada: dano_cidade
+        curva: {tipo: pontos, pontos: [[0, 0], [20, 0.2], [50, 1]]}
+    efeitos:
+      necessidades: {tedio: -5}
+    narracao: "{eu} manda consertar {objeto}."
+    fala: ordem_reconstruir
+    chance_fala: 1
+    tags: [trabalho]
+    importancia: 1

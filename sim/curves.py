@@ -29,7 +29,29 @@ INPUT_RANGES: dict[str, tuple[float, float]] = {
     "presentes": (0, 20),  # outros personagens no mesmo lugar
     "perigo": (0, 100),  # perigo do lugar (perigo_noite à noite)
     "tensao": (0, 100),  # tensão do mundo medida pelo diretor (Fase 3; 50 antes)
+    # Fase 2 (sociedade) ---------------------------------------------------
+    "afinidade_inicial": (-100, 100),  # afinidade do YAML com o alvo (o "amor de fundo")
+    "afinidade_com": (-100, 100),  # minha afinidade com alguém: afinidade_com.medium
+    "presenca": (0, 1),  # 1 se alguém está no lugar candidato: presenca.priest
+    "faccao": (0, 1),  # 1 se sou da facção: faccao.seita
+    "conflito_alvo": (0, 100),  # minha memória ruim mais forte envolvendo o alvo
+    "memoria": (0, 100),  # minha memória mais forte deste tipo: memoria.briga
+    "memoria_alvo": (0, 100),  # idem, envolvendo o alvo: memoria_alvo.briga
+    "fofoca": (0, 100),  # quão suculenta é a melhor fofoca que tenho para contar ao alvo
+    "denuncia": (0, 100),  # minha memória mais forte de uma infração de outro (ainda não denunciada)
+    "dano": (0, 100),  # quanto o lugar candidato está estragado (100 - menor resistência)
+    "dano_cidade": (0, 100),  # o pior estrago do mundo inteiro
+    "mandado": (0, 1),  # 1 se o alvo tem mandado de prisão (para o Fiscal)
 }
+
+# entradas que precisam de ".<algo>" e o que é o algo
+DOTTED_INPUTS = {
+    "necessidade": "necessidade", "alvo_necessidade": "necessidade", "afinidade_com": "personagem",
+    "presenca": "personagem", "faccao": "facção", "memoria": "tipo de memória", "memoria_alvo": "tipo de memória",
+}
+# entradas que só funcionam em ações com alvo (condicoes.alvo)
+TARGET_INPUTS = {"afinidade", "alvo_necessidade", "afinidade_inicial", "conflito_alvo", "memoria_alvo",
+                 "fofoca", "mandado"}
 
 
 def input_kind(entry: str) -> str:

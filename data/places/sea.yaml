@@ -15,3 +15,5 @@ conexoes:
   - {para: market, tipo: tunel, minutos: 5}
   - {para: desert, tipo: caminho, minutos: 40}
 acoes: [cochilar, festejar, rezar]
+estruturas:
+  - {id: sea_boat, nome: o barco de pesca}

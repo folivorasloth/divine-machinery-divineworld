@@ -89,6 +89,9 @@ acoes:
         curva: {tipo: pontos, pontos: [[0, 1], [70, 0.6], [100, 0.1]]}
     efeitos:
       necessidades: {tedio: 10, sono: 3, fome: 5, social: 5}
+      # o Ferreiro explode por qualquer coisa
+      por_traco:
+        irritado: {raiva: 25}
     narracao: "{eu} {trabalho} em {lugar}."
     fala: trabalhar
     chance_fala: 0.3
@@ -151,7 +154,7 @@ acoes:
     efeitos:
       necessidades: {sono: -20, tedio: -5}
     narracao: "{eu} fecha os olhos um pouquinho em {lugar}."
-    narracao_fim: "{eu} acorda do cochilo, meio perdido."
+    narracao_fim: "{eu} acorda do cochilo, meio perdid{o|a}."
     fala: cochilar
     chance_fala: 0.2
     tags: [rotina]

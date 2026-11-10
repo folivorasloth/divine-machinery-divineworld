@@ -48,13 +48,14 @@ def natural_change(
     is_night: bool,
     dt_minutes: float,
     sleeping: bool = False,
+    extra_traits: list[str] = (),
 ) -> None:
     """Aplica a variação natural (taxas) em `needs`, no lugar."""
     dt_hours = dt_minutes / 60.0
     for nid, need in data.world.needs.items():
         if sleeping and nid == "sono":
             continue
-        rate = (need.rate_night if is_night else need.rate_day) * rate_multiplier(data, char, nid)
+        rate = (need.rate_night if is_night else need.rate_day) * rate_multiplier(data, char, nid, extra_traits)
         value = needs.get(nid, need.initial)
         if need.mode == "acumula":
             value += rate * dt_hours

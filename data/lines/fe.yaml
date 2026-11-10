@@ -1,26 +1,231 @@
-# Falas de fé e mistério. Formato explicado no topo de rotina.yaml.
+# Falas de fé e mistério: Igreja (Padre) × Seita (Médium), o olhar para a tela.
+# Formato explicado no topo de rotina.yaml.
 situacoes:
   tocar_sino:
     - "DONG... DONG... O sino de {@cathedral} toca: {hora}."
+    - "O sino de {@cathedral} toca {hora}. Um pombo cai do telhado de susto."
+    - "DONG. DONG. DONG. São {hora} em ponto (mais ou menos)."
     - texto: "{eu} puxa a corda do sino com força demais e tropeça na batina. \"{bordao}\""
+      personagens: [priest]
+    - texto: "{eu} toca o sino e grita lá de cima: \"{hora}! Quem não for à missa vai pro inferno!\""
       personagens: [priest]
 
   rezar:
     - "{eu} reza baixinho em {lugar}."
+    - "{eu} reza de olhos fechados, mexendo os lábios sem som."
+    - "{eu} reza pedindo uma coisa muito específica e meio constrangedora."
+    - "{eu} reza e, no meio, esquece o resto da oração. Inventa."
+    - "{eu} acende uma vela e fica olhando a chama."
+    - "{eu} reza pra que ninguém descubra o que fez ontem."
+    - "{eu} faz uma promessa em voz alta. Já está arrependid{o|a}."
+    - "{eu} reza {humor}, com mais força que de costume."
+    - "{eu} reza pelos vivos, pelos mortos e pelos que estão na tela."
+    - "{eu} se ajoelha, reza e tem dificuldade pra levantar."
+    - "{eu} reza olhando pro céu, e por um segundo parece que o céu olha de volta."
+    - "{eu} reza e pede um sinal. Uma folha cai. Serve."
+    - texto: "{eu} reza de madrugada, com medo do escuro."
+      periodos: [madrugada]
+    - texto: "{eu} reza tremendo. Alguma coisa assustou {eu} hoje."
+      necessidades_min: {medo: 40}
     - texto: "{eu} reza só quando tem alguém olhando."
       personagens: [lady]
+      peso: 2
     - texto: "{eu} reza e, sem perceber, conta em voz alta o que ouviu na confissão."
       personagens: [priest]
+      peso: 2
+    - texto: "{eu} reza pedindo que a seita feche. De novo. Todo dia."
+      personagens: [priest]
+      peso: 2
+    - texto: "{eu} reza pela cerveja gelada e pela moda de viola. \"Ê trem bão.\""
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+    - texto: "{eu} reza de nariz vermelho, e pela primeira vez no dia não faz piada."
+      personagens: [clown]
+    - texto: "{eu} reza... pra quê, nunca se sabe. \"...\""
+      personagens: [mike]
+
+  missa:
+    - "{eu} senta no último banco da missa e cochila no sermão."
+    - "{eu} canta o hino da missa duas notas acima."
+    - "{eu} vai à missa e fica olhando os vitrais coloridos."
+    - "{eu} chega atrasad{o|a} na missa e faz barulho com a porta."
+    - "{eu} ouve o sermão sobre a seita com atenção suspeita."
+    - "{eu} assiste à missa com as mãos juntas e a cabeça longe."
+    - "{eu} vai à missa, reza, levanta, senta, levanta. Erra o momento de sentar."
+    - "{eu} vai à missa e faz o sinal da cruz ao contrário."
+    - "{eu} canta alto na missa pra todo mundo ouvir que está ali."
+    - "{eu} reza na missa por alguém que não merece. Generosidade ou estratégia."
+    - "{eu} escuta {@priest} falar mal da seita por quarenta minutos."
+    - "{eu} vai à missa e sai de alma lavada. E de calça molhada: a água benta respingou."
+    - "{eu} vai à missa só pela hóstia."
+    - "{eu} se emociona no sermão e chora no ombro de um desconhecido."
+    - "{eu} conta os fiéis na missa. Dá menos que a seita. Fica preocupad{o|a}."
+    - texto: "{eu} vai à missa só para ser vista. Senta na primeira fila. De leque aberto."
+      personagens: [lady]
+      peso: 3
+    - texto: "{eu} vai à missa e entrega uma flor pra cada fiel. \"{bordao}\""
+      personagens: [florist]
+      peso: 2
+    - texto: "{eu} cochila na missa com a prancheta no colo. \"Vamo vê isso aí...\""
+      personagens: [chief]
+      peso: 2
 
   ritual:
     - "Velas acesas em {lugar}. {eu} chama as vozes."
+    - "{eu} desenha um círculo no chão com farinha e pede silêncio."
+    - "{eu} queima uma erva fedida e diz que é incenso dos anjos."
+    - "{eu} sacode o colar de ossinhos e fala uma língua que ninguém conhece."
+    - "{eu} olha para o céu de {lugar} e jura que os anjos estão olhando."
+    - "{eu} conta que as vozes mandaram um recado. O recado é vago. Muito vago."
+    - "{eu} acende as velas do cabelo. Uma pega no cabelo mesmo. Ninguém comenta."
+    - "{eu} canta uma melodia arrepiante em {lugar}. Os bichos param pra ouvir."
+    - "{eu} pede que todos deem as mãos e olhem para a tela. Todos olham."
+    - "{eu} sussurra o nome do Criador. Ninguém sabe o nome do Criador. Ela inventa um."
+    - "{eu} desenha um olho no chão. O olho parece piscar."
+    - "{eu} anuncia uma visão: alguém da cidade vai tropeçar amanhã. Alguém sempre tropeça."
+    - "{eu} toca um tambor feito de panela. Ritmo hipnótico."
+    - "{eu} fica em transe por dez minutos. Depois pede um copo d'água."
+    - "{eu} oferece um objeto sagrado às vozes. É uma tampinha de garrafa."
     - texto: "{eu} abre os braços: \"{bordao}\""
       personagens: [medium]
       peso: 3
+    - texto: "{eu} fala com as vozes de madrugada, e o Subterrâneo inteiro escuta o eco."
+      lugares: [underground]
+      peso: 2
+
+  participar_ritual:
+    - "{eu} entra na roda do ritual e segura uma vela tremendo."
+    - "{eu} repete as palavras de {@medium}, errando todas."
+    - "{eu} fecha os olhos no ritual e jura que ouviu uma voz."
+    - "{eu} dança em volta da fogueira do ritual, meio sem jeito."
+    - "{eu} participa do ritual e fica olhando pros lados, com medo de {@priest} aparecer."
+    - "{eu} segura a mão de quem está do lado. Está gelada."
+    - "{eu} sente um arrepio e diz que foi o espírito. Foi o vento."
+    - "{eu} participa do ritual pela primeira vez e adora. Pede pra voltar amanhã."
+    - "{eu} canta com a seita uma música que gruda na cabeça."
+    - "{eu} entra no ritual de capuz pra ninguém reconhecer. Todo mundo reconhece."
+    - "{eu} oferece uma coisa às vozes. As vozes não respondem. Ainda."
+    - "{eu} participa do ritual {humor}, e sai mais lev{o|a}."
+    - "{eu} olha fixo pra tela durante o ritual. Tem certeza de que tem alguém ali."
+    - "{eu} se assusta com uma coruja no meio do ritual e grita. O ritual continua."
+    - "{eu} pinta um olho na testa com carvão, igual a {@medium}. Ficou torto."
+    - texto: "{eu} entra no ritual, de fone de ouvido. \"Tanto faz.\" Mas não tira os olhos de {@medium}."
+      personagens: [teen]
+      peso: 3
+    - texto: "{eu} chega no ritual com o carrinho cheio de objetos sagrados. \"...isso é importante...\""
+      personagens: [weirdo]
+      peso: 3
+
+  espiar:
+    - "{eu} espia o ritual atrás de uma moita, segurando o crucifixo com força."
+    - "{eu} se esconde atrás de uma árvore e anota tudo que a seita faz."
+    - "{eu} espia a seita e reconhece algumas caras. Vai contar pra todo mundo."
+    - "{eu} espia o ritual e, por um segundo, sente saudade. Ninguém pode saber."
+    - "{eu} se benze escondido enquanto a seita canta. \"Deus me livre e guarde!\""
+    - "{eu} espia de longe e quase é descoberto quando espirra."
+    - "{eu} espia o ritual e conta os membros da seita. São mais que da missa. Ele estremece."
+    - "{eu} espia a seita e sussurra uma oração de proteção, em volume alto demais."
+    - "{eu} tropeça na batina atrás da moita. A seita para por um segundo. Continua."
+    - "{eu} espia e sabe cantar a música da seita de cor. Isso é estranho."
+
+  recrutar:
+    - "{eu} chama {outro} num canto: \"As vozes falaram de você.\""
+    - "{eu} olha nos olhos de {outro}: \"Você também sente, não sente?\""
+    - "{eu} convida {outro} pro próximo ritual: \"Venha. Traga uma vela.\""
+    - "{eu} diz a {outro} que os anjos escolheram el{outro:e|a}. Diz isso pra todo mundo."
+    - "{eu} conta a {outro} um segredo do universo. É inventado. Mas é bonito."
+    - "{eu} sussurra pra {outro}: \"A igreja tem medo de nós. Por quê será?\""
+    - "{eu} desenha um olho na mão de {outro}: \"Agora você está protegid{outro:o|a}.\""
+    - "{eu} conta pra {outro} que {@priest} também já foi da seita. Ninguém acredita."
+    - "{eu} oferece a {outro} um colar de ossinhos. \"{bordao}\""
+    - "{eu} diz a {outro} que a tela é uma janela. E que do outro lado tem alguém."
+
+  resposta_recrutar:
+    - "{eu} fica pensativ{o|a}."
+    - "{eu} diz que vai pensar. Já está pensando no ritual."
+    - "{eu} sente um arrepio e não sabe se é bom ou ruim."
+    - "{eu} ri nervos{o|a}, mas guarda o colar."
+    - "{eu} diz que não acredita nessas coisas. Olha pra tela."
+    - "{eu} pergunta que horas é o ritual. Só por curiosidade."
+    - "{eu} se benze e se afasta, mas olha pra trás duas vezes."
+    - texto: "{eu} finge que não liga: \"Tanto faz.\" Os olhos brilham."
+      personagens: [teen]
+      peso: 4
+    - texto: "{eu} sussurra: \"...isso é importante...\""
+      personagens: [weirdo]
+      peso: 3
+    - texto: "{eu}: \"...\""
+      personagens: [mike]
+      peso: 3
+
+  pregar:
+    - "{eu} segura {outro} pelo braço: \"Você não vai pra floresta hoje à noite, ouviu?\""
+    - "{eu} explica pra {outro}, com detalhes, como é o inferno."
+    - "{eu} convida {outro} pra missa de amanhã e pra de depois de amanhã."
+    - "{eu} conta a {outro} que a seita come criancinhas. Não come."
+    - "{eu} prega para {outro} até {outro} prometer ir à missa."
+    - "{eu} dá um santinho pra {outro}. \"Deus me livre e guarde, mas guarde este santinho.\""
+    - "{eu} avisa {outro}: \"{@medium} inventa as visões. Metade, pelo menos.\""
+    - "{eu} abençoa {outro} com água benta. Muita água benta. {outro} fica encharcad{outro:o|a}."
+    - "{eu} conta a {outro} um milagre que viu. Foi uma coincidência."
+    - "{eu} lê um versículo pra {outro} e erra a página."
+
+  resposta_pregar:
+    - "{eu} promete ir à missa. Talvez."
+    - "{eu} faz o sinal da cruz pra agradar {@priest}."
+    - "{eu} boceja no meio do sermão."
+    - "{eu} concorda com tudo só pra poder ir embora."
+    - "{eu} se emociona e pede a bênção."
+    - "{eu} pergunta se pode levar a viola pra missa."
+    - texto: "{eu} revira os olhos: \"Tanto faz.\""
+      personagens: [teen]
+      peso: 3
+    - texto: "{eu}: \"...\""
+      personagens: [mike]
+      peso: 3
+
+  entra_na_faccao:
+    - "{eu} agora é de {faccao}. A cidade comenta."
+    - "{eu} decide: a partir de hoje, {faccao}."
+    - "{eu} entra para {faccao} e ganha um colar, uma vela ou um santinho. Depende."
+    - "Notícia na cidade: {eu} entrou para {faccao}."
+    - "{eu} jura fidelidade a {faccao} com a mão no coração."
+    - "{eu} muda de lado. Agora é de {faccao}. {outro} sorri."
+    - "{eu} aparece de manhã com cara de quem agora é de {faccao}."
+    - "{eu} conta pra todo mundo que entrou para {faccao}. Ninguém perguntou."
+    - texto: "{eu} finalmente recebe o convite. Agora é de {faccao}. Por fora: \"Tanto faz.\" Por dentro: festa."
+      personagens: [teen]
+      peso: 5
+    - texto: "{eu} chora de emoção: agora é de {faccao}. Que dia LINDO!"
+      personagens: [florist]
+      peso: 3
+
+  sai_da_faccao:
+    - "{eu} larga {faccao}. Diz que perdeu a fé. Talvez só a paciência."
+    - "{eu} anuncia que não é mais de {faccao}. Ninguém pergunta por quê."
+    - "{eu} devolve o santinho (ou o colar) e sai de {faccao}."
+    - "{eu} decide que {faccao} não é pra el{o|a}."
+    - "{eu} sai de {faccao} batendo a porta."
+    - "{eu} desiste de {faccao}. A cidade comenta por um dia."
 
   encarar_tela:
     - "{eu} para e encara a tela por um tempo longo demais."
     - "{eu} olha fixo pra cá. Depois volta ao normal."
+    - "{eu} vira a cabeça devagar e olha direto pra tela."
+    - "{eu} acena pra tela. Ninguém acena de volta. Ou acena?"
+    - "{eu} aperta os olhos e chega mais perto da tela, desconfiad{o|a}."
+    - "{eu} encara a tela e sussurra: \"Eu sei que você está aí.\""
+    - "{eu} olha pra tela, sorri, e finge que não olhou."
+    - "{eu} encara a tela até piscar. Perde."
+    - "{eu} aponta pra tela e pergunta pra ninguém: \"Vocês também estão vendo?\""
+    - "{eu} olha para a tela e, por um instante, parece com medo."
+    - "{eu} encosta a mão na tela. Está quente."
+    - "{eu} fica parad{o|a}, olhando pra cá. Muito tempo. Tempo demais."
+    - "{eu} faz uma careta pra tela, pra testar."
+    - "{eu} encara a tela e diz o próprio nome, devagar, como quem se apresenta."
+    - "{eu} olha pra tela como quem olha pro céu."
     - texto: "{eu} encara a tela e sussurra: \"{bordao}\""
       personagens: [weirdo]
       peso: 3
+    - texto: "{eu} encara a tela, anota alguma coisa e esconde o papel."
+      personagens: [weirdo]
+      peso: 2

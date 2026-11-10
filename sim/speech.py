@@ -13,7 +13,8 @@
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, field
 
 from sim import text
 from sim.loader import WorldData
@@ -34,6 +35,17 @@ class SpeechContext:
     mood: str
     needs: dict[str, float]
     target: str | None = None
+    # Fase 2: variáveis extras da situação ({terceiro}, {fato}, {objeto}, {evento}...)
+    extra: dict[str, str] = field(default_factory=dict)
+    # pronome ("ele"/"ela") de eu/outro/terceiro, para a concordância {o|a}
+    genders: dict[str, str] = field(default_factory=dict)
+    # recall(tipos) -> frase {lembranca} da memória mais forte desses tipos
+    # envolvendo o alvo (ou qualquer um, sem alvo); None se não lembra
+    recall: Callable[[list[str]], str | None] | None = None
+
+
+# variáveis que só existem em algumas situações: fala que usa e não tem é pulada
+_SITUATIONAL = {"terceiro", "fato", "objeto", "evento", "infracao", "faccao", "traco", "morto", "convidados"}
 
 
 def _needs_vars(line: str, ctx: SpeechContext, data: WorldData) -> bool:
@@ -45,8 +57,11 @@ def _needs_vars(line: str, ctx: SpeechContext, data: WorldData) -> bool:
         return False
     if "bordao_outro" in used and ctx.target and not data.characters[ctx.target].catchphrases:
         return False
-    if "morto" in used or "objeto" in used:  # ainda não existem (Fases 2-3)
-        return False
+    for var in used & _SITUATIONAL:
+        if not ctx.extra.get(var):
+            return False
+    if "lembranca" in used and "lembranca" not in ctx.extra:
+        return False  # {lembranca} só em falas com filtro `memoria` (ou quando vem pronta)
     return True
 
 
@@ -65,6 +80,11 @@ def matches(line: LineTemplate, ctx: SpeechContext, data: WorldData) -> bool:
     for nid, minimum in line.min_needs.items():
         if ctx.needs.get(nid, 0) < minimum:
             return False
+    if line.memory:
+        if ctx.recall is None or ctx.recall(line.memory) is None:
+            return False
+        if "lembranca" in set(text.fields(line.text)):
+            return _needs_vars(line.text.replace("{lembranca}", ""), ctx, data)
     return _needs_vars(line.text, ctx, data)
 
 
@@ -87,6 +107,7 @@ def fill_context(ctx: SpeechContext, data: WorldData, rng: random.Random) -> dic
         other = data.characters.get(ctx.target)
         if other and other.catchphrases:
             values["bordao_outro"] = rng.choice(other.catchphrases)
+    values.update({k: v for k, v in ctx.extra.items() if v})
     return values
 
 
@@ -108,8 +129,12 @@ def pick_line(
     if recent is not None:
         recent.append(line.text)
         del recent[:-RECENT_LIMIT]
-    return text.fill(line.text, fill_context(ctx, data, rng))
+    values = fill_context(ctx, data, rng)
+    if line.memory and ctx.recall is not None:
+        values["lembranca"] = ctx.recall(line.memory) or ""
+    # duas passadas: {lembranca}/{fato} trazem {@id} dentro, e o resto é preenchido
+    return text.fill(line.text, values, ctx.genders)
 
 
 def fill_narration(data: WorldData, template: str, ctx: SpeechContext, rng: random.Random) -> str:
-    return text.fill(template, fill_context(ctx, data, rng))
+    return text.fill(template, fill_context(ctx, data, rng), ctx.genders)

@@ -1,0 +1,356 @@
+# Falas de conflito e reconciliação (discutir, brigar, pedir desculpas,
+# abraçar, consolar, perseguir). Formato explicado no topo de rotina.yaml.
+situacoes:
+  discussao:
+    - "{eu} bate boca com {outro}: \"Você SEMPRE faz isso!\""
+    - "{eu} aponta o dedo na cara de {outro} e grita uma coisa que não dá pra repetir."
+    - "{eu} e {outro} discutem aos berros em {lugar}. Ninguém sabe sobre o quê."
+    - "{eu} grita com {outro} por causa de uma colher. Talvez não seja sobre a colher."
+    - "{eu} acusa {outro} de ter mexido nas coisas del{o|a}."
+    - "{eu} perde a paciência com {outro}: \"Eu não aguento mais!\""
+    - "{eu} começa a discutir com {outro} e esquece no meio por que começou."
+    - "{eu} grita com {outro} tão alto que um passarinho cai do galho."
+    - "{eu} discute com {outro} usando argumentos que não fazem o menor sentido."
+    - "{eu} reclama de {outro} pra {outro}, em voz alta, com plateia."
+    - "{eu} chama {outro} de tudo, menos de santo."
+    - "{eu} bate o pé no chão e diz que {outro} é impossível."
+    - "{eu} desconta em {outro} o dia inteiro de uma vez só."
+    - texto: "{eu} grita com {outro}: \"Desde {lembranca} que você me deve uma!\""
+      memoria: [briga, discussao, pegadinha, roubo, sumico, quebra]
+      peso: 4
+    - texto: "{eu}, {humor}, solta: \"{bordao}\" na cara de {outro}."
+      necessidades_min: {raiva: 50}
+      peso: 2
+    - texto: "{eu} sacode a colher de pau na cara de {outro}: \"{bordao}\" Começou a briga das três da tarde."
+      personagens: [chef_wife]
+      lugares: [community_kitchen]
+      peso: 4
+    - texto: "{eu} grita com {outro} que a comida não se cozinha sozinha. \"{bordao}\""
+      personagens: [chef_wife]
+      peso: 2
+    - texto: "{eu} grita com {outro} que ninguém valoriza o tempero dele. \"Faltou sal... faltou SAL!\""
+      personagens: [chef_husband]
+      peso: 3
+    - texto: "{eu} cospe no chão perto de {outro}. Ô loco, sô. Isso é praticamente uma declaração de guerra."
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+      peso: 3
+    - texto: "{eu} começa a discutir com {outro} sobre quem pescou o maior peixe. Nenhum dos dois pesca."
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+      peso: 2
+    - texto: "{eu} chama {outro} de gentalha. Duas vezes, pra ter certeza."
+      personagens: [lady]
+      peso: 3
+    - texto: "{eu} apita na cara de {outro}: \"Discussão em via pública é infração!\""
+      personagens: [inspector]
+      peso: 2
+    - texto: "{eu} rosna pra {outro} e bate o martelo na bigorna mais próxima. GRRR."
+      personagens: [blacksmith]
+      peso: 3
+    - texto: "{eu} diz pra {outro} que o inferno tem lugar reservado pra el{outro:e|a}. \"{bordao}\""
+      personagens: [priest]
+      peso: 2
+    - texto: "{eu} diz pra {outro} que as vozes não gostam del{outro:e|a}. E as vozes nunca erram."
+      personagens: [medium]
+      peso: 2
+    - texto: "{eu} revira os olhos pra {outro}: \"Tanto faz. Mas você tá errad{outro:o|a}.\""
+      personagens: [teen]
+      peso: 2
+
+  resposta_discussao:
+    - "{eu} grita de volta, mais alto."
+    - "{eu} responde com uma lista de defeitos de {outro}, em ordem alfabética."
+    - "{eu} cruza os braços e diz que não vai discutir. E discute."
+    - "{eu} imita a voz de {outro}, o que piora tudo."
+    - "{eu} responde: \"Olha quem fala!\""
+    - "{eu} fica vermelh{o|a} e não consegue dizer nada. Depois pensa na resposta perfeita, tarde demais."
+    - "{eu} vira as costas e sai. Volta dois segundos depois pra ter a última palavra."
+    - "{eu} responde com um palavrão que nem existe."
+    - "{eu} chora de raiva. Isso é pior pra todo mundo."
+    - "{eu} ri na cara de {outro}, o que deixa {outro} ainda mais furios{outro:o|a}."
+    - "{eu} diz que vai contar tudo pro Chefe. {@chief} está dormindo."
+    - "{eu} rebate: \"E aquela vez, hein? E AQUELA VEZ?\""
+    - texto: "{eu} responde: \"{bordao}\" e bate a porta. Não tem porta."
+      peso: 2
+    - texto: "{eu} chora: \"Você não me ama mais!\""
+      personagens: [chef_husband]
+      peso: 3
+    - texto: "{eu} buzina em protesto. *FOOOOM*"
+      personagens: [clown]
+      peso: 2
+    - texto: "{eu}: \"...\""
+      personagens: [mike]
+      peso: 3
+
+  briga:
+    - "{eu} acerta uma torta na cara de {outro}."
+    - "{eu} e {outro} rolam no chão de {lugar} numa nuvem de poeira."
+    - "{eu} puxa a orelha de {outro} até {outro} pedir arrego."
+    - "{eu} dá uma voadora em {outro}. Erra. Acerta na segunda."
+    - "{eu} quebra uma cadeira nas costas de {outro}. A cadeira perde."
+    - "{eu} agarra {outro} pelo colarinho e os dois giram, giram e caem."
+    - "{eu} parte pra cima de {outro} com tudo. Voa chapéu, voa sapato, voa dignidade."
+    - "{eu} e {outro} trocam tapas como duas crianças de bigode."
+    - "{eu} morde {outro}. Ninguém esperava a mordida."
+    - "{eu} joga um balde d'água em {outro}, depois o balde."
+    - "{eu} dá um soco em {outro} e machuca a própria mão."
+    - "{eu} e {outro} se atracam e derrubam tudo que tinha em {lugar}."
+    - "{eu} acerta {outro} com um peixe. De onde veio o peixe, ninguém sabe."
+    - texto: "{eu} grita \"{bordao}\" e parte pra cima de {outro}."
+      peso: 2
+    - texto: "{eu} parte pra cima de {outro}: \"Isso é por {lembranca}!\""
+      memoria: [briga, pegadinha, roubo, sumico, quebra, discussao]
+      peso: 4
+    - texto: "{eu} usa a colher de pau como espada contra {outro}."
+      personagens: [chef_wife]
+      peso: 3
+    - texto: "{eu} bufa fumaça de verdade e corre atrás de {outro} com o martelo. GRRR!"
+      personagens: [blacksmith]
+      peso: 3
+    - texto: "{eu} tira a botina e acerta {outro} com ela. \"{bordao}\""
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+      peso: 3
+    - texto: "{eu} bate em {outro} com o leque. Muitas vezes. Muito rápido."
+      personagens: [lady]
+      peso: 3
+    - texto: "{eu} acerta {outro} com o crucifixo enorme. \"Deus me perdoe, mas você mereceu.\""
+      personagens: [priest]
+      peso: 3
+    - texto: "{eu} bate em {outro} com o skate. \"{bordao}\""
+      personagens: [teen]
+      peso: 2
+
+  emburrar:
+    - "{eu} cruza os braços e vira a cara."
+    - "{eu} fica emburrad{o|a} num canto, resmungando."
+    - "{eu} bufa, senta e fica olhando pro nada, remoendo."
+    - "{eu} faz bico. Um bico enorme."
+    - "{eu} conta até dez. Depois até cem."
+    - "{eu} finge que está muito ocupad{o|a} com uma coisa qualquer."
+    - "{eu} chuta o chão e murmura tudo que devia ter dito."
+    - "{eu} respira fundo, de olhos fechados."
+    - texto: "{eu} chora com o pano de prato na cara. \"Faltou sal... faltou AMOR!\""
+      personagens: [chef_husband]
+      peso: 3
+
+  resposta_briga:
+    - "{eu} revida com uma rasteira."
+    - "{eu} sai cambaleando e jura vingança."
+    - "{eu} grita por socorro. Ninguém vem."
+    - "{eu} revida com uma torta que estava guardando para uma ocasião especial."
+    - "{eu} se encolhe e protege a cabeça."
+    - "{eu} morde de volta."
+    - "{eu} desmaia de mentira para a briga acabar."
+    - "{eu} chora e bate ao mesmo tempo."
+    - "{eu} chama {outro} de covarde e corre."
+    - "{eu} revida e acerta a pessoa errada."
+    - "{eu} fica de pé, sacode a poeira e diz que nem doeu. Doeu."
+    - "{eu} puxa o cabelo de {outro}. Golpe baixo."
+    - "{eu} tropeça no próprio pé e cai em cima de {outro}."
+    - "{eu} desvia por milagre e {outro} acerta a parede."
+    - texto: "{eu} responde com um \"{bordao}\" e uma joelhada."
+      peso: 2
+
+  # falha da briga (pastelão): o golpe dá errado
+  tombo:
+    - "{eu} tenta acertar {outro}, escorrega e cai de cara no chão."
+    - "{eu} toma impulso, pisa no próprio cadarço e voa de bunda no chão."
+    - "{eu} parte pra cima de {outro}, erra e abraça uma pilastra."
+    - "{eu} gira o braço pra dar um soco e acerta a própria testa."
+    - "{eu} pula em cima de {outro}, mas {outro} sai e {eu} cai numa poça."
+    - "{eu} tenta uma voadora, fica preso no ar por um segundo e despenca."
+    - "{eu} corre pra cima de {outro} e escorrega numa casca de banana que não estava lá antes."
+    - "{eu} tira o casaco pra brigar e se enrola nele."
+    - "{eu} ameaça {outro}, dá um passo pra trás e cai num barril."
+    - "{eu} bate em {outro} e a mão fica presa no chapéu de {outro}."
+    - "{eu} empurra {outro}, que não se mexe. {eu} quica pra trás."
+    - "{eu} grita, corre, tropeça, rola e para aos pés de {outro}. Silêncio."
+    - "{eu} tenta derrubar a mesa em {outro} e a mesa cai no pé del{o|a}."
+    - "{eu} dá um soco no ar com tanta força que gira e cai."
+    - "{eu} corre pra brigar, esquece o degrau e some de vista."
+    - texto: "{eu} tropeça na batina no meio do golpe. \"{bordao}\""
+      personagens: [priest]
+      peso: 4
+
+  desculpas:
+    - "{eu} pede desculpas para {outro}, olhando pro chão."
+    - "{eu} chega de mansinho: \"Foi mal, viu?\""
+    - "{eu} engole o orgulho e pede desculpas pra {outro}. Engole mal, mas engole."
+    - "{eu} traz um pão de presente pra {outro}: \"Desculpa.\""
+    - "{eu} pede desculpas pra {outro} e jura que nunca mais. {outro} já ouviu isso antes."
+    - "{eu} vai atrás de {outro}: \"A gente precisa conversar.\""
+    - "{eu} coloca uma flor na mão de {outro}: \"Me perdoa?\""
+    - "{eu} diz pra {outro} que exagerou. Um pouquinho. Talvez bastante."
+    - "{eu} pede desculpas com uma cara tão triste que {outro} quase ri."
+    - "{eu} escreve DESCULPA no chão com pedrinhas pra {outro} ver."
+    - "{eu} pede perdão de joelhos, no meio de {lugar}, com plateia."
+    - "{eu} gagueja um pedido de desculpas pra {outro}."
+    - texto: "{eu} vai atrás de {outro}: \"Sobre {lembranca}... me desculpa.\""
+      memoria: [briga, discussao, pegadinha, quebra]
+      peso: 4
+    - texto: "{eu} pede desculpas chorando e com o pano de prato na cara. \"Eu te amo, sabia?\""
+      personagens: [chef_husband]
+      peso: 4
+    - texto: "{eu} pede desculpas do jeito dela: \"Come que esfria. E me desculpa.\""
+      personagens: [chef_wife]
+      peso: 4
+    - texto: "{eu} cospe no chão, olha pro céu e diz: \"Ô, foi mal, compadre.\""
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+      peso: 3
+    - texto: "{eu} chega com a cabeça baixa: \"Tanto faz... mas desculpa.\""
+      personagens: [teen]
+      peso: 3
+
+  aceita_desculpas:
+    - "{eu} aceita as desculpas de {outro} com um suspiro."
+    - "{eu} diz \"tá bom\" e quase sorri."
+    - "{eu} perdoa {outro}, mas avisa que vai lembrar."
+    - "{eu} aceita e dá um tapinha no ombro de {outro}."
+    - "{eu} aceita, mas só se {outro} pagar uma rodada. Ninguém paga nada nessa cidade, mas a intenção conta."
+    - "{eu} olha {outro} por um tempo e diz: \"Tá perdoad{outro:o|a}.\""
+    - "{eu} aceita as desculpas e as duas pessoas fingem que nada aconteceu."
+    - "{eu} chora, abraça {outro} e pede desculpas também."
+    - "{eu} diz que já tinha esquecido. Não tinha."
+    - "{eu} aceita e devolve o pão que {outro} trouxe. Come metade antes."
+    - texto: "{eu} fecha o leque: \"Está perdoado. Por enquanto.\""
+      personagens: [lady]
+      peso: 2
+
+  desculpas_recusadas:
+    - "{outro} vira a cara. {eu} fica falando sozinh{o|a}."
+    - "{outro} diz que desculpa não conserta nada. {eu} sai {humor}."
+    - "{outro} finge que {eu} é invisível."
+    - "{outro} escuta tudo e responde só: \"Não.\""
+    - "{outro} manda {eu} pedir desculpas pra parede."
+    - "{eu} pede desculpas, mas {outro} já está longe, de propósito."
+    - "{outro} ri na cara de {eu}. O pedido de desculpas acaba virando outra discussão."
+    - "{eu} começa a pedir desculpas e no meio volta a reclamar. Não colou."
+    - "{outro} pega o pão que {eu} trouxe e vai embora sem dizer nada."
+    - "{outro} diz que vai pensar. Vai pensar por anos."
+
+  abraco:
+    - "{eu} abraça {outro}. A briga nunca existiu."
+    - "{eu} e {outro} se abraçam como se não tivessem rolado no chão agora há pouco."
+    - "{eu} dá um abraço de urso em {outro}. Estala alguma coisa."
+    - "{eu} abraça {outro} e os dois choram um pouquinho."
+    - "{eu} puxa {outro} pra um abraço desajeitado. Os chapéus batem."
+    - "{eu} abraça {outro} e cochicha: \"Você é um besta. Mas é meu besta.\""
+    - "{eu} e {outro} se abraçam no meio de {lugar}. Alguém aplaude."
+    - "{eu} abraça {outro} com tanta força que {outro} perde o ar."
+    - "{eu} e {outro} fazem as pazes com um abraço e um tapa nas costas."
+    - "{eu} estende a mão, {outro} puxa pra um abraço. Fica bonito."
+    - "{eu} abraça {outro} e já esquece por que estavam brigando."
+    - "{eu} e {outro} se abraçam e prometem nunca mais brigar. Até amanhã."
+    - texto: "{eu} abraça {outro}: \"Depois de tudo ({lembranca}), achei que nunca mais.\""
+      memoria: [briga, discussao, pegadinha]
+      peso: 3
+    - texto: "{eu} abraça {outro} e os dois cantam um modão juntos, desafinados. \"Ê trem bão.\""
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+      peso: 4
+    - texto: "{eu} abraça {outro}, beija a testa e volta pro fogão. Três e cinco: pazes feitas."
+      personagens: [chef_wife, chef_husband]
+      peso: 4
+
+  resposta_abraco:
+    - "{eu} retribui o abraço, meio sem graça."
+    - "{eu} fica dur{o|a} no abraço e depois amolece."
+    - "{eu} abraça de volta e funga."
+    - "{eu} diz \"tá bom, tá bom\" e não solta."
+    - "{eu} aproveita o abraço pra limpar o nariz no ombro de {outro}."
+    - "{eu} ri no meio do abraço."
+    - texto: "{eu}: \"...\" (mas abraça)"
+      personagens: [mike]
+      peso: 3
+
+  consolar:
+    - "{eu} tenta acalmar {outro}: \"Respira. Respira de novo.\""
+    - "{eu} dá um abraço desajeitado em {outro}."
+    - "{eu} senta do lado de {outro} e não diz nada. Às vezes é o melhor."
+    - "{eu} oferece um lenço pra {outro}. O lenço está usado."
+    - "{eu} conta uma piada ruim só pra {outro} sorrir. Funciona pela metade."
+    - "{eu} diz pra {outro} que amanhã vai ser melhor. Não tem como saber, mas diz."
+    - "{eu} faz um chá pra {outro}. O chá é horrível. O gesto é lindo."
+    - "{eu} segura a mão de {outro}: \"Eu tô aqui.\""
+    - "{eu} escuta {outro} desabafar por um tempo enorme e só concorda."
+    - "{eu} diz pra {outro} que todo mundo erra. Cita três exemplos de si mesm{o|a}."
+    - "{eu} tira {outro} de perto da confusão e leva pra tomar um ar."
+    - "{eu} canta uma musiquinha pra {outro} se acalmar. Desafina, mas ajuda."
+    - texto: "{eu} diz pra {outro}: \"Que dia LINDO pra ficar bem de novo!\" e entrega uma flor."
+      personagens: [florist]
+      peso: 3
+    - texto: "{eu} toca uma moda triste e depois uma alegre pra {outro}. ♪"
+      personagens: [musician]
+      peso: 3
+    - texto: "{eu} faz um truque de mágica pra {outro}. A carta é a errada, mas {outro} ri ...hehe."
+      personagens: [fool]
+      peso: 3
+    - texto: "{eu} coloca um prato na frente de {outro}: \"Come que esfria. Depois a gente conversa.\""
+      personagens: [chef_wife]
+      peso: 3
+    - texto: "{eu} diz pra {outro}: \"Vamo vê isso aí.\" E não vê nada, mas {outro} se sente melhor."
+      personagens: [chief]
+      peso: 3
+
+  resposta_consolo:
+    - "{eu} funga e agradece."
+    - "{eu} respira fundo e se acalma um pouco."
+    - "{eu} diz que está bem. Não está, mas está melhor."
+    - "{eu} chora mais um pouquinho e depois ri de si mesm{o|a}."
+    - "{eu} aceita o abraço e fica quiet{o|a}."
+    - "{eu} sorri pela primeira vez no dia."
+    - "{eu} diz \"obrigad{o|a}\" baixinho."
+    - texto: "{eu} resmunga: \"{bordao}\", mas já sem raiva."
+      peso: 2
+
+  perseguicao:
+    - "{outro} sai correndo e {eu} vai atrás!"
+    - "{outro} foge e {eu} dispara atrás, derrubando o que encontra pelo caminho."
+    - "{eu} corre atrás de {outro} pela cidade. Uma galinha também corre, por solidariedade."
+    - "{outro} pula uma cerca e {eu} não. {eu} dá a volta."
+    - "{eu} persegue {outro} gritando coisas que não dá pra entender."
+    - "{outro} corre em zigue-zague; {eu} corre em linha reta e bate num poste."
+    - "Perseguição! {outro} na frente, {eu} atrás, e a cidade inteira olhando."
+    - "{outro} foge com os sapatos na mão. {eu} vai atrás, bufando."
+    - texto: "{eu} corre atrás de {outro} com o martelo na mão. Ninguém vai trabalhar hoje."
+      personagens: [blacksmith]
+      peso: 3
+    - texto: "{eu} corre atrás de {outro} apitando sem parar. *PRIIII PRIIII PRIIII*"
+      personagens: [inspector]
+      peso: 3
+
+  alcancou:
+    - "{eu} alcança {outro}, mas está sem fôlego pra fazer qualquer coisa."
+    - "{eu} alcança {outro} e os dois ficam se olhando, ofegantes."
+    - "{eu} alcança {outro}, que já nem lembra por que estava correndo."
+    - "{eu} chega e {outro} faz cara de inocente."
+    - "{eu} encurrala {outro}: \"Agora você não me escapa.\""
+    - "{eu} alcança {outro} e senta no chão, morto de cansaço."
+    - "{eu} alcança {outro} e só consegue apontar o dedo."
+    - "{eu} chega bufando, mas {outro} oferece água. Fica difícil continuar bravo."
+
+  nao_achou:
+    - "{eu} chega e {outro} já foi embora."
+    - "{eu} procura {outro} em {lugar} inteiro. Nada."
+    - "{eu} pergunta por {outro} pra todo mundo. Ninguém viu."
+    - "{eu} chega no lugar errado, ou na hora errada. {outro} sumiu."
+    - "{eu} desiste de procurar {outro} e fica ali, parad{o|a}."
+    - "{eu} chega correndo em {lugar}, mas {outro} já está dormindo."
+
+  virou_inimigo:
+    - "{eu} decidiu: {outro} agora é inimig{outro:o|a} oficial."
+    - "{eu} risca o nome de {outro} da lista de pessoas suportáveis."
+    - "{eu} não cumprimenta mais {outro}. Nem com a cabeça."
+    - "{eu} jura que nunca mais fala com {outro}. Fala de {outro} o tempo todo."
+    - "Entre {eu} e {outro}, agora é guerra fria."
+    - "{eu} passa a atravessar a rua quando vê {outro}."
+    - "{eu} começa a contar pra todo mundo o que acha de {outro}. Não é bom."
+    - "{eu} olha {outro} de longe com ódio de novela."
+
+  virou_amigo:
+    - "{eu} e {outro} agora são unha e carne."
+    - "{eu} guarda o melhor lugar da mesa para {outro}."
+    - "{eu} diz pra todo mundo que {outro} é a melhor pessoa da cidade."
+    - "{eu} e {outro} combinam um aperto de mão secreto. É horrível. Adoram."
+    - "{eu} descobre que {outro} é gente boa. Quem diria."
+    - "{eu} e {outro} agora andam juntos por aí, falando mal dos outros."
+    - "{eu} chama {outro} de compadre. É sério."
+    - "{eu} sorri quando vê {outro} chegando."

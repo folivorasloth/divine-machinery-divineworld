@@ -1,0 +1,256 @@
+# Pastelão: pegadinhas, tombos, skate, malabarismo, choques, construir e quebrar.
+# Formato explicado no topo de rotina.yaml.
+situacoes:
+  pegadinha:
+    - "{eu} coloca uma almofada de pum na cadeira de {outro}. PRRRRT."
+    - "{eu} troca o açúcar de {outro} por sal."
+    - "{eu} amarra os cadarços de {outro} um no outro."
+    - "{eu} esconde um sapo no chapéu de {outro}."
+    - "{eu} grita \"BU!\" atrás de {outro}, que pula meio metro."
+    - "{eu} cola um papel escrito \"ME CHUTE\" nas costas de {outro}."
+    - "{eu} coloca um balde de água em cima da porta pra {outro}. SPLASH."
+    - "{eu} pinta um bigode em {outro} enquanto {outro} piscava."
+    - "{eu} esconde a cadeira de {outro} na hora que {outro} ia sentar."
+    - "{eu} troca as placas e manda {outro} pro lugar errado."
+    - "{eu} esguicha água em {outro} com a flor da lapela."
+    - "{eu} oferece um aperto de mão pra {outro}. Choquinho. *BZZT*"
+    - "{eu} imita {outro} pelas costas, com plateia. A plateia ri."
+    - "{eu} enche o bolso de {outro} com minhocas."
+    - "{eu} finge que {outro} está pegando fogo. {outro} rola no chão. Não estava."
+    - texto: "{eu} buzina no ouvido de {outro}. *FOOOOOM*"
+      personagens: [clown]
+      peso: 3
+    - texto: "{eu} troca o leque de {outro} por um peixe."
+      personagens: [clown]
+      peso: 2
+
+  pegadinha_errada:
+    - "{eu} prepara uma almofada de pum para {outro} e senta nela sem querer. PRRRRT."
+    - "{eu} arma um balde de água na porta para {outro}. O balde cai em {eu}."
+    - "{eu} amarra os cadarços de {outro}... errado. Amarra os próprios. Cai."
+    - "{eu} esconde um sapo no chapéu de {outro}. O sapo pula na boca de {eu}."
+    - "{eu} grita \"BU!\" atrás de {outro}. {outro} nem se mexe. {eu} leva um susto com o próprio eco."
+    - "{eu} tenta assustar {outro}, tropeça nos sapatos enormes e cai de cara."
+    - "{eu} troca o sal de {outro} por açúcar e depois come a comida errada. Cospe longe."
+    - "{eu} esguicha água na flor da lapela. A flor está virada pra dentro."
+    - "{eu} cola um papel \"ME CHUTE\" nas costas de {outro}. Cola na própria mão."
+    - "{eu} esconde a cadeira de {outro}, esquece onde escondeu e senta no ar."
+    - "{eu} prepara um aperto de mão com choquinho. Leva o choque sozinh{o|a}. *BZZT*"
+    - "{eu} se esconde pra pregar uma peça em {outro} e dorme esperando."
+    - "{eu} finge que vai cair pra assustar {outro}. Cai de verdade."
+    - "{eu} imita {outro} pelas costas. {outro} está de frente."
+    - "{eu} joga uma torta em {outro}. A torta faz uma curva e volta."
+    - texto: "{eu} aperta a buzina pra assustar {outro}. A buzina explode. *PFFF*"
+      personagens: [clown]
+      peso: 3
+
+  resposta_pegadinha:
+    - "{eu} fica vermelh{o|a} de raiva."
+    - "{eu} grita: \"EU VOU TE PEGAR!\""
+    - "{eu} ri, mas é aquele riso de quem vai se vingar."
+    - "{eu} não acha graça. Nenhuma."
+    - "{eu} jura que um dia vai dar o troco."
+    - "{eu} chora de raiva e de vergonha ao mesmo tempo."
+    - "{eu} respira fundo e conta até dez. Chega no três e desiste."
+    - "{eu} aponta pra {outro}: \"Você vai ver.\""
+    - "{eu} vai reclamar com o Fiscal. Ou com qualquer um."
+    - "{eu} tira a roupa molhada e torce em cima de {outro}."
+    - texto: "{eu} bufa fumaça de verdade. GRRR."
+      personagens: [blacksmith]
+      peso: 4
+    - texto: "{eu} fecha o leque com um estalo: \"Gentalha!\""
+      personagens: [lady]
+      peso: 4
+    - texto: "{eu} apita até ficar roxo. \"INFRAÇÃO!\""
+      personagens: [inspector]
+      peso: 4
+    - texto: "{eu} se benze: \"Deus me livre e guarde desse palhaço!\""
+      personagens: [priest]
+      peso: 4
+    - texto: "{eu}: \"...\""
+      personagens: [mike]
+      peso: 4
+
+  skate:
+    - "{eu} desce a ladeira de skate, mãos no bolso."
+    - "{eu} faz uma manobra que ninguém viu."
+    - "{eu} anda de skate em círculos, fone no talo."
+    - "{eu} tenta um ollie. Quase."
+    - "{eu} desliza pelo corrimão e aterrissa. Olha em volta: ninguém viu. Típico."
+    - "{eu} anda de skate e assusta uma galinha."
+    - "{eu} rema com o pé, de capuz, com cara de quem está no Mundo de Fora."
+    - "{eu} grava o próprio nome no shape do skate com um prego."
+
+  tombo_skate:
+    - "{eu} desce a escada de skate. A escada ganha."
+    - "{eu} tenta um ollie e cai de bunda no chão."
+    - "{eu} perde o skate, que sai rolando sozinho. {eu} rola pro outro lado."
+    - "{eu} bate o skate num degrau e voa de cara numa barraca."
+    - "{eu} cai do skate e finge que foi de propósito."
+    - "{eu} se estatela no chão. O fone continua tocando, alto."
+    - "{eu} tenta descer o corrimão e fica pendurad{o|a} nele."
+    - "{eu} cai do skate bem na frente de todo mundo. \"Tanto faz.\""
+    - "{eu} atropela um pombo com o skate. Os dois caem."
+    - "{eu} cai, levanta, sobe de novo e cai de novo."
+    - "{eu} desce a escadaria da Catedral de skate. Rola junto com o skate até o último degrau."
+    - "{eu} dá uma pirueta no ar e aterrissa na lata de lixo."
+    - "{eu} cai do skate e o skate vai sozinho até o chafariz. Splash."
+    - "{eu} escorrega e o skate voa direto na canela de alguém."
+    - "{eu} cai e fica deitad{o|a} no chão olhando o céu, decidindo se vale a pena levantar."
+
+  malabarismo:
+    - "{eu} faz malabarismo com três bolinhas. Bonito."
+    - "{eu} equilibra um prato na ponta do nariz. As crianças batem palma."
+    - "{eu} faz malabarismo com laranjas e come uma no meio."
+    - "{eu} joga as bolinhas pro alto e todas voltam. Milagre."
+    - "{eu} faz um truque de cartas. A carta certa! Ninguém acredita."
+    - "{eu} gira um chapéu na ponta do dedo."
+    - "{eu} faz malabarismo de olhos fechados. Abre um pra conferir ...hehe."
+    - "{eu} anda numa perna só fazendo malabarismo. Dura dois segundos."
+
+  malabarismo_errado:
+    - "{eu} faz malabarismo e deixa tudo cair. Tudo."
+    - "{eu} joga as bolinhas pro alto. Uma acerta a própria cabeça."
+    - "{eu} equilibra um prato no nariz. O prato não concorda."
+    - "{eu} faz malabarismo com tochas. Agora o chapéu está pegando fogo ...hehe."
+    - "{eu} perde uma bolinha, se abaixa pra pegar e as outras caem nas costas."
+    - "{eu} faz um truque de cartas e as 52 voam com o vento."
+    - "{eu} tenta jogar as bolinhas por trás das costas e acerta quem estava assistindo."
+    - "{eu} faz malabarismo com ovos. Faz omelete no chão."
+    - "{eu} tropeça no meio do número e cai sentad{o|a} em cima das bolinhas."
+    - "{eu} deixa tudo cair e fica olhando o chão um tempão ...hehe."
+    - "{eu} começa o malabarismo, se distrai com uma borboleta e é atingido por três laranjas."
+    - "{eu} curva pra agradecer os aplausos e o chapéu de guizos cai na sopa de alguém."
+
+  fucar:
+    - "{eu} abre um painel só pra ver o que tem dentro."
+    - "{eu} encosta o ouvido num rack e jura que ele está falando."
+    - "{eu} puxa um cabo pra ver o que acontece. Uma luz apaga em algum lugar do mundo."
+    - "{eu} mexe num botão vermelho. Nada acontece. Por enquanto."
+    - "{eu} anda até o fundo da Sala do Servidor. Volta rapidinho."
+    - "{eu} conta pros racks uma piada. Os racks piscam."
+    - "{eu} desmonta uma peça e sobra um parafuso na montagem."
+    - "{eu} lambe o dedo e encosta num conector. Ninguém sabe por quê."
+
+  choque:
+    - "{eu} encosta onde não devia. *BZZZZT* O cabelo fica todo em pé."
+    - "{eu} leva um choque e sai soltando fumacinha pelas orelhas."
+    - "{eu} toma um choque tão forte que vê os segredos do universo por um segundo. Esquece em seguida."
+    - "{eu} leva um choque, dá um pulo, bate a cabeça no teto. *BZZT* *TOC*"
+    - "{eu} encosta no rack e fica brilhando no escuro por alguns minutos."
+    - "{eu} leva um choque e começa a falar em binário."
+    - "{eu} toma choque e as luzes da Sala piscam no ritmo dos dentes batendo."
+    - "{eu} leva o choque da semana. Já virou tradição."
+    - "{eu} encosta num cabo solto. *BZZT* De longe, alguém grita: \"Não encosta nisso!\""
+    - "{eu} leva um choque e ri, meio tont{o|a}: \"Que demais!\""
+    - "{eu} leva um choque e o cabelo, que já era arrepiado, fica mais."
+    - "{eu} toma choque e por um instante tudo fica azul elétrico."
+
+  construir:
+    - "{eu} martela, serra e pinta em {lugar}."
+    - "{eu} conserta o que dá, com prego, cola e fé."
+    - "{eu} carrega tábuas pra lá e pra cá em {lugar}."
+    - "{eu} mede tudo duas vezes e corta errado uma."
+    - "{eu} conserta cantando uma moda de trabalho."
+    - "{eu} usa fita adesiva onde precisava de parafuso. Funciona."
+    - "{eu} tapa um buraco com um pedaço de outra coisa."
+    - "{eu} trabalha no conserto com um lápis atrás da orelha que nunca usa."
+    - "{eu} segura a escada pra ninguém. Sobe sozinh{o|a}."
+    - "{eu} pinta a parede de uma cor que ninguém escolheu."
+    - "{eu} martela o dedo, xinga, e continua."
+    - "{eu} conserta e fica orgulhos{o|a}, olhando o serviço de longe."
+    - "{eu} ajuda no conserto mais com palpite do que com a mão."
+    - "{eu} reforça tudo com arame. Muito arame."
+    - texto: "{eu} comanda o conserto aos berros. GRRR *martelada*"
+      personagens: [blacksmith]
+      peso: 3
+    - texto: "{eu} conserta e mede o conserto com a régua. Está fora da norma. Conserta de novo."
+      personagens: [inspector]
+      peso: 2
+
+  construir_errado:
+    - "{eu} martela com tanta raiva que quebra justamente o que estava consertando."
+    - "{eu} serra o galho em que estava sentad{o|a}."
+    - "{eu} prega a própria manga na parede."
+    - "{eu} conserta a porta, que agora abre pro lado errado."
+    - "{eu} encosta a escada e a escada derruba o que estava em pé."
+    - "{eu} aperta o parafuso até ele entrar do outro lado."
+    - "{eu} cola tudo e fica colad{o|a} junto."
+    - "{eu} conserta uma coisa e quebra outras duas."
+    - "{eu} bufa, perde a paciência e chuta o que acabou de arrumar."
+    - "{eu} pinta tudo, inclusive quem estava ajudando."
+    - texto: "{eu} dá uma martelada de raiva e a bigorna racha. GRRR!"
+      personagens: [blacksmith]
+      peso: 4
+
+  quebrar:
+    - "{eu} quebra alguma coisa em {lugar}. Ops."
+    - "{eu} chuta uma cadeira e a cadeira voa longe."
+    - "{eu} soca a parede. A parede fica com um buraco. A mão, também."
+    - "{eu} derruba uma prateleira inteira de raiva."
+    - "{eu} quebra um vaso e diz que já estava rachado."
+    - "{eu} arranca uma tábua e joga no chão."
+    - "{eu} grita e quebra tudo que estiver a menos de um braço de distância."
+    - "{eu} desconta a raiva numa mesa. A mesa não tinha nada a ver com isso."
+    - "{eu} quebra um banco em dois e senta numa das metades."
+    - "{eu} vira a mesa. Literalmente."
+    - "{eu} chuta a porta tão forte que ela sai do lugar."
+    - "{eu} parte uma cerca no meio com as próprias mãos."
+    - "{eu} joga uma pedra numa janela. Erra. Joga outra."
+    - "{eu} quebra tudo e depois fica olhando os cacos, sem saber o que fazer."
+    - "{eu} destrói uma coisa e pede desculpas pra ela."
+    - texto: "{eu} bufa fumaça e amassa uma panela com as mãos. GRRR!"
+      personagens: [blacksmith]
+      peso: 3
+
+  pichar:
+    - "{eu} picha um muro e assina o próprio nome, bem grande."
+    - "{eu} desenha um olho enorme na parede. Assina embaixo."
+    - "{eu} escreve \"TANTO FAZ\" num muro. E assina, claro."
+    - "{eu} picha uma frase profunda com erro de português. Assina."
+    - "{eu} picha a parede com tinta roxa e escreve o próprio nome com coração."
+    - "{eu} picha \"EU VOU PRO MUNDO DE FORA\" e assina com data."
+    - "{eu} desenha uma caricatura de {@inspector}. Assina com orgulho."
+    - "{eu} picha tão rápido que esquece de olhar se tinha alguém olhando. Tinha."
+    - "{eu} picha o muro e a própria mão. Assina a mão também."
+    - "{eu} escreve o nome no muro, muito grande, pra ninguém ter dúvida."
+
+  estrutura_danificado:
+    - "Depois dessa, {objeto} rachou e entortou."
+    - "Com o tranco, {objeto} não aguentou: tem rachadura pra todo lado."
+    - "Agora {objeto} tem um buraco que não tinha."
+    - "Depois disso, {objeto} range, balança e por pouco não desaba."
+    - "Alguém vai ter que consertar {objeto}."
+    - "No meio da confusão, {objeto} levou a pior."
+    - "Já dá pra ver: {objeto} vai precisar de um mutirão."
+    - "Agora {objeto} está em pedaços, mas ainda de pé."
+
+  estrutura_destruido:
+    - "Foi a gota d'água: {objeto} veio abaixo de vez. Só sobraram os cacos."
+    - "A cidade inteira escuta o estrondo: {objeto} não existe mais."
+    - "Acabou: {objeto} virou entulho."
+    - "Numa nuvem de poeira, {objeto} desaba."
+    - "Agora {objeto} só volta se alguém quiser (ou se {@chief} mandar)."
+    - "Um silêncio constrangedor: {objeto} foi pro chão."
+    - "Do que era {objeto}, só ficou a lembrança."
+    - "Como castelo de areia, {objeto} se desmancha."
+
+  estrutura_consertada:
+    - "{eu} termina o conserto de {objeto}. Ficou melhor do que antes."
+    - "{eu} dá a última martelada em {objeto} e limpa o suor da testa. Pronto."
+    - "{eu} conserta {objeto}. Sobrou um parafuso, mas tudo bem."
+    - "Graças a {eu}, dá pra usar {objeto} de novo."
+    - "{eu} pinta por cima, prega o que faltava, e {objeto} volta a servir."
+    - "{eu} conserta {objeto} e fica um tempão admirando o serviço."
+    - "{eu} termina de arrumar {objeto} e assina embaixo, com orgulho."
+    - "Depois de muito prego e muita fé, {eu} deixa {objeto} em ordem."
+
+  ordem_reconstruir:
+    - "{eu} bate o carimbo: \"Vamo vê isso aí.\" Manda consertar {objeto}."
+    - "{eu} acorda assustado de um cochilo com uma intuição: consertar {objeto}. Já!"
+    - "{eu} sobe no banco da Prefeitura: \"Todo mundo consertando {objeto}! Agora! Depois do almoço.\""
+    - "{eu} decreta: {objeto} vai ser consertado. Assina sem ler."
+    - "{eu} manda arrumar {objeto}. Aprova também um pedido pra deixar como está."
+    - "{eu} coça a cabeça e manda a cidade inteira cuidar de {objeto}. \"Vamo vê isso aí.\""
+    - "{eu} grita da janela da Prefeitura que quem consertar {objeto} ganha um elogio."
+    - "{eu} cria uma comissão pra consertar {objeto}. A comissão é ele mesmo, cochilando."

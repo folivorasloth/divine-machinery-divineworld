@@ -15,4 +15,9 @@ conexoes:
   - {para: town_square, tipo: caminho, minutos: 3}
   - {para: tavern, tipo: caminho, minutos: 2}
   - {para: sea, tipo: tunel, minutos: 5}
-acoes: [comer, roubar, quebrar, construir]
+acoes: [comer, roubar, quebrar, construir, pichar, andar_de_skate, fazer_malabarismo]
+estruturas:
+  - {id: market_stalls, nome: as barracas da Feira}
+  - {id: market_signs, nome: as placas da Feira}
+# coisas que o Ganancioso (ou quem for) pode roubar daqui
+objetos: [uma melancia, um chapéu de palha, um rádio de pilha, uma caixa de parafusos]

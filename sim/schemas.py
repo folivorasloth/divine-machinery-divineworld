@@ -224,6 +224,108 @@ class TunnelConfig(DataModel):
     min_duration_s: float = Field(alias="duracao_minima_s", ge=0)
 
 
+# --------------------------------------------------------------------------
+# Fase 2: sociedade (memória, fofoca, relações, leis, facções, estruturas)
+# --------------------------------------------------------------------------
+
+
+class MemoryKind(DataModel):
+    """Um tipo de memória (briga, roubo, festa...). Frases usam {quem} (quem fez),
+    {alvo} (com quem/em quem), {lugar} e {objeto}."""
+
+    name: str = Field(alias="nome", min_length=1)
+    intensity: Percent = Field(50, alias="intensidade")  # intensidade ao formar (0..100)
+    sentiment: float = Field(0, alias="sentimento", ge=-1, le=1)  # -1 ruim, +1 bom
+    decay_per_day: float = Field(10, alias="decai_por_dia", ge=0)  # pontos de intensidade por dia
+    permanent: bool = Field(False, alias="permanente")  # nunca some (morte, casamento, Limbo)
+    # quem lembra muda a afinidade com quem fez ({quem}) neste tanto ao formar
+    affinity: float = Field(0, alias="afinidade")
+    # frase de fofoca (terceira pessoa): "{quem} brigou com {alvo} em {lugar}"
+    fact: str = Field(alias="fato", min_length=1)
+    # como quem estava envolvido fala dela: "aquela briga em {lugar}"
+    recollection: str = Field(alias="lembranca", min_length=1)
+    # a lei vê esta memória como prova desta infração (contra {quem})
+    infraction: Id | None = Field(None, alias="infracao")
+
+
+class MemoryConfig(DataModel):
+    kinds: dict[Id, MemoryKind] = Field(default_factory=dict, alias="tipos")
+    max_per_npc: int = Field(40, alias="max_por_npc", ge=5)
+    forget_below: float = Field(5, alias="esquecer_abaixo", ge=0)
+    # quem só viu (testemunha) ou só ouviu falar (fofoca) lembra mais fraco
+    witness_factor: float = Field(0.6, alias="fator_testemunha", ge=0, le=1)
+    gossip_factor: float = Field(0.7, alias="fator_fofoca", ge=0, le=1)
+
+
+class GossipConfig(DataModel):
+    # chance de a fofoca chegar torta: troca quem fez por outra pessoa
+    distortion_chance: float = Field(0.2, alias="chance_distorcao", ge=0, le=1)
+    # traço que distorce o dobro e espalha segredo de confissão
+    gossiper_trait: Id | None = Field("fofoqueiro", alias="traco_fofoqueiro")
+
+
+class RelationsConfig(DataModel):
+    # a afinidade volta devagar para o valor inicial (rancor dura, mas passa)
+    return_per_hour: float = Field(0.2, alias="retorno_por_hora", ge=0)
+    enemies_below: float = Field(-50, alias="inimigos_abaixo")
+    friends_above: float = Field(60, alias="amigos_acima")
+
+
+class Infraction(DataModel):
+    name: str = Field(alias="nome", min_length=1)
+    severity: float = Field(1, alias="gravidade", gt=0)
+    # só conta nestes horários (ex.: barulho só de madrugada); vazio = sempre
+    hours: list[TimeWindow] = Field(default_factory=list, alias="horarios")
+
+
+class LawConfig(DataModel):
+    enforcer_profession: Id = Field("fiscal", alias="profissao_fiscal")
+    infractions: dict[Id, Infraction] = Field(default_factory=dict, alias="infracoes")
+    prison_points: float = Field(2, alias="pontos_para_prisao", gt=0)
+    limbo_points: float = Field(6, alias="pontos_para_limbo", gt=0)
+    points_decay_per_day: float = Field(1, alias="pontos_somem_por_dia", ge=0)
+    warrant_hours: float = Field(24, alias="mandado_horas", gt=0)
+    # a mesma pessoa pela mesma infração não é registrada de novo antes disso
+    repeat_hours: float = Field(6, alias="reincidencia_horas", ge=0)
+    # numa olhada só, o Fiscal registra no máximo esta quantidade de flagrantes
+    max_per_look: int = Field(2, alias="max_por_olhada", ge=1)
+    prison: Id = Field("prison", alias="prisao")
+    limbo: Id = Field("limbo", alias="limbo")
+    limbo_return: Id = Field("town_square", alias="volta_do_limbo")
+    # o que o preso pode fazer na cela (mesmo que a Prisão não ofereça a ação)
+    prison_actions: list[Id] = Field(default_factory=lambda: ["comer"], alias="acoes_na_prisao")
+    # quanto tempo depois de entrar o preso ganha uma "visita" do Fiscal (não usado)
+    flee_action: Id = Field("fugir", alias="acao_fuga")
+    chase_action: Id = Field("perseguir", alias="acao_perseguicao")
+
+
+class Faction(DataModel):
+    name: str = Field(alias="nome", min_length=1)
+    leader: Id = Field(alias="lider")
+    # entra quando a afinidade com o líder passa disso (e é maior que a com o líder rival)
+    join_affinity: float = Field(40, alias="afinidade_para_entrar")
+    # sai quando a afinidade com o líder cai abaixo disso
+    leave_affinity: float = Field(-10, alias="afinidade_para_sair")
+
+
+class TheftConfig(DataModel):
+    """Ganância: o que acontece com o que é roubado."""
+
+    witness_notice_chance: float = Field(0.6, alias="chance_testemunha_notar", ge=0, le=1)
+    # o ladrão esconde e esquece onde escondeu (o objeto fica perdido em algum lugar)
+    forget_chance: float = Field(0.3, alias="chance_esquecer", ge=0, le=1)
+    # quem perambula por um lugar com objeto perdido pode achar
+    find_chance: float = Field(0.3, alias="chance_achar", ge=0, le=1)
+    # quem tem um destes traços declara que o achado é SAGRADO
+    sacred_traits: list[Id] = Field(default_factory=list, alias="tracos_que_acham_sagrado")
+    # quem trabalha no lugar percebe o sumiço ao começar a trabalhar
+    anger_on_notice: float = Field(25, alias="raiva_ao_perceber", ge=0)
+
+
+class StructuresConfig(DataModel):
+    damaged_below: float = Field(70, alias="danificado_abaixo", ge=0, le=100)
+
+
 class WorldConfig(DataModel):
     name: str = Field(alias="nome")
     seed: int | None = None
@@ -245,6 +347,14 @@ class WorldConfig(DataModel):
     log_level: Literal["debug", "info", "aviso", "erro"] = Field("info", alias="nivel_log")
     # {humor} das falas quando nenhuma necessidade está alta
     neutral_mood: str = Field("de boa", alias="humor_neutro")
+    # Fase 2
+    memory: MemoryConfig = Field(default_factory=MemoryConfig, alias="memoria")
+    gossip: GossipConfig = Field(default_factory=GossipConfig, alias="fofoca")
+    relations: RelationsConfig = Field(default_factory=RelationsConfig, alias="relacoes")
+    law: LawConfig = Field(default_factory=LawConfig, alias="leis")
+    factions: dict[Id, Faction] = Field(default_factory=dict, alias="faccoes")
+    structures: StructuresConfig = Field(default_factory=StructuresConfig, alias="estruturas")
+    theft: TheftConfig = Field(default_factory=TheftConfig, alias="roubos")
 
     @field_validator("seed", mode="before")
     @classmethod
@@ -288,6 +398,18 @@ class Place(DataModel):
     features: list[str] = Field(default_factory=list, alias="tem")
     connections: list[Connection] = Field(default_factory=list, alias="conexoes")
     actions: list[Id] = Field(default_factory=list, alias="acoes")
+    # Fase 2: prédios/objetos com estado (inteiro, danificado, destruído)
+    structures: list["StructureDef"] = Field(default_factory=list, alias="estruturas")
+    # coisas que dá para roubar aqui (texto livre)
+    objects: list[str] = Field(default_factory=list, alias="objetos")
+
+
+class StructureDef(DataModel):
+    id: Id
+    name: str = Field(alias="nome", min_length=1)
+
+
+Place.model_rebuild()
 
 
 # --------------------------------------------------------------------------
@@ -378,6 +500,7 @@ class Character(DataModel):
     real_link: RealLink = Field(default_factory=RealLink, alias="ligacao_real")
     inheritance: Inheritance = Field(default_factory=Inheritance, alias="heranca")
     on_death: str = Field("", alias="se_morrer")
+    faction: Id | None = Field(None, alias="faccao")  # Fase 2: igreja, seita... (world.yaml > faccoes)
 
 
 # --------------------------------------------------------------------------
@@ -388,6 +511,8 @@ class Character(DataModel):
 class TraitEffects(DataModel):
     needs: dict[Id, Multiplier] = Field(default_factory=dict, alias="necessidades")
     actions: dict[Id, Multiplier] = Field(default_factory=dict, alias="acoes")
+    # multiplica a chance de falha (pastelão) de qualquer ação com `falha`
+    failure: Multiplier = Field(1.0, alias="falha")
 
 
 class Trait(DataModel):
@@ -489,6 +614,9 @@ class TargetRule(DataModel):
     required: bool = Field(True, alias="obrigatorio")
     affinity_min: Affinity | None = Field(None, alias="afinidade_min")
     affinity_max: Affinity | None = Field(None, alias="afinidade_max")
+    # Fase 2: o alvo precisa ser um destes personagens / ter uma destas profissões
+    characters: list[Id] = Field(default_factory=list, alias="personagens")
+    professions: list[Id] = Field(default_factory=list, alias="profissoes")
 
 
 class ActionConditions(DataModel):
@@ -502,6 +630,8 @@ class ActionConditions(DataModel):
     # "trabalho": só no local_trabalho do personagem; "casa": só na casa dele.
     # Nesses casos a ação não precisa estar na lista `acoes` do lugar.
     own_place: Literal["trabalho", "casa"] | None = Field(None, alias="lugar_proprio")
+    # Fase 2: só quem é de uma destas facções (world.yaml > faccoes)
+    factions: list[Id] = Field(default_factory=list, alias="faccoes")
 
 
 class ActionEffects(DataModel):
@@ -510,12 +640,30 @@ class ActionEffects(DataModel):
     target_needs: dict[Id, float] = Field(default_factory=dict, alias="alvo_necessidades")
     affinity: float = Field(0, alias="afinidade")  # minha afinidade com o alvo
     target_affinity: float = Field(0, alias="afinidade_do_alvo")  # a do alvo comigo
+    # Fase 2 ---------------------------------------------------------------
+    # minha afinidade com personagens específicos (ex.: ir à missa -> {priest: 2})
+    affinity_with: dict[Id, float] = Field(default_factory=dict, alias="afinidade_com")
+    # efeito extra para quem tem um traço (ex.: briguento bebe e fica esquentado)
+    by_trait: dict[Id, dict[Id, float]] = Field(default_factory=dict, alias="por_traco")
+    # dano numa estrutura do lugar (ao terminar)
+    structure_damage: float = Field(0, alias="dano_estrutura", ge=0)
 
 
 class ActionFailure(DataModel):
     chance: float = Field(ge=0, le=1)
     effects: ActionEffects = Field(default_factory=ActionEffects, alias="efeitos")
     speech: Id | None = Field(None, alias="fala")
+    narration: str | None = Field(None, alias="narracao")  # texto do Chat quando dá errado
+    # memória que quem viu forma de quem falhou (ex.: tombo)
+    memory: Id | None = Field(None, alias="memoria")
+
+
+class Observation(DataModel):
+    """Quem faz a ação forma uma memória sobre alguém no lugar que esteja fazendo
+    uma ação com esta tag (ex.: o Padre espiando o ritual -> memória ritual_visto)."""
+
+    memory: Id = Field(alias="memoria")
+    tag: Id
 
 
 class Action(DataModel):
@@ -549,10 +697,39 @@ class Action(DataModel):
     # depois de terminar, não pode repetir antes de N minutos do mundo
     cooldown_minutes: float = Field(0, alias="cooldown_minutos", ge=0)
     # tipo de evento especial emitido no começo (no lugar de action_started)
-    event: Literal["bell"] | None = Field(None, alias="evento")
+    event: Literal["bell", "fight", "argument", "reconcile", "gossip", "prank", "theft", "arrest",
+                   "faction", "chase", "ritual", "slapstick"] | None = Field(None, alias="evento")
     # ações sociais: o alvo responde com uma fala desta situação
     target_speech: Id | None = Field(None, alias="fala_alvo")
     target_speech_chance: float = Field(0.5, alias="chance_fala_alvo", ge=0, le=1)
+    # Fase 2 ---------------------------------------------------------------
+    # automática: nunca é escolhida pela Utility AI, só disparada pelo mundo (fugir, perseguir)
+    automatic: bool = Field(False, alias="automatica")
+    # ação social: também vale ir atrás do alvo em outro lugar
+    seek_target: bool = Field(False, alias="ir_atras")
+    # o alvo (e quem viu) forma esta memória sobre quem fez
+    memory: Id | None = Field(None, alias="memoria")
+    # é infração (world.yaml > leis.infracoes): o Fiscal registra se vir
+    infraction: Id | None = Field(None, alias="infracao")
+    # fazer as pazes: enfraquece as memórias ruins entre os dois
+    reconciles: bool = Field(False, alias="reconcilia")
+    # chance de, ao terminar, o alvo sair correndo e quem fez ir atrás
+    chase_chance: float = Field(0, alias="chance_perseguicao", ge=0, le=1)
+    # conserta estruturas danificadas do lugar (pontos ao longo da ação);
+    # só vale em lugar com estrutura danificada
+    repairs: float = Field(0, alias="conserta", ge=0)
+    # o alvo larga o que estava fazendo e sente o efeito na hora (briga, pegadinha)
+    interrupts_target: bool = Field(False, alias="interrompe_alvo")
+    # ...e reage com esta ação automática (ex.: emburrar por uns minutos)
+    target_reaction: Id | None = Field(None, alias="reacao_alvo")
+    # deixa assinatura numa estrutura do lugar (pichação): o Fiscal descobre depois
+    signs: bool = Field(False, alias="assina")
+    # comportamentos especiais (regra no código, documentada em docs/arquitetura.md)
+    special: Literal["fofoca", "confissao", "denuncia", "prender", "roubar", "recrutar", "ordem_reconstruir"] | None = Field(
+        None, alias="especial")
+    # recrutar: para qual facção
+    faction: Id | None = Field(None, alias="faccao")
+    observe: Observation | None = Field(None, alias="observa")
 
     @field_validator("duration_minutes", mode="before")
     @classmethod
@@ -624,8 +801,70 @@ class WorldEvent(DataModel):
     tags: list[Id] = Field(default_factory=list)
 
 
+class OrganizerRule(DataModel):
+    """Quem pode ter a ideia de organizar (vale quem bate com QUALQUER item)."""
+
+    characters: list[Id] = Field(default_factory=list, alias="personagens")
+    traits: list[Id] = Field(default_factory=list, alias="tracos")
+    professions: list[Id] = Field(default_factory=list, alias="profissoes")
+    groups: list[Id] = Field(default_factory=list, alias="grupos")
+    factions: list[Id] = Field(default_factory=list, alias="faccoes")
+
+
+class SocialEventTexts(DataModel):
+    planned: list[str] = Field(alias="planejado", min_length=1)
+    started: list[str] = Field(alias="comeca", min_length=1)
+    failed: list[str] = Field(alias="fracassa", min_length=1)
+    ended: list[str] = Field(alias="termina", min_length=1)
+
+
+class SocialEventDef(DataModel):
+    """Evento organizado pelos NPCs (festa, rave, rodeio, casamento, mutirão...).
+
+    Um NPC que bate com `organizadores` e tem as `vontade` altas pode ter a ideia
+    (`chance_por_hora`). Ele marca lugar e hora, convida pela afinidade, e os
+    convidados ganham um objetivo (bônus na nota da `acao` naquele lugar e hora).
+    Na hora, acontece se houver `quorum` pessoas lá; senão, fracassa."""
+
+    id: Id
+    name: str = Field(alias="nome", min_length=1)
+    action: Id = Field(alias="acao")
+    place: Id | None = Field(None, alias="lugar")
+    # "dano": o lugar é onde há uma estrutura danificada (mutirão)
+    where: Literal["fixo", "dano"] = Field("fixo", alias="onde")
+    organizers: OrganizerRule = Field(alias="organizadores")
+    desire: dict[Id, Percent] = Field(default_factory=dict, alias="vontade")
+    chance_per_hour: float = Field(alias="chance_por_hora", ge=0, le=1)
+    start_window: TimeWindow = Field(alias="comeca_entre")
+    lead_hours: tuple[float, float] = Field((1, 3), alias="antecedencia_horas")
+    duration_hours: tuple[float, float] = Field((2, 3), alias="duracao_horas")
+    invite_affinity_min: float = Field(20, alias="convite_afinidade_min")
+    max_guests: int = Field(8, alias="max_convidados", ge=0)
+    quorum: int = Field(3, ge=1)
+    bonus: float = Field(4, gt=0)
+    cooldown_hours: float = Field(24, alias="cooldown_horas", ge=0)
+    # casamento: precisa de um par com afinidade mútua mínima (o par vira {outro})
+    partner_affinity_min: float | None = Field(None, alias="par_afinidade_min")
+    # o par não pode ter com o organizador uma relação destes tipos (irmao, mae...)
+    partner_forbidden_kinds: list[str] = Field(default_factory=list, alias="par_tipos_proibidos")
+    # quem nunca entra como par (nem organiza) neste evento
+    excluded: list[Id] = Field(default_factory=list, alias="excluidos")
+    memory: Id | None = Field(None, alias="memoria")
+    failure_memory: Id | None = Field(None, alias="memoria_fracasso")
+    texts: SocialEventTexts = Field(alias="textos")
+    importance: int = Field(2, alias="importancia", ge=0, le=3)
+    tags: list[Id] = Field(default_factory=lambda: ["evento"])
+
+    @model_validator(mode="after")
+    def _place(self) -> "SocialEventDef":
+        if self.where == "fixo" and self.place is None:
+            raise ValueError("evento social com onde: fixo precisa de 'lugar'")
+        return self
+
+
 class EventsFile(DataModel):
     events: list[dict] = Field(default_factory=list, alias="eventos")
+    social_events: list[dict] = Field(default_factory=list, alias="eventos_sociais")
 
 
 # --------------------------------------------------------------------------
@@ -642,6 +881,9 @@ class LineTemplate(DataModel):
     weather: list[str] = Field(default_factory=list, alias="climas")
     min_needs: dict[Id, Percent] = Field(default_factory=dict, alias="necessidades_min")
     weight: float = Field(1.0, alias="peso", ge=0)
+    # Fase 2: só se quem fala lembra de algo deste tipo envolvendo o alvo (ou
+    # qualquer um, se não houver alvo). A memória vira a variável {lembranca}.
+    memory: list[Id] = Field(default_factory=list, alias="memoria")
 
     @model_validator(mode="before")
     @classmethod

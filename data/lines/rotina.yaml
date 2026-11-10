@@ -11,65 +11,216 @@
 #       periodos: [noite]       ← só nestes períodos (opcional)
 #       climas: [chuva]         ← só com estes climas (opcional, Fase 3)
 #       necessidades_min: {raiva: 60}  ← só se a necessidade estiver acima
+#       memoria: [briga]        ← só se quem fala lembra de algo assim (Fase 2);
+#                                  a lembrança vira {lembranca}
 #       peso: 2                 ← chance relativa (padrão 1)
 #
-# Variáveis: {eu} {outro} {lugar} {hora} {periodo} {clima} {bordao}
-#            {bordao_outro} {trabalho} {morto} {objeto}
+# Variáveis: {eu} {outro} {lugar} {hora} {periodo} {clima} {humor} {bordao}
+#            {bordao_outro} {trabalho} {terceiro} {fato} {lembranca} {objeto}
+#            {evento} {infracao} {faccao} {traco} {convidados}
+# Concordância: {o|a} usa o pronome de quem fala ("cansad{o|a}"),
+#               {outro:o|a} o do alvo, {terceiro:o|a} o de quem se fala.
 # Para citar alguém específico use o id: {@fool}, {@cathedral}.
 # NUNCA escreva o nome por extenso ("O Palhaço"): com {@clown} o texto
 # acompanha se o João renomear o personagem.
-#
-# Esta é a base da Fase 0 (poucos exemplos). A Fase 2 expande para pelo
-# menos 15 variações por situação comum.
 # =====================================================================
 
 situacoes:
   comer:
     - "{eu} come um prato fundo de sopa em {lugar}."
     - "{eu} raspa o prato e pede mais."
+    - "{eu} come de pé, olhando pro nada, como quem pensa na vida."
+    - "{eu} assopra a colher três vezes e queima a língua mesmo assim."
+    - "{eu} come rápido demais e solta um arroto que ecoa em {lugar}."
+    - "{eu} come em silêncio, {humor}, sem olhar pra ninguém."
+    - "{eu} encontra um fio de cabelo na sopa e decide não comentar."
+    - "{eu} divide o pão com quem está do lado, mas fica com a maior metade."
+    - "{eu} come e reclama do sal. Depois repete."
+    - "{eu} come com a pressa de quem tem medo que a comida fuja."
+    - texto: "{eu} come de madrugada, escondid{o|a}, direto da panela."
+      periodos: [madrugada]
+    - texto: "{eu} come tanto que precisa desabotoar alguma coisa."
+      necessidades_min: {fome: 70}
     - texto: "{eu}: \"{bordao}\" — e serve mais uma concha pra todo mundo."
       personagens: [chef_wife]
       peso: 3
-    - texto: "{eu} prova a comida dez vezes antes de engolir."
+    - texto: "{eu} prova a comida dez vezes antes de engolir. \"Faltou sal... faltou SAL!\""
       personagens: [chef_husband]
       peso: 2
-    - texto: "{eu} come encostado na parede, de olho em quem está olhando."
+    - texto: "{eu} come encostado na parede, de olho em quem está olhando. Esconde um pãozinho no bolso."
       personagens: [greedy]
+      peso: 2
     - texto: "{eu} come. Só isso."
       personagens: [mike]
       peso: 3
+    - texto: "{eu} come de mindinho levantado e diz que a louça é de quinta."
+      personagens: [lady]
+      peso: 2
+    - texto: "{eu} come com uma mão e bate na mesa com a outra no ritmo de um modão."
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old, musician]
+    - texto: "{eu} reza antes de comer. E durante. E depois."
+      personagens: [priest]
+    - texto: "{eu} faz bolinhas de pão e tenta fazer malabarismo com elas ...hehe."
+      personagens: [fool]
+    - texto: "{eu} coloca o nariz vermelho no prato de alguém e ri sozinho."
+      personagens: [clown]
+    - texto: "{eu} come segurando o capuz, como se a comida fosse levar ele embora."
+      personagens: [weirdo]
+    - texto: "{eu} come, mas com o fone de ouvido no talo. \"{bordao}\""
+      personagens: [teen]
 
   trabalhar:
     - "{eu} {trabalho} em {lugar}."
     - "{eu} trabalha resmungando."
+    - "{eu} trabalha cantarolando uma música que ninguém conhece."
+    - "{eu} {trabalho}, mas a cabeça está longe."
+    - "{eu} começa o expediente com um suspiro do tamanho de {lugar}."
+    - "{eu} trabalha direitinho por cinco minutos e depois finge que trabalha."
+    - "{eu} {trabalho} com uma dedicação que dá até medo."
+    - "{eu} para o serviço pra ver se alguém está olhando. Ninguém. Volta a trabalhar."
+    - "{eu} {trabalho} e pensa que um dia ainda vai largar tudo."
+    - texto: "{eu} trabalha {humor}, e todo mundo percebe."
+      necessidades_min: {raiva: 50}
+    - texto: "{eu} {trabalho} bocejando sem parar."
+      necessidades_min: {sono: 60}
     - texto: "{eu} aprova um pedido sem ler. \"{bordao}\""
       personagens: [chief]
       peso: 3
+    - texto: "{eu} aprova dois pedidos que dizem exatamente o contrário um do outro. \"{bordao}\""
+      personagens: [chief]
+      peso: 2
     - texto: "{eu}: \"{bordao}\" *martelada*"
+      personagens: [blacksmith]
+      peso: 2
+    - texto: "{eu} bufa fumaça e martela o ferro como se ele tivesse xingado a mãe."
       personagens: [blacksmith]
       peso: 2
     - texto: "{eu} mede a calçada com a régua. \"{bordao}\""
       personagens: [inspector]
       peso: 2
+    - texto: "{eu} inventa uma regra nova: proibido assobiar perto da Prefeitura."
+      personagens: [inspector]
+    - texto: "{eu} cozinha batendo a colher de pau em tudo e em todos. \"{bordao}\""
+      personagens: [chef_wife]
+      peso: 2
+    - texto: "{eu} queima o arroz. Ninguém vê quando ele é trocado por outro, perfeito."
+      personagens: [chef_husband]
+      peso: 2
+    - texto: "{eu} troca as placas da Feira de lugar. Agora o banheiro é a barraca de queijo."
+      personagens: [clown]
+      peso: 2
+    - texto: "{eu} toca viola na esquina e esquece que tinha um compromisso. ♪"
+      personagens: [musician]
+      peso: 2
+    - texto: "{eu} revira o lixo e encontra uma tampinha. \"...isso é importante...\""
+      personagens: [weirdo]
+      peso: 2
+    - texto: "{eu} olha pro fundo da Sala do Servidor e sussurra: \"{bordao}\""
+      personagens: [tech_old]
+      peso: 2
+    - texto: "{eu} encosta num cabo descascado só pra ver. Nada acontece. Ainda."
+      personagens: [tech_apprentice]
+    - texto: "{eu} rega as flores cantando alto. \"{bordao}\""
+      personagens: [florist]
+      peso: 2
+    - texto: "{eu} reza a missa e conta, sem querer, quem confessou o quê."
+      personagens: [priest]
+    - texto: "{eu} faz um truque para as crianças e o coelho foge do chapéu ...hehe."
+      personagens: [fool]
+    - texto: "{eu} laça um bezerro e quase é laçado por ele. \"{bordao}\""
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+      peso: 2
 
   dormir:
     - "{eu} vai dormir."
     - "{eu} ronca alto em {lugar}."
+    - "{eu} deita, levanta pra ver se trancou a porta, deita de novo."
+    - "{eu} dorme de boca aberta."
+    - "{eu} apaga como uma lâmpada queimada."
+    - "{eu} conta carneirinhos e perde a conta no três."
+    - "{eu} dorme e fala sozinh{o|a}: \"não, não, o outro queijo...\""
+    - "{eu} dorme abraçad{o|a} no travesseiro como se fosse a última coisa do mundo."
+    - "{eu} se revira na cama pensando no que disseram hoje."
+    - "{eu} sonha que está caindo e acorda caindo da cama. Volta a dormir."
+    - "{eu} puxa o cobertor até o nariz. Lá fora, alguma coisa uiva."
+    - texto: "{eu} dorme {humor}, o que nunca é um bom sinal."
+      necessidades_min: {raiva: 50}
     - texto: "{eu} dorme abraçado na viola."
       personagens: [musician]
+      peso: 2
+    - texto: "{eu} dorme de olhos abertos. Ninguém tem coragem de checar."
+      personagens: [mike, weirdo]
+      peso: 2
+    - texto: "{eu} dorme agarrado num bicho de pelúcia que ninguém pode saber que existe."
+      personagens: [inspector]
+      peso: 2
+    - texto: "{eu} dorme com as joias. Todas. Tilinta cada vez que vira."
+      personagens: [lady]
+    - texto: "{eu} reza um terço inteiro e dorme no meio do segundo."
+      personagens: [priest]
+    - texto: "{eu} dorme de botina."
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
 
   cochilar:
-    - "{eu} cochila sentado."
+    - "{eu} cochila sentad{o|a}."
+    - "{eu} fecha os olhos \"só um minutinho\"."
+    - "{eu} cochila e baba no próprio ombro."
+    - "{eu} cochila em pé, igual cavalo."
+    - "{eu} dá uma pescada e quase cai pra frente."
+    - "{eu} cochila com a boca aberta. Uma mosca investiga."
+    - "{eu} tira um cochilo estratégico em {lugar}."
+    - "{eu} encosta a cabeça na parede e some do mundo por um tempo."
+    - "{eu} cochila e ronca baixinho, quase educad{o|a}."
+    - "{eu} jura que não estava dormindo, só descansando os olhos."
     - texto: "{eu} cochila no banco da praça, com a prancheta no peito."
       personagens: [chief]
       lugares: [town_square]
       peso: 3
+    - texto: "{eu} cochila e murmura: \"{bordao}\""
+      personagens: [chief, medium, teen]
+      peso: 2
+    - texto: "{eu} cochila na cela, abraçad{o|a} nos próprios joelhos."
+      lugares: [prison]
+      peso: 3
+    - texto: "{eu} cochila em cima de um rack quentinho. \"Não encosta nisso\", diz alguém, longe."
+      lugares: [server_room]
+      peso: 2
+    - texto: "{eu} cochila na beira da praia e acorda com um caranguejo no sapato."
+      lugares: [sea]
+      peso: 2
 
   perambular:
     - "{eu} anda sem rumo por {lugar}."
+    - "{eu} chuta uma pedrinha de um lado a outro de {lugar}."
+    - "{eu} anda olhando pro céu e tropeça num degrau."
+    - "{eu} passeia assobiando uma música de {periodo}."
+    - "{eu} vai e volta três vezes no mesmo caminho, sem motivo."
+    - "{eu} anda devagar, pensando em quem disse o quê."
+    - "{eu} olha as vitrines que não existem."
+    - "{eu} anda {humor} por {lugar}."
+    - "{eu} para no meio do caminho e esquece pra onde ia."
+    - "{eu} conta os passos até {lugar}. Perde a conta."
     - texto: "{eu} para, olha pro nada e muda de direção."
       personagens: [mike]
+      peso: 4
+    - texto: "{eu} atravessa {lugar} como se {lugar} não estivesse lá."
+      personagens: [mike]
       peso: 3
-    - texto: "{eu} anda em zigue-zague, empurrando o carrinho."
+    - texto: "{eu} anda em zigue-zague, empurrando o carrinho. \"...isso é importante...\""
       personagens: [weirdo]
+      peso: 2
+    - texto: "{eu} desfila por {lugar} esperando ser notada. Ninguém nota. \"{bordao}\""
+      personagens: [lady]
+      peso: 2
+    - texto: "{eu} anda encostado nas paredes, apalpando os bolsos do casaco."
+      personagens: [greedy]
+      peso: 2
+    - texto: "{eu} distribui flores para quem passa. \"{bordao}\""
+      personagens: [florist]
+      peso: 2
+    - texto: "{eu} anda de capuz, fone no talo, chutando tudo que vê."
+      personagens: [teen]
+      peso: 2
+    - texto: "{eu} dá uma estrelinha no meio de {lugar} e encara alguém por tempo demais."
+      personagens: [clown]
       peso: 2

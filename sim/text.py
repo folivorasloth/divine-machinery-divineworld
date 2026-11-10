@@ -32,10 +32,32 @@ TEMPLATE_VARS: dict[str, str] = {
     "morto": "nome de um morto (funeral, lembrança) — Fase 3",
     "objeto": "um objeto (roubo, herança, objeto sagrado) — Fase 2",
     "humor": "humor de quem fala, vindo da necessidade mais alta (ex.: faminto)",
+    # Fase 2
+    "terceiro": "de quem se fala numa fofoca (nem quem fala, nem quem ouve)",
+    "lembranca": "uma memória de quem fala, ex.: aquela briga na Cozinha Comunitária",
+    "fato": "o que a fofoca conta, ex.: o Palhaço roubou um pão na Feira",
+    "evento": "nome de um evento organizado (festa, rave, rodeio...)",
+    "infracao": "nome de uma infração (pichação, roubo, briga...)",
+    "faccao": "nome de uma facção (a Igreja, a Seita)",
+    "traco": "nome de um traço (o novo traço de quem volta do Limbo)",
+    "convidados": "lista de nomes (convidados ou participantes de um evento)",
+}
+
+# Variáveis das frases de memória (world.yaml > memoria.tipos: fato/lembranca)
+MEMORY_VARS: dict[str, str] = {
+    "quem": "quem fez",
+    "alvo": "com quem / em quem foi feito",
+    "lugar": "onde foi",
+    "objeto": "o objeto (roubo, achado) ou um detalhe",
 }
 
 # Variáveis que viram token de id (personagem ou lugar), não texto.
-ID_VARS = {"eu", "outro", "lugar", "morto"}
+ID_VARS = {"eu", "outro", "lugar", "morto", "terceiro", "quem", "alvo"}
+
+# Concordância de gênero: {o|a} usa o pronome de quem fala ({eu});
+# {outro:o|a} usa o do alvo; {terceiro:o|a} o de quem se fala na fofoca.
+# Ex.: "{eu} acorda meio perdid{o|a}." -> "A Dama acorda meio perdida."
+_GENDER = re.compile(r"^(?:(outro|terceiro):)?([^|{}:]*)\|([^|{}]*)$")
 
 _FIELD = re.compile(r"\{([^{}]*)\}")
 
@@ -45,28 +67,39 @@ def fields(template: str) -> list[str]:
     return _FIELD.findall(template)
 
 
-def check_template(template: str, known_ids: set[str]) -> list[str]:
+def check_template(template: str, known_ids: set[str], variables: dict[str, str] | None = None) -> list[str]:
     """Devolve a lista de problemas do template (vazia = ok), em português."""
+    variables = TEMPLATE_VARS if variables is None else variables
     problems = []
     if template.count("{") != template.count("}"):
         problems.append("chaves { } desbalanceadas")
     for field in fields(template):
+        if _GENDER.match(field):
+            continue
         if field.startswith("@"):
             if field[1:] not in known_ids:
                 problems.append(f"{{{field}}}: não existe personagem nem lugar com id '{field[1:]}'")
-        elif field not in TEMPLATE_VARS:
-            options = ", ".join("{" + v + "}" for v in TEMPLATE_VARS)
+        elif field not in variables:
+            options = ", ".join("{" + v + "}" for v in variables)
             problems.append(f"variável desconhecida {{{field}}}. Use uma destas: {options}")
     return problems
 
 
-def fill(template: str, ctx: Mapping[str, str]) -> str:
+def fill(template: str, ctx: Mapping[str, str], genders: Mapping[str, str] | None = None) -> str:
     """Etapa 1: preenche variáveis. Para variáveis de id, `ctx` traz o id
     (ex.: {'eu': 'clown'}) e o resultado vira `{@clown}`. Variável sem valor
-    fica como está (melhor um texto estranho do que um crash)."""
+    fica como está (melhor um texto estranho do que um crash).
+
+    `genders` diz o pronome ("ele"/"ela") de 'eu', 'outro' e 'terceiro' para
+    a concordância {o|a}; sem pronome, fica a primeira forma (masculino)."""
+    genders = genders or {}
 
     def replace(match: re.Match) -> str:
         field = match.group(1)
+        g = _GENDER.match(field)
+        if g:
+            who = g.group(1) or "eu"
+            return g.group(3) if genders.get(who) == "ela" else g.group(2)
         if field.startswith("@") or field not in ctx:
             return match.group(0)
         value = ctx[field]

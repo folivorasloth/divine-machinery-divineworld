@@ -16,4 +16,6 @@ conexoes:
   - {para: cathedral, tipo: caminho, minutos: 6}
   - {para: houses, tipo: caminho, minutos: 6}
   - {para: underground, tipo: tunel, minutos: 5}
-acoes: [rezar, ritual]
+acoes: [rezar, ritual, participar_ritual, espiar_seita, quebrar]
+estruturas:
+  - {id: cemetery_gate, nome: o portão do Cemitério}

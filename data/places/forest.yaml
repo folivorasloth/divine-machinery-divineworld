@@ -15,4 +15,4 @@ tem: [árvores altas, clareira dos rituais, olhos no escuro]
 conexoes:
   - {para: town_square, tipo: tunel, minutos: 5}
   - {para: mountain, tipo: caminho, minutos: 30}
-acoes: [ritual, rezar, festejar]
+acoes: [ritual, participar_ritual, espiar_seita, rezar, festejar]
