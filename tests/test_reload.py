@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import pytest
 
 from server.runtime import Runtime
+from sim.clock import WorldClock
 from sim.engine import Command, World
 from sim.loader import DataError, load_data_or_raise
 from sim.persistence import Storage
@@ -24,7 +25,9 @@ def _rename(path, new_name):
 
 def _world(data_copy, tmp_path, seed=3):
     data = load_data_or_raise(data_copy)
-    return World(data, Storage(tmp_path / "w.sqlite"), seed=seed, speed=600)
+    # hora fixa (08:00): sem isso o mundo começa na hora real e o resultado muda com o relógio
+    start = WorldClock.parse_start(data.world.clock, "08:00", real_now=datetime(2026, 11, 9, 12, 0))
+    return World(data, Storage(tmp_path / "w.sqlite"), seed=seed, speed=600, start=start)
 
 
 def _run_hours(world, hours):

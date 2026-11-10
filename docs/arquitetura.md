@@ -1116,7 +1116,7 @@ Guia dos modelos: `docs/guias/06_modelos_3d_e_design.md`. Tudo que é número ou
   para quando o João pedir.
 - F6 ✅: `recarregar` (seção 3.3). Fase 6 também: entradas `presenca_lider.<facção>` e
   `afinidade_lider.<facção>` (missa e ritual seguem o líder ATUAL), aviso do validador para lugar com
-  estruturas sem ação de conserto, `limites.dias_minimos_entre_mortes_naturais`, contração de nomes com
+  estruturas sem ação de conserto, `limites.dias_minimos_entre_mortes_naturais` e `limites.max_mortes_em_7_dias`/`causas_fora_do_limite` (teto semanal de mortes sorteadas, em `lifecycle.roll`), contração de nomes com
   artigo minúsculo ("em a bigorna" → "na bigorna"), `tools.backup`, material emissivo no `.glb` de
   personagem. Detalhes e balanceamento: `docs/relatorios/FASE_6.md`.
 - Técnicos: continuam trabalhando na Sala do Servidor como profissão (manhã/tarde); um problema real

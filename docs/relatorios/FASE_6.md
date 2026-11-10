@@ -49,7 +49,7 @@ sob controle) e dez guias passo a passo em `docs/guias/` explicam tudo para quem
 ```bash
 cd divine-machinery-divineworld
 .venv/bin/python -m tools.validate                    # "Tudo certo! 0 erros, 0 aviso(s)."
-.venv/bin/python -m pytest -q -o addopts=""           # "198 passed" (~4 min)
+.venv/bin/python -m pytest -q -o addopts=""           # "199 passed" (~4 min)
 (cd viewer && npm ci && npm test && npm run build)    # "# pass 8 / # fail 0", "✓ built"
 
 # 1) o critério do guia 01 (renomear sem reiniciar)
@@ -81,7 +81,7 @@ cd divine-machinery-divineworld
 | Critério | Resultado | Evidência |
 |---|---|---|
 | Seguindo só o guia 01, alguém renomeia um personagem e vê o nome novo no Chat do Mundo e no visual, sem reiniciar | ✅ | Servidor (`--speed 300 --seed 21 --sem-mqtt --sem-llm`) rodando; aba Playwright (Chromium headless, SwiftShader) aberta em `parede_centro` antes da troca: `ANTES {"name":"O Palhaço","place":"market","hellos":1,"dom":["O Palhaço"]}`. Passos do guia: `sed` na linha `nome:`, `tools.validate` → "Tudo certo! 0 erros", `tools.cli recarregar` → "clown: O Palhaço -> O Bozó". A MESMA aba, sem recarregar a página: `DEPOIS {"name":"O Bozó","place":"market","hellos":2,"dom":["O Bozó"]}, "pageLoads":1, "errs":[]` (o `hello` novo chegou; o rótulo no DOM mudou). Chat (`tools.cli chat --personagem clown` e `/api/chat`): "O Ganancioso pergunta pro Bozó se viu alguma coisa estranha hoje." / "O Bozó responde só com uma buzina. *FOM*" / "Os dados do mundo foram recarregados. O Palhaço agora se chama o Bozó." (o texto do aviso foi depois corrigido para `"O Bozó"` entre aspas, para não perder a maiúscula). `/api/characters` → `{'id': 'clown', 'name': 'O Bozó', ...}`. Prints: `img/fase6_renomear_1_antes.png`, `img/fase6_renomear_2_depois.png` (o "O Bozó" na Feira). Renomeação desfeita e recarregada ("clown: O Bozó -> O Palhaço"). |
-| 60 dias simulados sem erros, com o relatório de variedade dentro dos limites | ✅ | **Rodada oficial (config final):** `tools.run --fast --dias 60 --novo --inicio 00:00 --seed 2026 --banco <tmp> --nascidos <tmp> --resumo` → código de saída 0, **stderr vazio**, nenhum "Traceback/Error", 40.830 linhas de Chat, 86.400 ticks; 29 personagens existiram, 22 vivos no fim; 7 mortes e 7 funerais, 8 nascimentos, 1 sucessão, 5 fantasmas, 17 prisões, 103 eventos organizados (67 deram certo). `tools.report --days 60 --seed 42` (16 min) → 13.711 falas, 7.339 textos diferentes, nenhuma acima do limite (30), **"Nenhum alerta (repetição e balanceamento)."**: 3,4 prisões/semana, 4 mortes (pior janela de 7 dias: 2), população 21–24, tédio ≥ 95 em 11,7%, eventos sociais 50–85% (casamento 0/1), diretor no máximo 13% (`boato_na_feira`). **Rodada extra** `--seed 7`: sem fala acima do limite e tudo dentro, **menos um alerta**: 3 mortes em 7 dias (2 acidentes bobos + briga; nenhuma natural — o intervalo novo só vale para morte natural). Registrado em Limitações; não mexi de novo para não "ajeitar" o número depois da medição. Antes desta rodada final houve outra de 60 dias (seed 42, sem os dois últimos ajustes): sem alertas, mas 10 nascimentos × 4 mortes (21 → 28) e `boato_na_feira` em 21% — daí `intervalo_nascimento_dias` 12 e o cooldown do boato. Relatórios completos não ficam no repositório (gerados em pasta temporária). |
+| 60 dias simulados sem erros, com o relatório de variedade dentro dos limites | ✅ (rodada de correção 1) | **Relatório (config final, depois da correção 1):** `tools.report --days 60` em três seeds, em paralelo, todas com stderr vazio e **"Nenhum alerta (repetição e balanceamento)."** — **seed 808**: 13.203 falas (7.294 diferentes), 8 mortes (acidente 2, briga 2, criatura 2, natural 1, choque 1), pior janela de 7 dias **2**, população 19–22, 3,1 prisões/semana, procissão 3/6 (50%), rave 44%, mutirão 67%, rodeio 92%, casamento 1/1, tédio ≥ 95 em 9,4%, diretor ≤ 12%; **seed 7**: 5 mortes (criatura 4, acidente 1), pior janela **2**, população 20–23, 1,6 prisões/semana, procissão 6/8 (75%), rave 45%, rodeio 47%, mutirão 65%, casamento 1/1, tédio 11,4%; **seed 42**: 4 mortes (natural 2, choque 1, briga 1), pior janela **1**, população 21–25, 4,0 prisões/semana, procissão 3/4 com sucesso (75%), rave 59%, mutirão 57%, casamento 1/2, tédio 11,9%. **Simulação:** `tools.run --fast --dias 60 --novo --inicio 00:00 --seed 2026 --banco <tmp> --nascidos <tmp> --resumo` → código 0, stderr vazio, 40.830 linhas de Chat (rodada anterior à correção; a revisão do orquestrador repetiu com a seed 808: código 0). **Histórico:** antes da correção, `--seed 808` dava 5 mortes em 7 dias e procissão 1/6, e `--seed 7` 3 mortes em 7 dias — daí o teto semanal de mortes e a troca da ação da procissão (seção Balanceamento). Relatórios gerados em pasta temporária (fora do repositório). |
 
 ## Robustez
 
@@ -104,9 +104,10 @@ Medido com `tools.report` (seeds 42, 7 e 99; 7, 14 e 60 dias). Tudo em YAML, com
 | **Prisões demais** (~13/semana na F2; 8/semana na primeira medição desta fase) — um roubo sozinho já prendia | `leis.pontos_para_prisao` 2 → 2.5 (roubo sozinho = advertência; roubo + outra coisa prende); `barulho.gravidade` 0.5 → 0.3 (com as raves dando certo, barulho virou a maior causa) | `world.yaml` | 2,9–3,4/semana (60 dias) |
 | **Rave quase sempre fracassava** (0/3) | janela 22:00–01:30 → 21:00–23:30; antecedência 1–4 h → 0,5–2 h; bônus 10 → 30 | `events/sociais.yaml` | 53–62% (60 dias) |
 | **Rodeio fracassava** (0/3): `festejar` quase não vale à tarde e o trabalho ganhava | janela 14–17 h → 16–18 h; bônus 10 → 20 | `events/sociais.yaml` | 71–85% (60 dias) |
-| **Casamento nunca dava certo** (marcado com até 20 h de antecedência) | antecedência 6–20 h → 2–6 h; bônus 5 → 10 | `events/sociais.yaml` | 3 de 5 em três rodadas de 60 dias (raro de propósito: precisa de um par com afinidade ≥ 92) |
+| **Casamento nunca dava certo** (marcado com até 20 h de antecedência) | antecedência 6–20 h → 2–6 h; bônus 5 → 10; ação `missa` → `rezar` (correção 1, mesmo motivo da procissão) | `events/sociais.yaml` | 3 de 5 em três rodadas de 60 dias (raro de propósito: precisa de um par com afinidade ≥ 92) |
+| **Procissão fracassava** (1/6 na seed 808): a ação era `missa`, que só vale onde o líder da Igreja está e **não vale para o próprio Padre** (ele é o líder) — o organizador nunca ia, e ninguém ia sem ele | ação `missa` → `rezar` (vale para todos na Catedral, inclusive o Padre); janela 08–16 h → 10–16 h; antecedência 2–6 h → 1–3 h; bônus 3 → 12 | `events/sociais.yaml` | 50–75% (60 dias, seeds 808, 7, 42) |
 | **Mutirão fracassava** (0/13 numa seed): o lugar mais estragado era o Subterrâneo (as raves quebram as caixas de som), onde `construir` não existia; ideias da madrugada caíam às 07:00 | `construir` nas `acoes` do Subterrâneo, Cemitério, Mar e Prisão (e aviso novo no validador); janela 07:00 → 09:00–16:00; bônus 5 → 25 | `places/*.yaml`, `events/sociais.yaml` | 53–73% (60 dias) |
-| **Mortes em rajada** (3 em 4 dias, F3) | `limites.dias_minimos_entre_mortes_naturais: 8` (campo novo: sem morte natural logo depois de outra morte); `acidente` 0.006 → 0.004 | `world.yaml` | pior janela de 7 dias: 2 (seed 42); 3 na seed 7, por acidentes e briga (ver Limitações) |
+| **Mortes em rajada** (3 em 4 dias na F3; 5 em 7 dias na seed 808 — natural, 2 acidentes, Limbo, choque) | `limites.dias_minimos_entre_mortes_naturais: 8` (sem morte natural logo depois de outra morte); **regra nova genérica `limites.max_mortes_em_7_dias: 2`** (com 2 mortes nos últimos 7 dias, nenhuma causa sorteada mata — o acidente, o choque, a briga e o Limbo acontecem, mas a pessoa sobrevive; `causas_fora_do_limite: []` lista exceções, validadas); `acidente` 0.006 → 0.004 | `world.yaml`, `sim/lifecycle.roll` | pior janela de 7 dias: 2, 2 e 1 (seeds 808, 7, 42); 4 a 8 mortes em 60 dias |
 | **O Aprendiz morrendo de choque todo mês** | `choque.chance` 0.03 → 0.012 | `world.yaml` | 0 choques nas duas rodadas finais de 60 dias |
 | **Diretor repetindo `boato_na_feira`** (21% de tudo em 60 dias) | `cooldown_horas` 20 → 32 | `events/diretor.yaml` | 13% (seeds 42 e 7) |
 | **Cidade crescendo** (10 nascimentos × 4 mortes em 60 dias: 21 → 28) | `intervalo_nascimento_dias` 9 → 12 | `world.yaml` | 21 → 22 (máx. 24) e 21 → 23 (máx. 25); `tools.run`: 22 vivos |
@@ -210,7 +211,7 @@ world/commands/result {"id": "", "cmd": "recarregar", "arg": "", "result": {"ok"
   recalculadas e `hello` novo; `server/app.py` — `recarregar` espera a resposta.
 - `tools/cli.py` — `recarregar` formatado; `tools/report.py` — saúde do mundo; `tools/backup.py` (novo).
 - `sim/text.py` (contração), `sim/utility.py` + `sim/curves.py` (`presenca_lider`, `afinidade_lider`),
-  `sim/loader.py` (aviso de conserto), `sim/schemas.py` + `sim/lifecycle.py` (intervalo de mortes).
+  `sim/loader.py` (aviso de conserto; `causas_fora_do_limite` validado), `sim/schemas.py` + `sim/lifecycle.py` (intervalo de mortes naturais e teto semanal de mortes).
 - `viewer/src/characters.js` (emissivo), `viewer/src/main.js` (`__dw.live().names`),
   `viewer/e2e/aceite_renomear.cjs` (novo).
 - `data/world.yaml`, `data/actions/basicas.yaml`, `data/actions/fe.yaml`, `data/events/sociais.yaml`,
@@ -219,14 +220,14 @@ world/commands/result {"id": "", "cmd": "recarregar", "arg": "", "result": {"ok"
 - `docs/guias/01`–`10` (01–05 e 07–10 novos; 06 estendido), `README.md`, `GUIA_POS_MAX.md` (aponta para
   os guias), `docker-compose.yml` (comentário do volume `data/`), `docs/arquitetura.md` (2, 3.3, 12.11,
   13.1, 16).
-- `tests/test_reload.py` (novo, 9 testes); `tests/test_society.py` (2 testes adaptados ao
+- `tests/test_reload.py` (novo, 10 testes); `tests/test_society.py` (2 testes adaptados ao
   `pontos_para_prisao: 2.5`).
 - `docs/relatorios/img/fase6_renomear_{1_antes,2_depois}.png`.
 
 ## Testes
-- **Python: 198 testes, 198 passando** (`.venv/bin/python -m pytest -q -o addopts=""`; 189 de antes,
+- **Python: 199 testes, 199 passando** (`.venv/bin/python -m pytest -q -o addopts=""`; 189 de antes,
   com 2 de `test_society.py` ajustados ao limiar novo de prisão — eles fixavam "2 pichações = prisão" e
-  "1 roubo denunciado = mandado" — e 9 novos em `tests/test_reload.py`: renomear sem perder estado
+  "1 roubo denunciado = mandado" — e 10 novos em `tests/test_reload.py` (o décimo: o teto semanal de mortes poupa todos menos as causas de `causas_fora_do_limite`): renomear sem perder estado
   (lugar, necessidades, memórias, relações, relógio) e falas novas já com o nome novo; YAML quebrado
   mantém a versão anterior e avisa; falas/pesos/personagem novo aplicados; arquivo sumido mantém o
   personagem; `Runtime` manda `hello` com o nome novo, guarda a cópia válida, liga com ela quando `data/`
@@ -253,9 +254,7 @@ world/commands/result {"id": "", "cmd": "recarregar", "arg": "", "result": {"ok"
 - **Teste de Ollama de verdade** e de **WLED/tela física real** continuam impossíveis aqui.
 - A primeira mensagem do `data_reloaded` foi "agora se chama o Bozó" (artigo minúsculo pela regra de
   contração); corrigido com aspas (`agora se chama "O Bozó"`).
-- **Mortes violentas ainda podem vir juntas**: na seed 7 de 60 dias, 3 mortes numa semana (2 acidentes
-  bobos e uma briga). O intervalo novo só vale para morte natural, de propósito (briga e acidente são
-  consequência do que eles fazem). Se incomodar: `morte.causas.acidente.chance` / `briga.chance`.
+- **O teto de 2 mortes por semana salva gente que "devia" morrer**: num acidente ou choque com o teto cheio, a pessoa sobrevive (o tombo/choque acontece e aparece no Chat). É de propósito (a cidade não aguenta uma praga por semana); para semanas trágicas, suba `limites.max_mortes_em_7_dias` ou ponha a causa em `causas_fora_do_limite`.
 - A contração de nomes minúsculos foi refinada depois das rodadas de 60 dias (a primeira versão punha
   "A mesa de sinuca" maiúsculo depois de dois-pontos). Só muda a exibição do texto, não a simulação;
   coberto por teste.
@@ -292,6 +291,18 @@ world/commands/result {"id": "", "cmd": "recarregar", "arg": "", "result": {"ok"
 
 ## Onde o João pode mexer sem programar
 - Tudo de antes (`data/`), agora aplicado com `tools.cli recarregar` sem reiniciar.
-- `data/world.yaml > limites.dias_minimos_entre_mortes_naturais` (novo).
+- `data/world.yaml > limites.dias_minimos_entre_mortes_naturais`, `max_mortes_em_7_dias` e `causas_fora_do_limite` (novos).
 - Entradas novas nas considerações das ações: `presenca_lider.<facção>`, `afinidade_lider.<facção>`.
 - `tools.report --days N --seed S` mede a saúde do mundo depois de cada ajuste (guia 05).
+
+## Revisão do orquestrador
+Revisão feita em 2026-11-10, com servidor, seeds e personagem diferentes dos usados pelo subagente.
+
+| Critério de aceite | Resultado | Evidência |
+|---|---|---|
+| 60 dias simulados sem erros | ✅ passou | `tools.run --fast --dias 60 --novo --inicio 00:00 --seed 808 --nascidos <tmp>` → código 0, stderr vazio, 35 770 linhas de chat, 9 mortes, 8 nascimentos, 20 vivos no fim (mín–máx 17–22). |
+| Relatório de variedade dentro dos limites | ✅ passou (após 1 rodada de correção) | Primeira revisão: `tools.report --days 60 --seed 808` deu 2 alertas ("rajada de mortes: 5 em 7 dias" e "procissão 1/6"). Correção: regra `limites.max_mortes_em_7_dias` no YAML + procissão/casamento usando `rezar`. Depois: `tools.report --days 60` nas seeds **808** e **2027** (nova) → "Nenhum alerta (repetição e balanceamento)." O subagente também conferiu 7 e 42. |
+| Seguindo só o guia 01, renomear aparece no Chat e no visual sem reiniciar | ✅ passou | Servidor rodando (porta 8002, seed 21); aba 3D aberta antes (`ANTES {"name":"A Florista","hellos":1}`). Segui o guia: troquei `nome:` em `florist.yaml` para "A Rosinha" → `tools.validate` (0 erros) → `tools.cli recarregar` ("florist: A Florista -> A Rosinha"). Na mesma aba, sem recarregar: `DEPOIS {"name":"A Rosinha","hellos":2,"dom":["A Rosinha"]},"pageLoads":1,"errs":[]` em 12 s. Chat: "[10/11 16:26] A Rosinha anda sem rumo até a Feira." Revertido depois. |
+
+Correção feita pelo orquestrador: `tests/test_reload.py::test_reload_renames_without_losing_state` falhava conforme a hora real do dia (o mundo do teste começava "agora" e, à noite, o Palhaço só dormia nas 6 h seguintes). O teste agora fixa o início às 08:00.
+Também conferido: `pytest` → 199 passed; `tools.validate` → 0 erros; `npm test` → 8 pass; `npm run build` ok; nenhum nascido, `.glb` de teste ou arquivo de `var/` no repositório.
