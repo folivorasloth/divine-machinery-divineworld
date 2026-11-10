@@ -84,7 +84,11 @@ _CONTRACTIONS = {
     ("a", "O"): "ao", ("a", "A"): "à", ("a", "Os"): "aos", ("a", "As"): "às",
     ("pra", "O"): "pro", ("pra", "A"): "pra", ("pra", "Os"): "pros", ("pra", "As"): "pras",
 }
-_CONTRACT = re.compile(r"\b(em|de|por|a|pra) (Os|As|O|A) (?=\w)")
+# já contraído no template ("toca o sino da {lugar}"): só tira o artigo repetido
+for _prep in ("da", "do", "das", "dos", "na", "no", "nas", "nos", "pela", "pelo", "à", "ao"):
+    for _art in ("O", "A", "Os", "As"):
+        _CONTRACTIONS[(_prep, _art)] = _prep
+_CONTRACT = re.compile(r"(?<!\w)(em|de|por|a|pra|da|do|das|dos|na|no|nas|nos|pela|pelo|à|ao) (Os|As|O|A) (?=\w)")
 # artigo maiúsculo de um nome no MEIO da frase vira minúsculo ("com O Músico" -> "com o Músico")
 _MID_ARTICLE = re.compile(r"(?<=[a-zà-ú,] )(Os|As|O|A)(?= \w)")
 
