@@ -14,6 +14,12 @@ Fase 1 (núcleo): o mundo já vive sozinho, em texto. Os NPCs têm necessidades,
 Utility AI, andam pelo grafo de lugares (com túneis), trabalham, comem, dormem e conversam; o
 Padre toca o sino; tudo aparece no Chat do Mundo no terminal e fica salvo em SQLite.
 
+Fase 2 (sociedade): afinidades vivas, memórias (que aparecem nas falas), fofoca com distorção,
+discussões, brigas de pastelão, pazes, pegadinhas e tombos, construções que quebram e são
+consertadas, o Fiscal com advertências, prisão e Limbo, Igreja × Seita, o Ganancioso roubando
+(e a cidade acusando, às vezes a pessoa errada) e festas, raves, rodeios, procissões, casamentos
+e mutirões organizados pelos próprios NPCs. `--resumo` mostra tudo que aconteceu.
+
 ## Primeiros passos
 
 ```bash
@@ -39,9 +45,9 @@ Tudo em `data/`:
 | `data/places/<id>.yaml` | lugares, conexões, paleta, perigo, ações possíveis |
 | `data/actions/*.yaml` | ações (verbos) e como cada uma é pontuada |
 | `data/lines/*.yaml` | falas (templates) |
-| `data/events/*.yaml` | eventos do diretor |
+| `data/events/*.yaml` | eventos do diretor e eventos sociais organizados pelos NPCs (`sociais.yaml`) |
 | `data/traits.yaml` | traços, profissões e o sorteio dos nascimentos |
-| `data/world.yaml` | relógio, limites, telas, MQTT, Ollama, clima |
+| `data/world.yaml` | relógio, limites, telas, MQTT, Ollama, clima; memórias, fofoca, leis, facções, roubos |
 
 Depois de editar, rode `python -m tools.validate`.
 

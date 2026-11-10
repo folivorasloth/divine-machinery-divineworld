@@ -282,7 +282,8 @@ nivel_log: info
 #   afinidade: quanto quem lembra passa a gostar (ou não) de quem fez
 #   infracao: a lei vê isso como prova desta infração (contra quem fez)
 #   fato: frase da FOFOCA ({quem} fez, {alvo} sofreu, {lugar}, {objeto})
-#   lembranca: como quem viveu fala disso ("desde {lembranca}...")
+#   lembranca: como quem viveu fala disso ("desde {lembranca}..."). Comece com
+#              "aquele/aquela" (fica certo depois de "desde", "por", "sobre").
 memoria:
   max_por_npc: 40
   esquecer_abaixo: 5
@@ -313,7 +314,7 @@ memoria:
       decai_por_dia: 15
       afinidade: 3
       fato: "{quem} fez as pazes com {alvo}, com abraço e tudo"
-      lembranca: "o dia em que a gente fez as pazes em {lugar}"
+      lembranca: "aquele dia em que a gente fez as pazes em {lugar}"
     pegadinha:
       nome: Pegadinha
       intensidade: 45
@@ -338,7 +339,7 @@ memoria:
       afinidade: -10
       infracao: roubar
       fato: "{quem} roubou {objeto} em {lugar}"
-      lembranca: "o sumiço de {objeto} em {lugar}"
+      lembranca: "aquele sumiço de {objeto} em {lugar}"
     sumico:
       nome: Suspeita de roubo
       intensidade: 55
@@ -347,7 +348,7 @@ memoria:
       afinidade: -12
       infracao: roubar
       fato: "{quem} pegou {objeto} de {lugar}, certeza"
-      lembranca: "o sumiço de {objeto} em {lugar}"
+      lembranca: "aquele sumiço de {objeto} em {lugar}"
     pichacao:
       nome: Pichação
       intensidade: 35
@@ -356,7 +357,7 @@ memoria:
       afinidade: -2
       infracao: pichar
       fato: "{quem} pichou {lugar} e ainda assinou"
-      lembranca: "a pichação em {lugar}"
+      lembranca: "aquela pichação em {lugar}"
     quebra:
       nome: Quebradeira
       intensidade: 45
@@ -365,7 +366,7 @@ memoria:
       afinidade: -5
       infracao: quebrar
       fato: "{quem} quebrou tudo em {lugar}"
-      lembranca: "a quebradeira em {lugar}"
+      lembranca: "aquela quebradeira em {lugar}"
     barulho:
       nome: Barulheira
       intensidade: 25
@@ -373,7 +374,7 @@ memoria:
       decai_por_dia: 30
       infracao: barulho
       fato: "{quem} fez uma barulheira danada em {lugar} de madrugada"
-      lembranca: "a barulheira em {lugar}"
+      lembranca: "aquela barulheira em {lugar}"
     prisao:
       nome: Prisão
       intensidade: 65
@@ -389,7 +390,7 @@ memoria:
       permanente: true
       afinidade: -30
       fato: "{alvo} foi mandado pro Limbo por {quem}"
-      lembranca: "o Limbo"
+      lembranca: "aquele silêncio branco do Limbo"
     festa:
       nome: Festa boa
       intensidade: 50
@@ -412,7 +413,7 @@ memoria:
       decai_por_dia: 12
       afinidade: 3
       fato: "{quem} acendeu velas e chamou as vozes em {lugar}"
-      lembranca: "o ritual em {lugar}"
+      lembranca: "aquele ritual em {lugar}"
     ritual_visto:
       nome: Ritual espiado
       intensidade: 50
@@ -420,7 +421,7 @@ memoria:
       decai_por_dia: 10
       afinidade: -4
       fato: "{quem} anda fazendo ritual de madrugada em {lugar}"
-      lembranca: "o que eu vi em {lugar} naquela noite"
+      lembranca: "aquilo que vi em {lugar} naquela noite"
     missa:
       nome: Missa
       intensidade: 25
@@ -428,14 +429,14 @@ memoria:
       decai_por_dia: 20
       afinidade: 2
       fato: "{quem} rezou uma missa bonita em {lugar}"
-      lembranca: "a missa em {lugar}"
+      lembranca: "aquela missa em {lugar}"
     conversao:
       nome: Mudou de lado
       intensidade: 60
       sentimento: -0.3
       decai_por_dia: 4
       fato: "{quem} agora anda com {objeto}"
-      lembranca: "quando {quem} entrou para {objeto}"
+      lembranca: "aquele dia em que {quem} entrou para {objeto}"
     casamento:
       nome: Casamento
       intensidade: 90
@@ -443,7 +444,7 @@ memoria:
       permanente: true
       afinidade: 10
       fato: "{quem} casou com {alvo} em {lugar}"
-      lembranca: "o casamento em {lugar}"
+      lembranca: "aquele casamento em {lugar}"
     consolo:
       nome: Consolo
       intensidade: 40
@@ -465,14 +466,14 @@ memoria:
       sentimento: 0.3
       decai_por_dia: 15
       fato: "{quem} achou {objeto} jogado em {lugar}"
-      lembranca: "o dia em que achei {objeto}"
+      lembranca: "aquele dia em que apareceu {objeto}"
     achado_sagrado:
       nome: Achado sagrado
       intensidade: 55
       sentimento: 0.5
       decai_por_dia: 5
       fato: "{quem} achou {objeto} em {lugar} e jura que é sagrado"
-      lembranca: "{objeto} sagrado que apareceu em {lugar}"
+      lembranca: "aquele achado sagrado em {lugar}"
     mutirao:
       nome: Mutirão
       intensidade: 40
@@ -480,7 +481,7 @@ memoria:
       decai_por_dia: 10
       afinidade: 3
       fato: "{quem} juntou gente para consertar {lugar}"
-      lembranca: "o mutirão em {lugar}"
+      lembranca: "aquele mutirão em {lugar}"
 
 fofoca:
   # chance de a fofoca chegar torta (troca quem fez por outra pessoa).

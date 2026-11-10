@@ -40,7 +40,7 @@ situacoes:
     - texto: "{eu} cobra de {outro}: \"E {lembranca}? Vai fingir que não foi nada?\""
       memoria: [roubo, sumico, pegadinha, quebra]
       peso: 3
-    - texto: "{eu} conta pra {outro} que ainda tem pesadelo com {lembranca}."
+    - texto: "{eu} conta pra {outro} que ainda tem pesadelo: {lembranca}."
       memoria: [prisao, limbo, choque, briga]
       peso: 2
     # personagens

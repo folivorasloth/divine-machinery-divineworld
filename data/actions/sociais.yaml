@@ -404,13 +404,12 @@ acoes:
     nome: Denunciar
     descricao: Vai até o Fiscal contar o que viu (ou ouviu dizer).
     tipo: social
-    peso: 0.5
+    peso: 1.2
     duracao_minutos: [3, 8]
     em_qualquer_lugar: true
     ir_atras: true
     especial: denuncia
     condicoes:
-      periodos: [manha, tarde]
       alvo: {obrigatorio: true, profissoes: [fiscal]}
     consideracoes:
       - entrada: denuncia

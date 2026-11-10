@@ -78,15 +78,15 @@ situacoes:
   # {lembranca} é a coisa confessada, do ponto de vista de quem confessa
   confissao:
     - "{eu} se ajoelha diante de {outro}: \"Padre, eu confesso... foi sobre {lembranca}.\""
-    - "{eu} confessa baixinho pra {outro} a culpa que sente por {lembranca}."
-    - "{eu} chora no confessionário falando de {lembranca}. {outro} escuta com atenção demais."
+    - "{eu} confessa baixinho pra {outro} a culpa que sente: {lembranca}."
+    - "{eu} chora no confessionário falando sobre {lembranca}. {outro} escuta com atenção demais."
     - "{eu} conta tudo pra {outro} sobre {lembranca}, e pede segredo absoluto."
     - "{eu} desabafa com {outro} sobre {lembranca}. Sai mais lev{o|a}. {outro} sai mais carregado."
     - "{eu} confessa a {outro}: \"É sobre {lembranca}.\" \"Isso fica entre nós, né?\""
-    - "{eu} sussurra a {outro} um pecado: {lembranca}. Foi culpa del{o|a}."
+    - "{eu} sussurra a {outro} um pecado: {lembranca}. Foi culpa del{e|a}."
     - "{eu} confessa a {outro} {lembranca}. {outro} faz o sinal da cruz e uma anotação mental."
-    - "{eu} gagueja a confissão: {lembranca}... foi del{o|a} a culpa."
-    - "{eu} confessa, olhando pro chão, que não esquece {lembranca}. A culpa foi del{o|a}."
+    - "{eu} gagueja a confissão: {lembranca}... foi del{e|a} a culpa."
+    - "{eu} confessa, olhando pro chão, que não esquece {lembranca}. A culpa foi del{e|a}."
     - texto: "{eu} confessa a {outro}: {lembranca}. Depois devolve uma coisa que estava no bolso. Não toda."
       personagens: [greedy]
       peso: 2

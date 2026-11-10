@@ -348,6 +348,7 @@ da sua rotina ou uma janela `horarios` de ação que ele pode fazer (é isso que
 - `perambular` (`vagar: true`): sorteia um lugar vizinho (sem névoa, acesso normal), com peso
   `(1 − perigo/100)²` — lugares perigosos atraem menos, **exceto para quem tem a imunidade
   `criaturas`** (o Mike vai a qualquer lugar com a mesma chance). É o comportamento do Mike.
+  (F2: voltar direto para o lugar de onde acabou de vir vale ×0,25 — `CharacterState.prev_place`.)
 - Campos novos das ações (F1): `narracao` / `narracao_fim` (texto do Chat do Mundo no começo e no
   fim; sem `narracao`, "{eu} vai <nome da ação> em {lugar}."), `dormindo`, `vagar`,
   `cooldown_minutos`, `evento: bell` (o começo da ação vira um evento `bell` em vez de
@@ -364,7 +365,8 @@ da sua rotina ou uma janela `horarios` de ação que ele pode fazer (é isso que
   evento `slapstick`, fala `falha.fala`, `falha.efeitos` no lugar dos efeitos normais, nada no
   alvo, memória `falha.memoria` (ex.: `tombo`) para quem viu.
 - Campos novos das ações (F2), todos no YAML: `ir_atras`, `memoria`, `infracao`,
-  `interrompe_alvo`, `reconcilia`, `chance_perseguicao`, `conserta`, `assina`, `automatica`,
+  `interrompe_alvo`, `reacao_alvo` (ação automática do alvo, ex.: `emburrar` 3–8 min depois de
+  uma bronca), `reconcilia`, `chance_perseguicao`, `conserta`, `assina`, `automatica`,
   `especial`, `faccao`, `observa: {memoria, tag}`, `efeitos.afinidade_com`,
   `efeitos.por_traco`, `efeitos.dano_estrutura`, e `evento` aceita `fight, argument,
   reconcile, gossip, prank, theft, arrest, faction, chase, ritual, slapstick`. Explicação de
