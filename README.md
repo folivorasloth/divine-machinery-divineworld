@@ -12,6 +12,7 @@ sozinhos: trabalham, constroem, destroem, festejam, brigam, morrem e lembram. Na
 
 | Guia | Para quando você quer... |
 |---|---|
+| [**00 — Instalar, configurar e usar**](docs/guias/00_instalar_configurar_usar.md) | **comece por aqui:** do zero até o mundo vivendo nas telas, configurar o homelab e usar no dia a dia |
 | [01 — Renomear e editar personagens](docs/guias/01_renomear_e_editar_personagens.md) | mudar nome, aparência, traços, bordões e falas (e renomear nascidos), sem desligar o mundo |
 | [02 — Criar personagem novo](docs/guias/02_criar_personagem_novo.md) | um morador novo a partir do `_MODELO.yaml`, com relações e ligação com o mundo real |
 | [03 — Falas e humor](docs/guias/03_falas_e_humor.md) | escrever templates, variáveis, filtros, e não deixar o mundo repetitivo |
