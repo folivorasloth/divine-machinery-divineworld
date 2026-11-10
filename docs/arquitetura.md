@@ -53,17 +53,18 @@ sim/                      simulação (Python puro, sem rede, exceto weather/llm
   loader.py         ✅ F0  lê data/, expande ${ENV}, valida, cruza referências, monta o grafo
   curves.py         ✅ F0  curvas de resposta da Utility AI
   text.py           ✅ F0  templates: variáveis, tokens {@id}, render com nomes atuais
-  clock.py          📐 F1  relógio do mundo (tempo real × multiplicador), períodos, dia/noite
-  rng.py            📐 F1  random.Random com seed do world.yaml; um único RNG por mundo
-  state.py          📐 F1  dataclasses do estado vivo: CharacterState, PlaceState, WorldState
-  needs.py          📐 F1  variação das necessidades por tick (taxas, traços, dia/noite)
-  pathfinding.py    📐 F1  Dijkstra no grafo (minutos), ignora névoa e lugares sem acesso
-  utility.py        📐 F1  candidatos, nota, escolha ponderada, explicação
-  actions.py        📐 F1  executor de planos (andar → fazer ação), efeitos, falha
-  speech.py         📐 F1  escolhe template por situação/filtros, evita repetição recente
-  events.py         📐 F1  Event + EventBus + tipos
-  persistence.py    📐 F1  SQLite: schema, migrações simples, salvar/carregar
-  engine.py         📐 F1  World: monta tudo, tick(), run_forever(), snapshot(), commands
+  clock.py          ✅ F1  relógio do mundo (passo fixo), períodos, dia/noite, hora inicial
+  rng.py            ✅ F1  random.Random com seed; salvar/restaurar estado; sorteio ponderado
+  state.py          ✅ F1  dataclasses do estado vivo: CharacterState, Activity, Plan, MoveStep
+  needs.py          ✅ F1  variação das necessidades por tick (taxas, traços, dia/noite), {humor}
+  pathfinding.py    ✅ F1  Dijkstra no grafo (minutos), ignora névoa e lugares sem acesso
+  utility.py        ✅ F1  candidatos, nota, escolha ponderada, explicação, nota da ação atual
+  speech.py         ✅ F1  escolhe template por situação/filtros, evita repetição recente
+  events.py         ✅ F1  Event + EventBus + tipos
+  persistence.py    ✅ F1  SQLite: schema, migrações simples, salvar/carregar, consulta do chat
+  engine.py         ✅ F1  World: monta tudo, tick(), run(), catch_up(), snapshot(), comandos
+                           (o "executor de planos" planejado em actions.py ficou dentro do
+                           engine: é pouco código e depende de tudo do World)
   relations.py      📐 F2  afinidade viva por par
   memory.py         📐 F2  memórias com intensidade e decaimento
   gossip.py         📐 F2  repasse de memórias com distorção
@@ -86,7 +87,9 @@ server/
   __main__.py       📐 F4  `python -m server`: sobe World + uvicorn + MQTT
 tools/
   validate.py       ✅ F0  `python -m tools.validate`
-  run.py            📐 F1  `python -m tools.run --speed 60 [--personagem id] [--lugar id] [--fast]`
+  run.py            ✅ F1  `python -m tools.run --speed 60 [--fast] [--horas N|--dias N] [--personagem id]
+                           [--lugar id] [--movimento] [--debug] [--resumo] [--saida arq] [--novo]
+                           [--seed N] [--inicio HH:MM] [--banco arq]`
   report.py         📐 F3  `python -m tools.report --days 7`: relatório de variedade
   cli.py            📐 F4  `python -m tools.cli chefe "..."` (fala com a API)
 viewer/             📐 F5  Three.js + Vite; index.html?screen=<id>, chat.html, layout.html
@@ -149,36 +152,46 @@ cada arquivo (e cada item de listas) separadamente, depois cruza referências:
 `load_data_or_raise()` lança `DataError` (usado pelo engine). Recarregar (Fase 6): carregar de
 novo; se tiver erro, manter o `WorldData` anterior e publicar evento `system` com o relatório.
 
-## 4. Relógio e tick 📐 F1
+## 4. Relógio e tick ✅ F1
 
 - `world_time = âncora_mundo + (agora_real − âncora_real) × multiplicador`, no fuso
   `relogio.fuso`. Com multiplicador 1, o mundo segue o relógio real (dia e noite reais).
+  `World.run()` refaz a âncora quando a velocidade muda ou ao despausar.
 - **Passo fixo:** cada tick avança `passo_minutos` (padrão 1 min do mundo). O intervalo real entre
   ticks é `passo×60/multiplicador` segundos; `--fast` (testes, `tools.report`) não dorme.
   Se a máquina atrasar, o laço faz vários ticks seguidos para alcançar (máx. 600 por rodada).
+  Medido: um dia inteiro (1440 ticks, 21 NPCs) leva ~4 s em `--fast`.
+- **Mundo novo:** começa na hora real (ou `--inicio`). Quem tem um bloco de rotina de uma ação
+  `dormindo: true` valendo naquela hora já começa dormindo em casa até o fim do bloco (senão um
+  mundo criado às 3h teria a cidade inteira acordada).
 - **Retomada:** o tempo do mundo salvo no SQLite é a âncora. Com multiplicador 1, ao religar, simula
   em modo rápido até `max_recuperacao_horas` do tempo perdido; o resto é pulado com um evento
-  `system` ("o mundo cochilou por N horas").
+  `system` ("o mundo cochilou por N horas"). Com outro multiplicador (testes) continua da hora
+  salva. Seed, estado do RNG, cooldowns, próxima reavaliação e falas recentes também são salvos:
+  parar e continuar dá exatamente a mesma história que rodar direto (teste).
 - Período = último `relogio.periodos[*].das` ≤ hora. `é_noite` = hora ≥ `noite_comeca` ou <
   `dia_comeca`. Mudança de período gera evento `period_changed`.
 
 ### 4.1 Ordem de um tick
 
 ```
-1. drenar comandos (fila)                                   F1 (pausar/velocidade), F4 (resto)
-2. avançar relógio; emitir period_changed se mudou           F1
+1. drenar comandos (fila)                                   ✅ F1 (pausar/continuar/velocidade), F4 (resto)
+2. avançar relógio; emitir period_changed se mudou           ✅ F1
 3. atualizar clima (cache; no máx. a cada atualizar_minutos) F3
-4. necessidades: para cada vivo, variar por taxa             F1
+4. necessidades: para cada vivo, variar por taxa + efeito proporcional da ação em andamento  ✅ F1
 5. memórias e relações: decaimento lento (1×/hora do mundo)  F2
-6. ações em andamento: aplicar efeito proporcional; terminar as que acabaram (emite action_finished)
-7. decisões: cada NPC livre (sem ação, sem plano) decide      F1  (ordem embaralhada pelo RNG)
-8. movimento: avançar planos; chegadas e túneis               F1
+6. ações em andamento: terminar as que acabaram (emite action_finished)                      ✅ F1
+7. movimento: avançar planos; chegadas e túneis; ao chegar, começa a ação                    ✅ F1
+8. decisões: cada NPC livre decide; quem está ocupado é reavaliado (seção 6.5)               ✅ F1
+   (ordem embaralhada pelo RNG; quem decidiu entra na contagem de "presentes" dos próximos)
 9. sistemas: lei, estruturas, eventos sociais, criaturas, morte/nascimento, telas    F2-F3
 10. diretor: 1× a cada 10 min do mundo                        F3
-11. snapshot para a API; salvar no SQLite a cada salvar_a_cada_minutos (e ao sair)   F1/F4
+11. snapshot para a API; commit dos eventos; salvar estado a cada salvar_a_cada_minutos (e ao sair)  ✅ F1
 ```
+(Na implementação, movimento vem antes das decisões — diferente do plano — para quem chega
+num lugar já começar a ação no mesmo tick e quem fica livre já decidir.)
 
-## 5. Necessidades 📐 F1
+## 5. Necessidades ✅ F1
 
 Definidas em `world.yaml > necessidades` (hoje: `fome, sono, social, fe, tedio, raiva, medo`).
 Valor 0..100; **maior = mais urgente**.
@@ -192,10 +205,12 @@ efeito da ação em andamento: += efeito_total × (dt / duração)
 clamp 0..100
 ```
 
-Personagem dormindo não ganha sono (o efeito de `dormir` domina). Alertas (`need_alert`, nível
-debug) quando algo passa de 90.
+Personagem numa ação com `dormindo: true` (`dormir`, `cochilar`) não ganha sono. Cada
+necessidade pode ter `humor` (ex.: fome → "faminto"): a variável `{humor}` das falas usa a
+necessidade mais alta acima de 60, ou `humor_neutro`. (Os alertas `need_alert` planejados ficaram
+para quando houver quem os use.)
 
-## 6. Utility AI 📐 F1 (formato dos dados ✅ F0)
+## 6. Utility AI ✅ F1
 
 ### 6.1 Candidatos
 
@@ -207,8 +222,13 @@ Para um NPC livre, gera pares (ação, lugar[, alvo]):
   ou `condicoes.lugar_proprio` = `trabalho` (lugar = `local_trabalho`) / `casa` (lugar = `casa`);
 - `condicoes`: `periodos`, `horarios` (qualquer janela), `profissoes`, `tracos` (tem algum),
   `personagens` (é um deles), `necessidades_min` (todas acima);
-- ações `social`: um candidato por alvo **presente no lugar atual** que passa em
-  `afinidade_min/max`. (Ir atrás de alguém em outro lugar é objetivo da Fase 2.)
+- ações `social`: um candidato por alvo **presente no lugar atual**, acordado (não está numa
+  ação `dormindo`), parado (não está andando) e que passa em `afinidade_min/max`. (Ir atrás de
+  alguém em outro lugar é objetivo da Fase 2.)
+- ações `em_qualquer_lugar` (conversar, encarar a tela) e `vagar` (perambular) valem só no lugar
+  atual — mais o lugar de um bloco de rotina ativo com essa ação, se o bloco der `lugar`;
+- `cooldown_minutos`: a ação não é candidata até passar esse tempo desde que terminou (o sino
+  toca uma vez por janela).
 
 ### 6.2 Nota
 
@@ -247,21 +267,41 @@ consideracoes:
 
 ### 6.4 Escolha e explicação
 
-1. descarta notas < `nota_minima`; ordena; pega as `top_n`;
-2. sorteia proporcional a `nota^(1/temperatura)` com o RNG do mundo;
-3. se não sobrou nada: `perambular` (ou ficar parado 10 min se nem isso).
+1. descarta notas < `nota_minima`; ordena (nota, depois rótulo, para ser estável); pega as `top_n`;
+2. das `top_n`, descarta as que valem menos que `melhor × fracao_da_melhor` (0.4): sem isso, nas
+   horas mornas o 3º lugar (às vezes bobo) saía com frequência demais;
+3. sorteia proporcional a `nota^(1/temperatura)` com o RNG do mundo;
+4. se não sobrou nada: a ação `vagar` (perambular), ou ficar parado 10 min (`_parado`).
 
-Toda decisão gera log `debug` (e o evento `decision`, não publicado no MQTT por padrão):
+Toda decisão gera log `debug` (logger `sim.engine`) e o evento `decision` (não vai para o SQLite
+nem para o MQTT; `tools.run --debug` mostra). Saída real:
 
 ```
-[06:42] O Chefe escolheu cochilar@town_square (0.84) | top3: cochilar 0.84, comer 0.51, conversar(fool) 0.33
-        cochilar: peso 0.6 × necessidade.sono=78→0.83 × perigo=5→0.95 × traço preguicoso×2.0 × rotina×3.0 × viagem 0.89
+[09/11 06:00] (A Prisão) O Padre escolheu tocar_sino@cathedral (126.13) | top3:
+tocar_sino@cathedral 126.13, trabalhar@cathedral 0.62, comer@community_kitchen 0.21
+    tocar_sino: peso×30.00 × rotina×5.00 × viagem 5min×0.84
 ```
 
-`utility.explain()` devolve a mesma coisa como estrutura (`[(fator, entrada, valor, resultado)]`)
-para o `quem <id>` da Fase 4.
+`utility.explain()` monta esse texto; o evento `decision` traz a mesma coisa como estrutura
+(`data.top = [[rótulo, nota]]`, `data.factors = [[fator, valor]]`), e
+`CharacterState.last_explanation` guarda a última (para o `quem <id>` da Fase 4).
 
-## 7. Ações e planos 📐 F1
+### 6.5 Reavaliação e interrupção (detalhe da F1)
+
+Uma ação em andamento não é sagrada. Quem está ocupado (e parado) é reavaliado a cada
+`reavaliar_a_cada_minutos` (10; espalhado por personagem) **e** nos minutos em que começa um bloco
+da sua rotina ou uma janela `horarios` de ação que ele pode fazer (é isso que põe o Padre no sino
+às 06:00 em ponto, quando ele está por perto):
+
+- `nota_atual` = nota da ação em andamento agora (sem viagem nem repetição; 0 se as condições
+  deixaram de valer, ex.: acabou o período de trabalho);
+- se `nota_atual < nota_minima`: para e decide de novo (ex.: quem ainda dorme às 10h sem rotina
+  de dormir acorda);
+- se a melhor outra opção ≥ `max(nota_para_interromper, nota_atual × fator_interrupcao)`, larga a
+  atual (`action_finished` com `interrupted: true`) e faz a nova. Para quem está **dormindo**, o
+  mínimo é `nota_para_acordar` (2.0): só a rotina de trabalho ou o sino acordam alguém.
+
+## 7. Ações e planos ✅ F1
 
 - Uma decisão vira um **plano**: `[andar/viajar ..., ação]`. O caminho vem de `pathfinding`
   (Dijkstra pelos `minutos`; evita névoa e acesso especial/nunca).
@@ -273,13 +313,23 @@ para o `quem <id>` da Fase 4.
   com `chance_fala`, sai uma fala da situação `fala`. Ações sociais aplicam `alvo_necessidades` e
   as afinidades no fim. `falha` (F2): sorteio no início; se falhar, aplica `falha.efeitos` e a fala
   `falha.fala` no lugar dos normais (traço `desastrado` aumenta a chance — regra no código).
-- `perambular`: escolhe um vizinho aleatório (sem névoa) e vai; é o comportamento do Mike.
+- `perambular` (`vagar: true`): sorteia um lugar vizinho (sem névoa, acesso normal), com peso
+  `(1 − perigo/100)²` — lugares perigosos atraem menos, **exceto para quem tem a imunidade
+  `criaturas`** (o Mike vai a qualquer lugar com a mesma chance). É o comportamento do Mike.
+- Campos novos das ações (F1): `narracao` / `narracao_fim` (texto do Chat do Mundo no começo e no
+  fim; sem `narracao`, "{eu} vai <nome da ação> em {lugar}."), `dormindo`, `vagar`,
+  `cooldown_minutos`, `evento: bell` (o começo da ação vira um evento `bell` em vez de
+  `action_started`), `fala_alvo` + `chance_fala_alvo` (o alvo de uma ação social responde).
+- Durante a ação, o efeito em `necessidades` é aplicado aos poucos; no fim (ou na interrupção),
+  `alvo_necessidades` e as afinidades são aplicados proporcionalmente ao tempo que durou.
+- Afinidade viva: `World.affinities` guarda só os pares que mudaram desde o YAML (tabela
+  `relations`, já criada na F1). A F2 cuida do retorno lento e da memória.
 - Interrupção: eventos fortes (briga começando no lugar, criatura, funeral) podem cancelar a
   ação atual (F2/F3) — o NPC decide de novo no tick seguinte.
 - Ações `ativa: false` existem nos dados mas são ignoradas até a fase que as implementa
   (hoje: `ritual`, `brigar`, `fofocar`, `consolar`, `roubar`, `construir`, `quebrar` → F2).
 
-## 8. Eventos 📐 F1 (formato fixado aqui)
+## 8. Eventos ✅ F1
 
 Tudo que acontece é um `Event` (dataclass), publicado no `EventBus`, gravado no SQLite e enviado
 ao WebSocket/MQTT. Formato JSON (chaves em inglês, como no resto do ecossistema):
@@ -306,6 +356,16 @@ ao WebSocket/MQTT. Formato JSON (chaves em inglês, como no resto do ecossistema
   (`sim.text.render`). O banco guarda só `text`: renomear muda até o histórico.
 - `importance`: 0 rotina · 1 interessante · 2 marcante · 3 grande acontecimento (linha do tempo).
 - `tags`: ids de `world.yaml > categorias_chat` (filtros do Chat do Mundo).
+- `id` é sequencial por mundo (`meta.last_event_id`), dado pelo `World` (não pelo SQLite).
+- `render()` também faz as contrações do português quando o nome começa com artigo
+  ("em A Praça" → "na Praça", "rumo a A Praça" → "rumo à Praça"; `sim.text.contract`).
+
+`data` por tipo (F1): `action_started`/`bell`: `action, target, minutes, score, spoke` (se saiu
+fala junto) · `action_finished`: `action, interrupted, minutes` · `speech`: `situation, action`
+(+ `reply_to` na resposta) · `move_*`: `from, to, minutes, destination, final` ·
+`teleport_*`: o mesmo + `from_place, to_place, from_screen, to_screen, duration_s` (distância
+entre os centros das telas ÷ `velocidade_led_cm_por_s`, mínimo `duracao_minima_s`) ·
+`period_changed`: `period, is_night` · `system`: livre.
 
 Tipos (`type`) planejados:
 
@@ -316,7 +376,7 @@ Tipos (`type`) planejados:
 | F3 | `death`, `funeral_started`, `funeral_ended`, `grief`, `ghost`, `birth`, `succession`, `creature_spawned`, `creature_gone`, `weather_changed`, `fog_on`, `fog_off`, `director_event`, `tension` |
 | F4 | `creator_command`, `creator_order`, `creator_voice`, `resurrection`, `stare`, `apparition` |
 
-## 9. Falas 📐 F1 (formato ✅ F0)
+## 9. Falas ✅ F1
 
 `sim.speech.pick(situação, falante, alvo, lugar, contexto)`:
 
@@ -326,9 +386,14 @@ Tipos (`type`) planejados:
 3. remove as usadas nos últimos N eventos do mesmo falante (anti-repetição, N=8);
 4. sorteia por `peso`; preenche variáveis com `sim.text.fill` (ids viram `{@id}`).
 
-Variáveis (`sim.text.TEMPLATE_VARS`): `{eu} {outro} {lugar} {hora} {periodo} {clima} {bordao}
-{bordao_outro} {trabalho} {morto} {objeto}` e `{@id}` para citar alguém pelo id. Se não houver
-fala para a situação, gera texto neutro com o nome da ação ("{eu} começa a comer.").
+Falas que pedem o que não existe agora são puladas: `{outro}`/`{bordao_outro}` sem alvo,
+`{bordao}` de quem não tem bordão (o Aprendiz), `{morto}`/`{objeto}` (Fases 2-3). As recentes de
+cada personagem ficam em `CharacterState.recent_lines` (salvas no banco). Se todas as opções
+foram usadas recentemente, aceita repetir. Clima na F1: `clima.clima_padrao` (real na F3).
+
+Variáveis (`sim.text.TEMPLATE_VARS`): `{eu} {outro} {lugar} {hora} {periodo} {clima} {humor}
+{bordao} {bordao_outro} {trabalho} {morto} {objeto}` e `{@id}` para citar alguém pelo id. Se não
+sair fala (chance ou falta de template), o Chat do Mundo mostra a `narracao` da ação.
 
 LLM (F4): `sim.llm.enrich(evento, contexto)` reescreve só falas de `importance >= 1` em situações
 listadas no `world.yaml`, com timeout `ollama.timeout_segundos` e limite `max_por_hora`. Falhou →
@@ -336,16 +401,16 @@ fica o template. O LLM recebe o template preenchido, bordões, humor, memórias 
 resposta só pode citar personagens por `{@id}` (validado com `text.check_template`, senão
 descarta).
 
-## 10. Persistência (SQLite) 📐 F1-F3
+## 10. Persistência (SQLite) ✅ F1 (tabelas F2-F3 📐)
 
 Arquivo em `persistencia.banco` (`${DW_DB_PATH:-var/world.sqlite}`). `sqlite3` da biblioteca
 padrão, `PRAGMA journal_mode=WAL`. Tabela `meta.schema_version` + migrações simples em
 `persistence.py` (lista de SQL por versão). Salva periodicamente e ao sair (Ctrl+C / SIGTERM).
 
 ```sql
--- F1
+-- F1 (migração 1 em sim/persistence.py)
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-  -- schema_version, world_time, seed, rng_state (json), speed, paused
+  -- schema_version, world_time, seed, rng_state (json), speed, paused, last_event_id
 CREATE TABLE characters (
   id TEXT PRIMARY KEY,               -- id do YAML (nome NUNCA é salvo aqui)
   alive INTEGER NOT NULL DEFAULT 1,
@@ -354,7 +419,7 @@ CREATE TABLE characters (
   current TEXT,                      -- json da ação/plano em andamento
   last_action TEXT,
   extra_traits TEXT NOT NULL DEFAULT '[]',  -- traços ganhos (Limbo, ressurreição)
-  flags TEXT NOT NULL DEFAULT '{}',  -- preso_ate, no_limbo, luto, etc.
+  flags TEXT NOT NULL DEFAULT '{}',  -- F1: cooldowns, next_review, recent_lines; F2+: preso_ate, luto...
   born_at TEXT, died_at TEXT, death_cause TEXT,
   updated_at TEXT NOT NULL
 );
@@ -367,8 +432,9 @@ CREATE TABLE events (
 CREATE TABLE event_actors (event_id INTEGER, char_id TEXT, role INTEGER, PRIMARY KEY (event_id, char_id));
 CREATE TABLE event_tags (event_id INTEGER, tag TEXT, PRIMARY KEY (event_id, tag));
 CREATE INDEX events_ts ON events(ts);  CREATE INDEX actors_char ON event_actors(char_id);
--- F2
 CREATE TABLE relations (a TEXT, b TEXT, affinity REAL NOT NULL, updated_at TEXT, PRIMARY KEY (a, b));
+  -- criada já na F1 (as conversas mudam a afinidade); só os pares que mudaram desde o YAML
+-- F2
 CREATE TABLE memories (
   id INTEGER PRIMARY KEY AUTOINCREMENT, owner TEXT NOT NULL, kind TEXT NOT NULL,
   about TEXT NOT NULL DEFAULT '[]',  -- ids envolvidos
@@ -389,6 +455,11 @@ CREATE TABLE director_log (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, tensio
   chosen TEXT, reason TEXT);
 CREATE TABLE weather_log (ts TEXT PRIMARY KEY, code INTEGER, label TEXT, temp REAL, raw TEXT);
 ```
+
+Na F1: `events.id` é dado pelo `World` (não é AUTOINCREMENT); eventos `decision` não são gravados;
+os eventos são confirmados (commit) a cada tick e o estado completo a cada
+`salvar_a_cada_minutos` e ao sair (Ctrl+C / SIGTERM). `Storage.query_events(character=, place=,
+tag=, type=, limit=, before_id=)` é a base do `/api/chat` da F4.
 
 Personagem morto **continua com o YAML** em `data/characters/` (a lápide mostra o nome atual).
 Personagem que está no SQLite mas sumiu do YAML: fica congelado e gera aviso (não apaga nada).
@@ -540,7 +611,8 @@ fala do mundo); dá para ligar depois com uma opção no `world.yaml`.
 ### 13.5 Docker
 
 `Dockerfile` (python:3.12-slim) + `docker-compose.yml`: um serviço `sim` com `./data` e `./var`
-como volumes e `.env` para endereços. F1 muda o comando para `python -m tools.run`; F4 para
+como volumes e `.env` para endereços. F1 ✅ mudou o comando para `python -m tools.run` (tempo real,
+`restart: unless-stopped`; `tzdata` no pyproject garante o fuso na imagem enxuta); F4 para
 `python -m server` com a porta `${DW_SERVER_PORT:-8000}` publicada e `restart: unless-stopped`.
 O viewer (F5) é servido como estático pelo próprio FastAPI (`viewer/dist`), sem segundo container.
 
@@ -565,7 +637,9 @@ O viewer (F5) é servido como estático pelo próprio FastAPI (`viewer/dist`), s
 - Um único `random.Random(seed)` por mundo (`seed` do YAML; vazio = aleatório e registrado no
   `meta`). Nenhum módulo usa `random` global. Com a mesma seed, dados e `--fast`, a sequência de
   eventos é idêntica (teste da F1).
-- Log com `logging` (`nivel_log`); `debug` traz as explicações de decisão. `tools.run` usa `rich`.
+- Log com `logging` (`nivel_log` do world.yaml; em `debug` traz as explicações de decisão e as
+  interrupções). `tools.run --debug` mostra as decisões no próprio Chat do Mundo (eventos
+  `decision`). O chat usa `rich` e vai para o stdout; o log, para o stderr.
 - Testes por módulo em `tests/`; os que precisam de mundo usam uma cópia de `data/` (fixture
   `data_copy`) e banco SQLite em `tmp_path`. MQTT e Ollama são testados com dublês (sem rede).
 
@@ -574,3 +648,7 @@ O viewer (F5) é servido como estático pelo próprio FastAPI (`viewer/dist`), s
 - Layout interno dos lugares numa tela (posições 3D) — F5 decide; pode ganhar campo no YAML.
 - Esquema das criaturas e dos eventos sociais — F2/F3 criam e documentam aqui.
 - Lista de situações reescritas pelo LLM — F4.
+- Técnicos: na F1 trabalham na Sala do Servidor como qualquer profissão (manhã/tarde). Quando a F4
+  ligar `homelab/servicos/#`, o trabalho deles deve depender de objetivo (problema real aberto).
+- Médium: sem `ritual` (F2), as noites dela são de `rezar` na floresta (bloco de rotina provisório
+  no YAML) e ela ainda dorme mais à noite do que a bible pede; a F2 ajusta com o ritual.

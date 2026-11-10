@@ -1,7 +1,7 @@
 # Falas de fé e mistério. Formato explicado no topo de rotina.yaml.
 situacoes:
   tocar_sino:
-    - "DONG... DONG... O sino da {@cathedral} toca: {hora}."
+    - "DONG... DONG... O sino de {@cathedral} toca: {hora}."
     - texto: "{eu} puxa a corda do sino com força demais e tropeça na batina. \"{bordao}\""
       personagens: [priest]
 

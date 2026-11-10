@@ -33,6 +33,7 @@ rotina:
 necessidades:
   social: {inicial: 50, taxa: 1.3}
   tedio: {taxa: 1.3}
+  sono: {taxa: 0.8}   # acorda tarde, fecha a noite na taverna
 relacoes:
   - {com: fool, afinidade: 70, tipo: irmao, nota: Zoa o irmão em público e protege ele escondido.}
   - {com: teen, afinidade: 60, tipo: cumplice}

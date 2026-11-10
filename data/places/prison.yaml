@@ -12,4 +12,4 @@ tem: [celas, grades, lista de infrações]
 conexoes:
   - {para: town_square, tipo: caminho, minutos: 3}
   - {para: town_hall, tipo: caminho, minutos: 2}
-acoes: [cochilar, rezar]
+acoes: [cochilar]

@@ -664,12 +664,22 @@ def _cross_check(
                 report.error(file, f"{where}.consideracoes[{i}].entrada: {problem}")
         if action.speech and action.speech not in data.lines:
             report.warn(file, f"{where}.fala: não há falas para a situação '{action.speech}' em data/lines/")
+        if action.target_speech and action.target_speech not in data.lines:
+            report.warn(file, f"{where}.fala_alvo: não há falas para a situação '{action.target_speech}' em data/lines/")
+        if action.target_speech and action.kind != "social":
+            report.error(file, f"{where}.fala_alvo: só faz sentido em ações 'social' (com alvo)")
+        for key, template in (("narracao", action.narration), ("narracao_fim", action.narration_end)):
+            if template:
+                for problem in text.check_template(template, set(data.characters) | set(data.places)):
+                    report.error(file, f"{where}.{key}: {problem}")
+                _warn_literal_names(report, file, f"{where}.{key}", template, {c.name: cid for cid, c in data.characters.items()})
         if action.failure and action.failure.speech and action.failure.speech not in data.lines:
             report.warn(file, f"{where}.falha.fala: não há falas para a situação '{action.failure.speech}'")
         if (
             action.active
             and action.kind != "movimento"
             and not action.anywhere
+            and not action.wander
             and not cond.own_place
             and aid not in offered
         ):

@@ -28,7 +28,7 @@ rotina:
   - {das: "08:00", ate: "12:00", acao: trabalhar, lugar: market}
   - {das: "13:00", ate: "14:00", acao: comer, lugar: community_kitchen}
   - {das: "14:00", ate: "17:00", acao: perambular, peso: 1.5}
-  - {das: "17:00", ate: "19:00", acao: encarar_tela, peso: 4}
+  - {das: "17:00", ate: "19:00", acao: encarar_tela, peso: 10}
   - {das: "23:00", ate: "07:00", acao: dormir, lugar: houses}
 relacoes:
   - {com: mike, afinidade: 50, tipo: amigo, nota: Tenta ser amigo do Mike.}

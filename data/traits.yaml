@@ -192,7 +192,7 @@ tracos:
     sorteavel: false
     efeitos:
       necessidades: {social: 0.2, tedio: 0.3}
-      acoes: {perambular: 3.0, conversar: 0.3}
+      acoes: {perambular: 3.0, conversar: 0.3, festejar: 0.2, rezar: 0.2}
   - id: calmo
     nome: Calmo
     opostos: [bravo, irritado]
@@ -312,13 +312,13 @@ profissoes:
   - {id: musico, nome: Músico, atividade: toca viola caipira, local_trabalho: town_square}
   - {id: padre, nome: Padre, atividade: celebra a missa, local_trabalho: cathedral, papel_importante: true, sorteavel: false}
   - {id: cozinheiro, nome: Cozinheiro, atividade: cozinha para a cidade, local_trabalho: community_kitchen, papel_importante: true}
-  - {id: vaqueiro, nome: Vaqueiro, atividade: trabalha no campo, local_trabalho: fields}
+  - {id: vaqueiro, nome: Vaqueiro, atividade: cuida do gado e da roça, local_trabalho: fields}
   - {id: medium, nome: Médium, atividade: recebe visões, local_trabalho: forest, papel_importante: true, sorteavel: false}
   - {id: colecionador, nome: Colecionador, atividade: revira o lixo atrás de coisas sagradas, local_trabalho: market}
   - {id: fiscal, nome: Fiscal, atividade: distribui advertências, local_trabalho: town_hall, papel_importante: true, sorteavel: false}
   - {id: ferreiro, nome: Ferreiro, atividade: forja ferramentas, local_trabalho: forge, papel_importante: true}
   - {id: florista, nome: Florista, atividade: cuida das flores, local_trabalho: town_square}
-  - {id: tecnico, nome: Técnico do servidor, atividade: conserta a Sala do Servidor, local_trabalho: server_room, papel_importante: true}
+  - {id: tecnico, nome: Técnico do servidor, atividade: faz a manutenção dos servidores, local_trabalho: server_room, papel_importante: true}
   - {id: nenhuma, nome: Sem profissão, atividade: não faz nada em especial}
 
 # =====================================================================

@@ -29,7 +29,7 @@ def test_renaming_a_character_touches_only_its_file(data_copy):
     # textos guardados com tokens de id passam a mostrar o nome novo
     stored = text.fill("{eu} buzina pra {outro}.", {"eu": "clown", "outro": "fool"})
     assert stored == "{@clown} buzina pra {@fool}."
-    assert text.render(stored, data.names()) == "Bozó das Couves buzina pra O Fool."
+    assert text.render(stored, data.names()) == "Bozó das Couves buzina pro Fool."
 
 
 def test_renaming_every_character_and_place_still_validates(data_copy):

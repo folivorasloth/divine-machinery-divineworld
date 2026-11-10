@@ -22,6 +22,17 @@
 #   (negativo = satisfaz, ex.: fome -60; positivo = custo, ex.: sono +5).
 # fala: situação de falas em data/lines/ (com chance_fala de sair um balão).
 # ativa: false = a ação existe mas a simulação ainda não usa (fase futura).
+#
+# Campos opcionais (Fase 1):
+#   narracao: "{eu} senta para comer em {lugar}."  ← texto do Chat do Mundo
+#             quando a ação começa (aparece quando não sai balão de fala)
+#   narracao_fim: "{eu} acorda."   ← texto quando a ação termina
+#   dormindo: true      ← quem faz está dormindo (não conversa, sono não sobe)
+#   vagar: true         ← a ação acontece num lugar VIZINHO sorteado (perambular)
+#   cooldown_minutos: 60  ← depois de terminar, não repete antes disso
+#   evento: bell        ← tipo especial de evento no Chat (o sino)
+#   fala_alvo: resposta ← (ações sociais) o alvo responde com esta situação
+#   chance_fala_alvo: 0.5
 # =====================================================================
 
 acoes:
@@ -50,12 +61,13 @@ acoes:
     tipo: individual
     peso: 0.4
     duracao_minutos: [10, 40]
-    em_qualquer_lugar: true
+    vagar: true
     consideracoes:
       - entrada: necessidade.tedio
         curva: {tipo: linear, minimo: 0.2}
     efeitos:
       necessidades: {tedio: -15, sono: 2}
+    narracao: "{eu} anda sem rumo até {lugar}."
     fala: perambular
     chance_fala: 0.1
     tags: [rotina]
@@ -76,7 +88,8 @@ acoes:
       - entrada: necessidade.fome
         curva: {tipo: pontos, pontos: [[0, 1], [70, 0.6], [100, 0.1]]}
     efeitos:
-      necessidades: {tedio: 10, sono: 8, fome: 5, social: 5}
+      necessidades: {tedio: 10, sono: 3, fome: 5, social: 5}
+    narracao: "{eu} {trabalho} em {lugar}."
     fala: trabalhar
     chance_fala: 0.3
     tags: [trabalho]
@@ -89,9 +102,10 @@ acoes:
     duracao_minutos: [20, 45]
     consideracoes:
       - entrada: necessidade.fome
-        curva: {tipo: pontos, pontos: [[0, 0], [30, 0.1], [60, 0.6], [85, 1]]}
+        curva: {tipo: pontos, pontos: [[0, 0], [30, 0.05], [50, 0.3], [70, 0.8], [85, 1]]}
     efeitos:
       necessidades: {fome: -65, social: -10}
+    narracao: "{eu} senta para comer em {lugar}."
     fala: comer
     chance_fala: 0.3
     tags: [rotina]
@@ -101,17 +115,20 @@ acoes:
     descricao: Dorme em casa.
     tipo: individual
     peso: 1.2
-    duracao_minutos: [240, 480]
+    duracao_minutos: [420, 600]
+    dormindo: true
     condicoes:
       lugar_proprio: casa
     consideracoes:
       - entrada: necessidade.sono
-        curva: {tipo: logistica, meio: 65, inclinacao: 0.12}
+        curva: {tipo: logistica, meio: 65, inclinacao: 0.12, minimo: 0.15}
       - entrada: hora
         nota: dormir de dia é menos provável
-        curva: {tipo: pontos, pontos: [[0, 1], [6, 1], [8, 0.3], [20, 0.3], [22, 1], [24, 1]]}
+        curva: {tipo: pontos, pontos: [[0, 1], [6, 1], [8, 0.4], [10, 0.05], [19, 0.05], [21, 0.6], [22, 1], [24, 1]]}
     efeitos:
-      necessidades: {sono: -90, fome: 10}
+      necessidades: {sono: -95, fome: 10}
+    narracao: "{eu} vai dormir em {lugar}."
+    narracao_fim: "{eu} acorda em {lugar}."
     fala: dormir
     chance_fala: 0.15
     tags: [rotina]
@@ -122,13 +139,19 @@ acoes:
     tipo: individual
     peso: 0.6
     duracao_minutos: [15, 45]
+    dormindo: true
     consideracoes:
       - entrada: necessidade.sono
         curva: {tipo: pontos, pontos: [[0, 0], [40, 0.2], [70, 0.7], [100, 1]]}
       - entrada: perigo
         curva: {tipo: linear, inverter: true, minimo: 0.05}
+      - entrada: hora
+        nota: cochilo é coisa do dia; de noite o certo é ir dormir em casa
+        curva: {tipo: pontos, pontos: [[0, 0.1], [6, 0.1], [8, 1], [20, 1], [22, 0.1], [24, 0.1]]}
     efeitos:
       necessidades: {sono: -20, tedio: -5}
+    narracao: "{eu} fecha os olhos um pouquinho em {lugar}."
+    narracao_fim: "{eu} acorda do cochilo, meio perdido."
     fala: cochilar
     chance_fala: 0.2
     tags: [rotina]
@@ -145,6 +168,8 @@ acoes:
         curva: {tipo: linear, minimo: 0.3}
     efeitos:
       necessidades: {medo: 3, tedio: -5}
+    cooldown_minutos: 120
+    narracao: "{eu} para e encara a tela."
     fala: encarar_tela
     chance_fala: 0.5
     tags: [misterio]

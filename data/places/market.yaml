@@ -15,4 +15,4 @@ conexoes:
   - {para: town_square, tipo: caminho, minutos: 3}
   - {para: tavern, tipo: caminho, minutos: 2}
   - {para: sea, tipo: tunel, minutos: 5}
-acoes: [comer, festejar, roubar, quebrar, construir]
+acoes: [comer, roubar, quebrar, construir]

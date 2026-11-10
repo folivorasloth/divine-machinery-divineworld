@@ -8,6 +8,9 @@ acoes:
     tipo: individual
     peso: 30           # alto de propósito: na janela certa, quase sempre vence
     duracao_minutos: [3, 5]
+    # uma vez por janela de horário; aparece no Chat como evento "sino"
+    cooldown_minutos: 60
+    evento: bell
     condicoes:
       profissoes: [padre]
       horarios:
@@ -16,6 +19,7 @@ acoes:
         - {das: "18:00", ate: "18:15"}
     efeitos:
       necessidades: {fe: -10}
+    narracao: "{eu} toca o sino de {lugar}: são {hora}."
     fala: tocar_sino
     chance_fala: 0.6
     tags: [igreja]
@@ -34,6 +38,7 @@ acoes:
         curva: {tipo: pontos, pontos: [[0, 0.8], [60, 1], [100, 1]]}
     efeitos:
       necessidades: {fe: -40, medo: -15, tedio: 5}
+    narracao: "{eu} se ajoelha para rezar em {lugar}."
     fala: rezar
     chance_fala: 0.3
     tags: [igreja]

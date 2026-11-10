@@ -23,8 +23,11 @@ acoes:
       alvo_necessidades: {social: -20}
       afinidade: 1
       afinidade_do_alvo: 1
+    narracao: "{eu} puxa conversa com {outro}."
     fala: conversa
     chance_fala: 0.9
+    fala_alvo: resposta
+    chance_fala_alvo: 0.6
     tags: [conversa]
 
   - id: festejar
@@ -42,6 +45,7 @@ acoes:
         curva: {tipo: pontos, pontos: [[0, 0.8], [3, 0.4], [6, 0.05], [17, 0.2], [20, 1], [24, 1]]}
     efeitos:
       necessidades: {tedio: -40, social: -30, sono: 10, fome: 5}
+    narracao: "{eu} cai na festa em {lugar}."
     fala: festejar
     chance_fala: 0.5
     tags: [evento]

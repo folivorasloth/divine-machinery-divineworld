@@ -10,8 +10,9 @@ sozinhos: trabalham, constroem, destroem, festejam, brigam, morrem e lembram. Na
 
 ## Estado atual
 
-Fase 0 (preparação): estrutura, esquemas de dados, a bible convertida em YAML (`data/`) e o
-validador. Ainda não há simulação rodando.
+Fase 1 (núcleo): o mundo já vive sozinho, em texto. Os NPCs têm necessidades, escolhem ações por
+Utility AI, andam pelo grafo de lugares (com túneis), trabalham, comem, dormem e conversam; o
+Padre toca o sino; tudo aparece no Chat do Mundo no terminal e fica salvo em SQLite.
 
 ## Primeiros passos
 
@@ -20,6 +21,11 @@ python3 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 .venv/bin/python -m tools.validate     # confere todos os YAML de data/
 .venv/bin/python -m pytest             # roda os testes
+
+# o mundo vivendo no terminal (Ctrl+C salva e sai; ao religar, continua de onde parou)
+.venv/bin/python -m tools.run --speed 60                       # 1 hora do mundo por minuto
+.venv/bin/python -m tools.run --fast --dias 1 --novo --resumo  # um dia inteiro em segundos
+.venv/bin/python -m tools.run --help                           # filtros e outras opções
 ```
 
 ## Onde mexer sem programar

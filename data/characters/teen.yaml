@@ -29,7 +29,7 @@ rotina:
   - {das: "03:00", ate: "12:00", acao: dormir, lugar: houses}
 necessidades:
   tedio: {inicial: 60, taxa: 1.4}
-  sono: {taxa: 0.9}
+  sono: {taxa: 0.6}   # acorda ao meio-dia
 relacoes:
   - {com: chef_wife, afinidade: 20, tipo: filho, nota: Detesta os pais pelo menos em público.}
   - {com: chef_husband, afinidade: 20, tipo: filho, nota: Detesta os pais pelo menos em público.}

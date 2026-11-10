@@ -25,6 +25,7 @@ profissao: padre
 local_trabalho: cathedral
 casa: cathedral
 rotina:
+  - {das: "05:20", ate: "06:00", acao: rezar, lugar: cathedral, peso: 3}   # reza perto do sino antes de tocar
   - {das: "05:50", ate: "06:20", acao: tocar_sino, lugar: cathedral, peso: 5}
   - {das: "06:30", ate: "07:30", acao: comer, lugar: community_kitchen}
   - {das: "07:30", ate: "11:50", acao: trabalhar, lugar: cathedral}

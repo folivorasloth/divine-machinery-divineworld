@@ -31,6 +31,9 @@ rotina:
   - {das: "15:00", ate: "17:30", acao: trabalhar, lugar: town_square}
   - {das: "19:30", ate: "23:59", acao: festejar, lugar: tavern, peso: 2.5}
   - {das: "01:00", ate: "08:30", acao: dormir, lugar: houses}
+# notívagos: o sono sobe mais devagar (taverna e modão até de madrugada)
+necessidades:
+  sono: {taxa: 0.8}
 relacoes:
   - {com: cowboy_fat, afinidade: 60, tipo: parceiro, nota: Modão na taverna até de madrugada.}
   - {com: cowboy_thin, afinidade: 60, tipo: parceiro}

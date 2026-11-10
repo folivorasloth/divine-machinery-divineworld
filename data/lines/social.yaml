@@ -18,6 +18,68 @@ situacoes:
       personagens: [mike]
     - texto: "{eu} cochicha pra {outro}: \"{bordao}\""
       personagens: [medium, weirdo]
+    - "{eu} pergunta pra {outro} se viu alguma coisa estranha hoje."
+    - "{eu} reclama com {outro}: está {humor}."
+    - texto: "{eu} comenta com {outro} que a {periodo} está esquisita."
+      periodos: [madrugada, noite]
+    - texto: "{eu} confessa pra {outro}, de mau humor: \"{bordao}\""
+      necessidades_min: {raiva: 50}
+    - texto: "{eu} chama {outro} pra comer alguma coisa."
+      necessidades_min: {fome: 55}
+    - texto: "{eu} conta pra {outro} um causo do campo que ninguém pediu. \"{bordao}\""
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+      peso: 2
+    - texto: "{eu} ouve {outro} e responde com três notas na viola. ♪"
+      personagens: [musician]
+      peso: 2
+    - texto: "{eu} diz pra {outro} que hoje é um dia LINDO, mesmo com tempo {clima}."
+      personagens: [florist]
+      peso: 2
+    - texto: "{eu} aprova o pedido de {outro} sem ouvir até o fim. \"{bordao}\""
+      personagens: [chief]
+      peso: 2
+    - texto: "{eu} anota o nome de {outro} no bloquinho. Só por precaução."
+      personagens: [inspector]
+      peso: 2
+    - texto: "{eu} pergunta pra {outro}, desconfiado, o que tem nos bolsos. \"{bordao}\""
+      personagens: [greedy]
+    - texto: "{eu} manda {outro} sentar e comer. \"{bordao}\""
+      personagens: [chef_wife]
+      peso: 2
+    - texto: "{eu} pergunta pra {outro} se a comida estava boa. Pergunta de novo."
+      personagens: [chef_husband]
+      peso: 2
+
+  # Resposta de quem foi chamado para conversar ({outro} é quem puxou papo).
+  resposta:
+    - "{eu} responde para {outro}: \"{bordao}\""
+    - "{eu} concorda com a cabeça e não diz nada."
+    - "{eu} ri do que {outro} disse."
+    - "{eu} muda de assunto."
+    - texto: "{eu} responde só com uma buzina. *FOM*"
+      personagens: [clown]
+      peso: 3
+    - texto: "{eu} responde e termina com um \"...hehe\"."
+      personagens: [fool]
+      peso: 2
+    - texto: "{eu}: \"...\""
+      personagens: [mike]
+      peso: 3
+    - texto: "{eu} abana o leque. \"{bordao}\""
+      personagens: [lady]
+      peso: 2
+    - texto: "{eu} dá de ombros: \"{bordao}\""
+      personagens: [teen]
+      peso: 3
+    - texto: "{eu} bufa e dá uma martelada no ar. \"GRRR\""
+      personagens: [blacksmith]
+      peso: 2
+    - texto: "{eu} apita. \"Infração!\""
+      personagens: [inspector]
+      peso: 2
+    - texto: "{eu} responde em notas: ♪ lá, mi, ré ♪"
+      personagens: [musician]
+      peso: 2
 
   festejar:
     - "{eu} dança no meio de {lugar}."

@@ -73,6 +73,9 @@ class NeedDef(DataModel):
     # pontos por hora do mundo; no modo "retorna" é a velocidade de volta à base
     rate_day: float = Field(alias="taxa_dia")
     rate_night: float = Field(alias="taxa_noite")
+    # palavra de humor usada na variável {humor} das falas quando esta
+    # necessidade é a mais alta (ex.: fome -> "faminto")
+    mood: str = Field("", alias="humor")
 
 
 class Period(DataModel):
@@ -178,6 +181,18 @@ class DecisionConfig(DataModel):
     travel_half_life_minutes: float = Field(alias="meia_vida_viagem_minutos", gt=0)
     repeat_penalty: float = Field(alias="penalidade_repeticao", ge=0, le=1)
     min_score: float = Field(0.01, alias="nota_minima", ge=0)
+    # só entram no sorteio as opções com nota >= melhor × fracao_da_melhor
+    # (0 = desliga; 0.5 = só o que vale pelo menos metade da melhor)
+    relative_cutoff: float = Field(0.0, alias="fracao_da_melhor", ge=0, le=1)
+    # Fase 1: quem está ocupado reavalia a cada N minutos do mundo e troca de
+    # ação (interrompe) se a melhor opção valer `fator_interrupcao` vezes a
+    # nota atual E pelo menos `nota_para_interromper`. É assim que alguém acorda
+    # para o trabalho, ou o Padre larga tudo para tocar o sino.
+    reevaluate_minutes: float = Field(10, alias="reavaliar_a_cada_minutos", gt=0)
+    interrupt_factor: float = Field(3.0, alias="fator_interrupcao", ge=1)
+    interrupt_min_score: float = Field(0.5, alias="nota_para_interromper", ge=0)
+    # acordar alguém (ação com `dormindo: true`) exige um motivo mais forte
+    wake_min_score: float = Field(2.0, alias="nota_para_acordar", ge=0)
 
 
 class NamedThing(DataModel):
@@ -228,6 +243,8 @@ class WorldConfig(DataModel):
     tunnel: TunnelConfig = Field(alias="tunel")
     screens: list[Screen] = Field(default_factory=list, alias="telas")
     log_level: Literal["debug", "info", "aviso", "erro"] = Field("info", alias="nivel_log")
+    # {humor} das falas quando nenhuma necessidade está alta
+    neutral_mood: str = Field("de boa", alias="humor_neutro")
 
     @field_validator("seed", mode="before")
     @classmethod
@@ -519,6 +536,23 @@ class Action(DataModel):
     speech_chance: float = Field(0.5, alias="chance_fala", ge=0, le=1)
     tags: list[Id] = Field(default_factory=list)
     importance: int = Field(0, alias="importancia", ge=0, le=3)
+    # Fase 1 ---------------------------------------------------------------
+    # texto do Chat do Mundo quando a ação começa sem fala (balão) e quando
+    # termina (ex.: dormir -> "{eu} acorda"). Mesmas variáveis das falas.
+    narration: str | None = Field(None, alias="narracao")
+    narration_end: str | None = Field(None, alias="narracao_fim")
+    # quem está fazendo esta ação está dormindo: não pode ser alvo de conversa
+    # e o sono não sobe sozinho enquanto isso
+    sleeping: bool = Field(False, alias="dormindo")
+    # a ação acontece num lugar VIZINHO sorteado (andar sem rumo: o Mike)
+    wander: bool = Field(False, alias="vagar")
+    # depois de terminar, não pode repetir antes de N minutos do mundo
+    cooldown_minutes: float = Field(0, alias="cooldown_minutos", ge=0)
+    # tipo de evento especial emitido no começo (no lugar de action_started)
+    event: Literal["bell"] | None = Field(None, alias="evento")
+    # ações sociais: o alvo responde com uma fala desta situação
+    target_speech: Id | None = Field(None, alias="fala_alvo")
+    target_speech_chance: float = Field(0.5, alias="chance_fala_alvo", ge=0, le=1)
 
     @field_validator("duration_minutes", mode="before")
     @classmethod

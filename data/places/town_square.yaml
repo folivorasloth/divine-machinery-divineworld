@@ -23,4 +23,4 @@ conexoes:
   - {para: prison, tipo: caminho, minutos: 3}
   - {para: fields, tipo: caminho, minutos: 8}
   - {para: forest, tipo: tunel, minutos: 5}
-acoes: [cochilar, festejar, construir, quebrar]
+acoes: [cochilar, construir, quebrar]

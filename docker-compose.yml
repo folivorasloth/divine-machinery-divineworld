@@ -3,8 +3,10 @@
 # Endereços e senhas vêm do arquivo .env (copie de .env.example; o .env
 # não vai para o git).
 #
-# Fase 0: o serviço "sim" só valida data/ e sai. As fases seguintes trocam
-# o "command" (Fase 1: simulação headless; Fase 4: simulação + API/WebSocket
+# Fase 1: o serviço "sim" roda a simulação headless em tempo real, com o
+# Chat do Mundo no log do container (docker compose logs -f sim). O estado
+# fica em ./var/world.sqlite e sobrevive a reinícios.
+# Fase 4 troca o "command" por `python -m server` (simulação + API/WebSocket
 # + ponte MQTT no mesmo processo, com a porta publicada).
 services:
   sim:
@@ -19,5 +21,5 @@ services:
     volumes:
       - ./data:/app/data
       - ./var:/app/var
-    command: ["python", "-m", "tools.validate"]
-    restart: "no"   # Fase 1+: unless-stopped
+    command: ["python", "-m", "tools.run"]
+    restart: unless-stopped

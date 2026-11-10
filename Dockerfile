@@ -17,6 +17,6 @@ RUN pip install --no-cache-dir .
 COPY data ./data
 VOLUME ["/app/var"]
 
-# Fase 0: só valida os dados. A Fase 1 troca por `python -m tools.run`
-# e a Fase 4 por `python -m server` (simulação + API no mesmo processo).
-CMD ["python", "-m", "tools.validate"]
+# Fase 1: simulação headless em tempo real. A Fase 4 troca por
+# `python -m server` (simulação + API no mesmo processo).
+CMD ["python", "-m", "tools.run"]
