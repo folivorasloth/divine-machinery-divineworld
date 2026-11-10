@@ -79,8 +79,8 @@ export class Overlay {
     el.textContent = text;
     this.root.appendChild(el);
     this.bubbles.push({ el, actor, until: now + seconds * 1000, born: now, w: 0, h: 0 });
-    // muitos balões juntos poluem a parede: mantém os 6 mais novos
-    while (this.bubbles.length > 6) this.bubbles.shift().el.remove();
+    // muitos balões juntos poluem a parede: mantém os 4 mais novos
+    while (this.bubbles.length > 4) this.bubbles.shift().el.remove();
   }
 
   project(pos, camera, w, h) {
@@ -134,13 +134,14 @@ export class Overlay {
       const p = this.project(b.actor.headPosition(v), camera, w, h);
       let x = Math.min(w - b.w / 2 - 4, Math.max(b.w / 2 + 4, p.x));
       let y = p.y - b.h - 6;
-      for (let tries = 0; tries < 8; tries++) {
-        const hit = placed.find((o) => Math.abs(o.x - x) < (o.w + b.w) / 2 && Math.abs(o.y - y) < (o.h + b.h) / 2 + 2);
+      // y = topo do balão. Se encosta num já colocado, sobe para cima dele.
+      for (let tries = 0; tries < 10; tries++) {
+        const hit = placed.find((o) => Math.abs(o.x - x) < (o.w + b.w) / 2 + 2 && y < o.y + o.h + 3 && y + b.h > o.y - 3);
         if (!hit) break;
-        y = hit.y - (hit.h + b.h) / 2 - 4;
+        y = hit.y - b.h - 6;
       }
       y = Math.max(2, y);
-      placed.push({ x, y: y + b.h / 2, w: b.w, h: b.h });
+      placed.push({ x, y, w: b.w, h: b.h });
       const left = Math.max(0, (b.until - now) / 1000);
       b.el.style.opacity = left < 0.5 ? (left / 0.5).toFixed(2) : '1';
       b.el.style.transform = `translate(${(x - b.w / 2).toFixed(1)}px, ${y.toFixed(1)}px)`;

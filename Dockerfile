@@ -1,5 +1,14 @@
 # Imagem única do Mundo Vivo: a simulação + a API/WebSocket + a ponte MQTT,
 # num processo só (python -m server). Ver docs/arquitetura.md, seção 1.1.
+# Fase 5: primeiro constrói o viewer 3D (Three.js + Vite) num estágio com Node;
+# a imagem final só leva o resultado (viewer/dist), sem Node.
+FROM node:22-slim AS viewer
+WORKDIR /viewer
+COPY viewer/package.json viewer/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY viewer/ ./
+RUN npm run build
+
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -18,6 +27,7 @@ RUN pip install --no-cache-dir .
 # (A cópia abaixo só vale se alguém rodar a imagem sem o volume.)
 COPY data ./data
 COPY viewer ./viewer
+COPY --from=viewer /viewer/dist ./viewer/dist
 VOLUME ["/app/var"]
 
 EXPOSE 8000

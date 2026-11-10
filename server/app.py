@@ -275,6 +275,10 @@ def create_app(runtime: Runtime | None = None, runtime_factory=None, start: bool
         """Modelos .glb que substituem os placeholders (o viewer pergunta aqui em vez de tentar baixar)."""
         return list_models(models_dir())
 
+    @app.get("/viewer/chat.html")
+    def chat_page_old_path():  # o endereço da F4 continua valendo
+        return FileResponse(VIEWER_DIR / "chat.html", media_type="text/html")
+
     # Fase 5: os modelos vêm direto da pasta (antes do /viewer, para ganhar dele)
     mdir = models_dir()
     with contextlib.suppress(OSError):

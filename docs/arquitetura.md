@@ -110,7 +110,19 @@ tools/
   cli.py            ✅ F4  `python -m tools.cli chefe "..."` (fala com a API; status/quem formatados; chat)
 viewer/
   chat.html         ✅ F4  Chat do Mundo na web (HTML+JS puro, sem build), servido em /chat
-                    📐 F5  Three.js + Vite; index.html?screen=<id>, layout.html
+  index.html        ✅ F5  uma tela: /viewer/?screen=<id> (sem screen: lista das telas)
+  layout.html       ✅ F5  mapa físico das telas e dos túneis (ao vivo)
+  src/logic.js      ✅ F5  regras puras (animação por ação, clipes, balão, grade, dia/noite, túnel, aparência)
+  src/main.js       ✅ F5  conexão WS, montagem da cena, mensagens, túnel, Aparição, laço com limite de FPS
+  src/ps1.js        ✅ F5  materiais PS1 (flat + vertex snapping) e render em baixa resolução
+  src/shapes.js     ✅ F5  primitivas low-poly e `bake` (junta malhas paradas por material)
+  src/places.js     ✅ F5  cenários placeholder por lugar (+ genérico pela paleta), entulho, lápides
+  src/characters.js ✅ F5  boneco placeholder pelo YAML, animação procedural, .glb do João
+  src/environment.js ✅ F5 céu, sol/lua, névoa de distância, chuva, relâmpago, névoa de tela offline
+  src/overlay.js    ✅ F5  balões, nomes, nomes dos lugares, relógio, risco de LED (HTML por cima)
+  public/models/    ✅ F5  characters/<id>.glb e places/<id>.glb (servidos direto pelo servidor)
+  test/             ✅ F5  `npm test` (node --test, sem navegador)
+tools/exemplo_glb.py ✅ F5 gera um .glb de exemplo (totem com idle e walk) para testar a troca
 tests/              pytest (um arquivo por módulo)
 var/                (fora do git) SQLite, cache de clima, logs
 ```
@@ -895,7 +907,10 @@ GET  /api/timeline?min_importance=2&limit=50&before_id=
 POST /api/commands   {"cmd": "chefe", "arg": "reconstruam a ferraria", "id": "opcional"}
      → 202 {"id", "status": "feito"|"na_fila", "result"}   (espera até 2 s; `status`/`quem` até 5 s)
 GET  /api/commands, /api/commands/{id}   últimos comandos e o resultado de cada um
-GET  /chat (viewer/chat.html), /viewer/*, / → /chat, /docs (OpenAPI do FastAPI)
+GET  /api/models                        F5: {"characters": [ids], "places": [ids]} com .glb em viewer/public/models
+GET  /chat (viewer/chat.html), / → /chat, /docs (OpenAPI do FastAPI)
+GET  /viewer/ (viewer/dist, `npm run build`; sem build: página 503 explicando), /viewer/layout.html,
+     /viewer/models/* (direto de viewer/public/models; DW_VIEWER_DIST e DW_MODELS_DIR mudam os caminhos)
 ```
 `since`/`until` são horas do MUNDO em ISO (comparação de texto; o fuso é sempre o do world.yaml).
 `/api/chat` esconde `tension` e os passos de caminhada (a não ser `include_moves=true`).
@@ -925,8 +940,18 @@ Implementado em `server/ws.py` (`Hub`). Servidor → cliente:
 {"type": "clock", "ts", "period", "is_night", "speed", "paused"}   // a cada 5 s reais e na troca de período
 {"type": "apparition", "screen", "places": [...], "duration_s": 4}
 ```
-(Diferenças do plano: `palette` usa as chaves em inglês do `Palette`; `bubble` leva o texto
-renderizado inteiro — o viewer encurta; `clock` vai a cada 5 s reais, não a cada minuto do mundo.)
+(Diferenças do plano: `palette` usa as chaves em inglês do `Palette`; `clock` vai a cada 5 s reais,
+não a cada minuto do mundo.)
+
+**F5 — acréscimos ao contrato (protocolo continua 1, só campos novos):**
+- `hello.screens[]` ganhou `max_fps`, `quality` e `offline`; `hello.config = {"visual": <world.yaml >
+  visual>, "tunnel": {"led_speed_cm_per_s", "min_duration_s"}}`; `hello.place_names` (todos os
+  lugares, para o portal dizer para onde vai); `hello.creatures` (`uid`, `kind`, `place`); `hello.dead`
+  (lápides no Cemitério); `visual` de cada personagem traz também `appearance` e `movement` (texto).
+- `bubble` ganhou `short` (sem o "Nome: " e as aspas, cortado em `visual.baloes.max_letras`) e
+  `duration_s` proporcional ao texto (`segundos_minimos + letras × segundos_por_letra`, até o máximo).
+- Mensagens novas: `{"type": "creature", "uid", "kind", "place", "on"}` (criatura aparece/some) e
+  `{"type": "structures", "place", "structures": [{"id", "state", "hp"}]}` (depois de `structure_changed`).
 
 Cliente → servidor: `{"type": "ping"}` → `pong`; `{"type": "resync"}` → `hello` de novo. Tela
 inexistente: `{"type": "error", "screens": [...]}` e fecha. `/ws/chat` (e `/ws` sem `screen`):
@@ -961,8 +986,9 @@ paho-mqtt 2.x: `mqtt.Client(callback_api_version=CallbackAPIVersion.VERSION2, cl
 `world` (simulação + servidor no mesmo processo, seção 1.1), porta `${DW_SERVER_PORT:-8000}:8000`,
 volumes `./data` e `./var`, `.env` opcional, `restart: unless-stopped`, `stop_grace_period: 20s`
 (o SIGTERM do Docker faz o uvicorn desligar e o `Runtime.stop()` salvar). O Chat do Mundo também
-sai no stdout (`docker compose logs -f world`; `--sem-chat` desliga). O viewer da F5 entra no mesmo
-container (`/viewer`).
+sai no stdout (`docker compose logs -f world`; `--sem-chat` desliga). **F5:** o `Dockerfile` tem um
+estágio `node:22-slim` que roda `npm ci && npm run build` e copia `viewer/dist` para a imagem final
+(sem Node); `viewer/public/models` é volume no compose (troca de .glb sem rebuild).
 
 ### 13.6 O olhar e a Aparição (`sim.presence`) ✅
 
@@ -983,21 +1009,63 @@ seita em êxtase (fé −30), memória permanente `aparicao` (quem dormia, mais 
 de uma ordem, quando alguém começa `conversar`, com `chance × (1 − tempo_passado/dias)` a fala sai
 da situação `assunto_<id>` com `{terceiro}` = de quem se fala (nunca com ele mesmo).
 
-## 14. Fase 5 — visual 📐
+## 14. Fase 5 — visual ✅
 
-- `viewer/` com Vite; `index.html?screen=<id>` conecta em `/ws?screen=<id>`, desenha só os lugares
-  da tela (layout dos lugares dentro da tela: grade automática, sobrescrevível por um campo futuro
-  `visual` no YAML do lugar).
-- Estética PS1: render em baixa resolução + upscale `image-rendering: pixelated`, vertex snapping
-  no shader, flat shading, névoa de distância, paleta vinda de `place.paleta`.
-- Placeholders por primitivas a partir de `character.visual` (corpo, altura, cores, chapéu,
-  acessório). Se existir `viewer/public/models/characters/<id>.glb` (ou `places/<id>.glb`), usa o
-  modelo. Animações por nome: `idle, walk, talk, work, sleep, fall, fight, pray, dance, stare`
-  (fallback procedural). Ação → animação: tabela no viewer (`trabalhar→work`, `brigar→fight`...).
-- Balões a partir de `bubble`; dia/noite por `clock`; chuva por `weather`; névoa por `fog`;
-  teletransporte: some na saída, aparece na tela de destino em `teleport end`.
-- `viewer/layout.html`: mapa físico das telas (`posicao_cm`, `tamanho_cm`) e conexões de túnel.
-- `viewer/chat.html`: Chat do Mundo ao vivo com filtros (usa `/api/chat` + `/ws/chat`).
+Guia dos modelos: `docs/guias/06_modelos_3d_e_design.md`. Tudo que é número ou mapeamento está em
+`world.yaml > visual` (qualidades, balões, escala dos personagens, nomes, relógio, névoa,
+`animacao_por_acao`, `animacao_por_evento`, `animacao_substituta`) e `telas[].fps_max/qualidade`.
+
+- **Build e serviço:** Vite (`viewer/`, `base: /viewer/`, duas entradas: `index.html` e `layout.html`)
+  gera `viewer/dist`, servido pelo FastAPI em `/viewer`. `npm run dev` (porta 5173) faz proxy de `/api`,
+  `/ws`, `/chat` e `/health` para `DW_API` (padrão `http://localhost:8000`). `dist/` e `node_modules/`
+  ficam fora do git; o Docker constrói.
+- **Uma cena por tela:** os lugares da tela viram dioramas de 10 × 10 m numa grade automática
+  (`logic.gridLayout`: colunas × linhas que deixam cada diorama maior na proporção da janela; a ordem é
+  a de `telas[].lugares`). A câmera (perspectiva, ~53° de cima) é ajustada por busca binária para
+  caber tudo. `?foco=<lugar>` enquadra um lugar só.
+- **PS1:** canvas pequeno (`altura_render` da qualidade) ampliado com `image-rendering: pixelated`;
+  `MeshLambertMaterial` com `flatShading` e um `onBeforeCompile` que arredonda `gl_Position` para uma
+  grade (vertex snapping, um uniform só para todos); névoa linear do three na cor do céu. Malhas paradas
+  de cada cenário são juntadas por material (`shapes.bake`): poucas chamadas de desenho.
+- **Placeholders:** `characters.buildPlaceholder` lê `visual` + `appearance` + `movement` (palavras
+  reconhecidas na seção 4 do guia). Pivôs em quadril, ombros e pescoço; grupo `pose` para deitar/cair/
+  ajoelhar. `places.buildPlace` tem um construtor por id e um genérico por `ambiente` + `paleta`.
+- **.glb:** `GET /api/models` diz quais existem (o Vite devolve HTML para arquivo inexistente; o
+  servidor responde certo nos dois modos). `GLTFLoader` + `SkeletonUtils.clone`; materiais trocados
+  por Lambert com snapping, texturas com `NearestFilter`; escala de segurança (fora de 0,3–6 m) e
+  origem no chão. Animação: `logic.pickClip` (exato → começa com → contém → substitutas → idle);
+  se não for exata, `proceduralRoot` completa no corpo inteiro.
+- **Animação:** a da ação vem de `animacao_por_acao`; eventos (`slapstick`, `fight`, `stare`...) tocam
+  uma animação curta por cima (`Actor.play`); na briga um vira para o outro; `stare` vira para a câmera;
+  morte = tombo + afunda no chão. Cada personagem tem um ponto no diorama (fixo por id + ação, sem
+  dois no mesmo ponto); `walk` sem caminho = passeio pelo lugar.
+- **Movimento:** `move` (dentro da tela) = caminhada em linha reta (mínimo 0,8 s para dar para ver);
+  `character` com lugar fora da tela = some.
+- **Túnel:** cada conexão `tunel` vira um portal no diorama (anel roxo + nome do destino). `teleport
+  start` na origem: anda até o portal, é "sugado" (estica e some) e um risco de luz corre até a borda
+  da tela na direção da tela de destino (pelas `posicao_cm`). No destino o portal acende; o personagem
+  aparece em `max(início + duration_s, fim)` (`logic.teleportAppearAt`): quando a luz de LED chegou
+  E a simulação disse que saiu. O `leds/tunnel` no MQTT é o da F4 (origem, destino, cm, duração).
+- **Ambiente:** hora local do mundo pelo `ts` (interpolada entre os `clock` com a velocidade),
+  `daylight()` com amanhecer 5–7 h e anoitecer 17h30–19 h; céu e luz mudam, o chão vai para
+  `paleta.noite`, janelas e lampiões acendem; céu puxado para azul de terror pela fração de lugares
+  sinistros da tela. Chuva (linhas) por `rainIntensity` (garoa < chuva < tempestade; clima forçado ou
+  funeral = forte, com relâmpagos). Neblina aproxima a névoa. `fog` (tela offline) = nuvens densas
+  cobrindo o diorama, conteúdo e personagens escondidos, nome "— na névoa".
+- **Balões e textos:** HTML por cima do canvas (nítido e legível de longe): balões com contorno
+  grosso, empilhados para não se sobrepor, no máximo 4; nomes embaixo dos pés (o de trás some quando
+  dois se encostam); nomes dos lugares; relógio e clima no canto.
+- **Aparição:** só na tela do evento: uma silhueta escura feita de 6 cópias semitransparentes
+  deslocadas (borrão) atravessa entre a câmera e o mundo em 1,7 s, a tela escurece nas bordas e todos
+  os NPCs da tela fazem `stare` por `duration_s + 2`.
+- **Desempenho:** limite de FPS por tela no laço (`requestAnimationFrame` pulando quadros), qualidade
+  por tela, luzes pontuais só na `alta`. Medido no Chromium sem GPU (SwiftShader): 30 FPS na TV do
+  centro (11 lugares, 21 personagens) e 20 na tela do homelab (limite dela).
+- **`viewer/layout.html`:** SVG da parede (y para cima, em cm), telas com nome/lugares, linhas dos
+  túneis entre telas com distância e duração do LED, cards com qualidade/FPS; ao vivo pelo `/ws/chat`
+  (cada `teleport_started` corre um ponto de luz pela linha; telas na névoa ficam cinzas).
+- **Depuração:** `window.__dw` (contadores de mensagens, FPS, atores, log de túnel e Aparição,
+  `__dw.live()` com o estado na hora) — é o que os testes com Playwright leem.
 
 ## 15. Determinismo, logs e testes
 
@@ -1012,11 +1080,13 @@ da situação `assunto_<id>` com `{terceiro}` = de quem se fala (nunca com ele m
 
 ## 16. Decisões em aberto (para as próximas fases)
 
-- Layout interno dos lugares numa tela (posições 3D) — F5 decide; pode ganhar campo no YAML.
+- Layout interno dos lugares numa tela — F5 ✅: grade automática (seção 14).
 - Esquema das criaturas — F3 ✅ (seção 12.7).
 - F4 ✅: `world/commands`, `homelab/servicos/#` e `telas/+/status` ligados (`server.mqtt_bridge`);
   `reviver` usa `lifecycle.resurrect(cid, "criador")`; situações do LLM em `ollama.situacoes`.
-- F5: o viewer consome o contrato da seção 13.3 (já implementado e testado do lado do servidor).
+- F5 ✅: o viewer consome o contrato da seção 13.3 (com os acréscimos da F5). Layout dos lugares
+  numa tela continua automático; um campo `visual` no YAML do lugar (posição/tamanho na grade) fica
+  para quando o João pedir.
 - F6: `recarregar` (data/ sem reiniciar) continua planejado.
 - Técnicos: continuam trabalhando na Sala do Servidor como profissão (manhã/tarde); um problema real
   (`homelab/servicos/<nome>` down, agora pelo MQTT) traz o Gremlin do Rack e o objetivo de

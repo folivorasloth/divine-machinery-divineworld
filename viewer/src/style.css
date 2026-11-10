@@ -1,5 +1,6 @@
 /* O viewer ocupa a tela inteira; o canvas é pequeno e ampliado sem suavizar. */
-html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+html, body { margin: 0; height: 100%; background: #000; }
+body { overflow: hidden; }
 body { font-family: "Trebuchet MS", "Verdana", system-ui, sans-serif; color: #fff; }
 #app { position: fixed; inset: 0; }
 #world {
@@ -11,7 +12,7 @@ body { font-family: "Trebuchet MS", "Verdana", system-ui, sans-serif; color: #ff
 
 /* balões: grandes e com contorno, para ler do outro lado do quarto */
 .bubble {
-  max-width: min(30vw, 420px);
+  max-width: min(26vw, 400px);
   padding: 0.35em 0.6em;
   background: #fffdf2; color: #141414;
   border: 3px solid #141414; border-radius: 0.6em;
@@ -60,7 +61,7 @@ body { font-family: "Trebuchet MS", "Verdana", system-ui, sans-serif; color: #ff
 .apparition-fx { background: radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(5, 8, 20, 0.85) 100%); mix-blend-mode: multiply; }
 
 /* escolha de tela (sem ?screen=) */
-body.picker, body.layout-page { overflow: auto; background: #10131c; }
+body.picker, body.layout-page { overflow: auto; background: #10131c; height: auto; min-height: 100%; }
 body.picker #app { position: static; padding: 2em; }
 body.picker a, body.layout-page a { color: #9cd3ff; }
 body.picker li { margin: 0.4em 0; font-size: 1.2em; }
@@ -77,6 +78,7 @@ body.layout-page header p { max-width: 70em; color: #aab3c5; }
 #wall .tunnel { stroke: #c77dff; stroke-width: 0.7; stroke-dasharray: 2 1.2; fill: none; }
 #wall .tunnel.active { stroke: #fff; stroke-width: 1.4; stroke-dasharray: none; }
 #wall .tunnel-label { fill: #e0aaff; font-size: 3px; }
+#wall .label-bg { fill: #1b2030; opacity: 0.9; }
 #wall .led { fill: #fff; filter: drop-shadow(0 0 1.5px #e0aaff); }
 #wall .floor { stroke: #556; stroke-width: 0.4; }
 #details { display: grid; grid-template-columns: repeat(auto-fill, minmax(18em, 1fr)); gap: 0.8em; margin-top: 1em; }

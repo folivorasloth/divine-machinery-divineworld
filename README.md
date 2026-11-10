@@ -33,6 +33,12 @@ cidade cumpre — ou não — do seu jeito), `medium "..."` (a Médium ouve uma 
 errado), `reviver <id>`, `nascer`, `pausar`, `velocidade`, `status`, `quem <id>`. Gente no quarto
 (câmera) faz a cidade encarar a tela e, raramente, ver a Aparição. Ollama é opcional.
 
+Fase 5 (o visual): cada tela abre `http://<servidor>:8000/viewer/?screen=<id>` e mostra, ao vivo e em
+3D low-poly com cara de PS1, os lugares dela: personagens placeholder reconhecíveis (montados do
+YAML), balões de fala, dia e noite, chuva, névoa da tela desligada, o teletransporte entre telas e a
+Aparição. Um `.glb` em `viewer/public/models/characters/<id>.glb` troca o boneco sem mexer em código
+(`docs/guias/06_modelos_3d_e_design.md`). Mapa das telas na parede: `/viewer/layout.html`.
+
 ## Primeiros passos
 
 ```bash
@@ -56,7 +62,12 @@ O mundo com a API e o Chat do Mundo na web (Fase 4):
 .venv/bin/python -m tools.cli status
 .venv/bin/python -m tools.cli quem clown
 
-# no homelab
+# as telas 3D (Fase 5): uma vez, constrói o viewer (Node 18+); o servidor serve em /viewer
+(cd viewer && npm ci && npm run build)
+#   http://localhost:8000/viewer/?screen=parede_centro   (lista das telas em /viewer/)
+#   desenvolvimento do viewer, com o servidor rodando: (cd viewer && npm run dev) -> http://localhost:5173/viewer/
+
+# no homelab (o Docker já constrói o viewer)
 cp .env.example .env && docker compose up -d --build           # http://<homelab>:8000/chat
 docker compose exec world python -m tools.cli status
 ```

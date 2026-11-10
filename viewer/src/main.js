@@ -221,7 +221,11 @@ function start() {
 
   function fit(v) {
     const sz = resizeFn();
-    const { camera, bounds } = v;
+    const { camera } = v;
+    // ?foco=<lugar>: a câmera mostra só aquele lugar (bom para conferir de perto)
+    const f = params.get('foco') && v.plots[params.get('foco')];
+    const bounds = f ? { minX: f.center.x - PLOT / 2, maxX: f.center.x + PLOT / 2, minZ: f.center.z - PLOT / 2, maxZ: f.center.z + PLOT / 2,
+      cx: f.center.x, cz: f.center.z } : v.bounds;
     camera.aspect = sz.aspect;
     camera.updateProjectionMatrix();
     const target = new THREE.Vector3(bounds.cx, 0, bounds.cz + 0.6);
@@ -352,9 +356,9 @@ function start() {
     return actor;
   }
 
-  function removeActor(id) {
+  function removeActor(id, only = null) {
     const a = view.actors.get(id);
-    if (!a) return;
+    if (!a || (only && a !== only)) return; // `only`: não apaga um personagem novo com o mesmo id
     view.scene.remove(a.root);
     view.actors.delete(id);
     overlay.removeActor(id);
@@ -543,6 +547,15 @@ function start() {
   function teleport(msg, now) {
     const id = msg.id;
     const ms = Math.max(400, (msg.duration_s || 2) * 1000);
+    if (msg.from_screen === screenId && msg.phase === 'start' && view.pending.has(id)) {
+      // no tempo acelerado ele pode voltar para o túnel antes de "aparecer" aqui: cancela a chegada
+      view.pending.delete(id);
+    }
+    if (msg.to_screen === screenId && msg.phase === 'start') {
+      // sobra de uma ida e volta rápida: o que está aqui é velho, quem vale é o que vem pelo túnel
+      const old = view.actors.get(id);
+      if (old) removeActor(id, old);
+    }
     if (msg.from_screen === screenId) {
       const plot = view.plots[msg.from_place];
       const portal = plot && plot.portals[msg.to_place];
@@ -555,7 +568,7 @@ function start() {
           a.leaving = true;
           setTimeout(() => {
             a.startFade('out', 0.55, performance.now(), () => {
-              removeActor(id);
+              removeActor(id, a);
               overlay.streak(portalScreenPos(portal), screenAngle(msg.from_screen, msg.to_screen), false, Math.min(ms, 1500));
             });
           }, 520);
@@ -597,22 +610,26 @@ function start() {
         continue;
       }
       view.pending.delete(id);
-      const plot = view.plots[p.info.place] || view.plots[p.place];
+      if (!view.plots[p.info.place] && !p.info.moving) continue; // já foi embora desta tela de novo
+      // sai do portal do lugar de chegada; se a simulação já o levou adiante (tempo acelerado),
+      // depois de sair ele caminha até onde está agora
+      const plot = view.plots[p.place] || view.plots[p.info.place];
+      const finalPlot = view.plots[p.info.place] || plot;
       if (!plot) continue;
       const portal = plot.portals[p.from];
       const a = makeActor(p.info);
       const start = portal ? portal.getWorldPosition(new THREE.Vector3()) : plot.center.clone();
       a.root.position.set(start.x, 0, start.z + 0.3);
-      a.place = plot.id;
+      a.place = finalPlot.id;
       a.info = p.info;
       a.setAnim(animForAction(p.info.action, false, view.visual));
       overlay.name(a, p.info.name);
       a.startFade('in', 0.6, now, () => {
-        const s = spotFor(plot, id, p.info.action);
-        a.moveTo(s.x, s.z, 1.4, performance.now());
+        const s = spotFor(finalPlot, id, p.info.action);
+        a.moveTo(s.x, s.z, finalPlot === plot ? 1.4 : 2.5, performance.now());
       });
       dbg.arrivals = (dbg.arrivals || 0) + 1;
-      dbg.log.push({ at: Date.now(), kind: 'appeared', id, place: plot.id });
+      dbg.log.push({ at: Date.now(), kind: 'appeared', id, place: plot.id, now: finalPlot.id });
     }
   }
 
@@ -730,6 +747,9 @@ function start() {
       dbg.rain = env.rain;
     }
   }
+  // estado AO VIVO para os testes (o __dw.actors é atualizado só 1x por segundo)
+  dbg.live = () => (view ? { actors: [...view.actors.keys()], pending: [...view.pending.keys()],
+    places: Object.fromEntries([...view.actors].map(([id, a]) => [id, a.place])) } : null);
   requestAnimationFrame(frame);
   connect();
 }

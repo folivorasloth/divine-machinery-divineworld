@@ -2,7 +2,8 @@
 #   cp .env.example .env      # ajuste MQTT_HOST, OLLAMA_URL... (o .env não vai para o git)
 #   docker compose up -d --build
 #   docker compose logs -f world
-# Depois: http://<ip-do-homelab>:8000/chat (Chat do Mundo) e /api/state.
+# Depois: http://<ip-do-homelab>:8000/chat (Chat do Mundo), /viewer/?screen=<id> (as telas 3D),
+# /viewer/layout.html (mapa das telas) e /api/state.
 #
 # Um serviço só ("world") com a simulação E o servidor no mesmo processo
 # (python -m server): a simulação é a dona do estado e a única que escreve no
@@ -28,6 +29,8 @@ services:
     volumes:
       - ./data:/app/data      # os YAML: edite e reinicie (docker compose restart world)
       - ./var:/app/var        # o SQLite, o cache do clima
+      # Fase 5: os .glb do João (soltar um arquivo aqui troca o placeholder, sem rebuild)
+      - ./viewer/public/models:/app/viewer/public/models
     command: ["python", "-m", "server", "--porta", "8000"]
     restart: unless-stopped
     stop_grace_period: 20s    # dá tempo de salvar o mundo no SIGTERM

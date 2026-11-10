@@ -92,10 +92,10 @@ export class Environment {
     this.scene.fog.near = this.camDist * this.visual.fog_near * thick * 0.75;
     this.scene.fog.far = this.camDist * this.visual.fog_far * thick * 0.75;
     // luzes
-    const nightBlue = new THREE.Color('#3a4a8a');
+    const nightBlue = new THREE.Color('#7f8fd0'); // luar: escuro, mas dá para ver de longe
     this.hemi.color.set('#ffffff').lerp(nightBlue, this.night);
-    this.hemi.groundColor.set('#6a5a4a').lerp(new THREE.Color('#10142a'), this.night);
-    this.hemi.intensity = (0.55 + day * 1.25) * (cloudy ? 0.85 : 1) + flash * 2.5;
+    this.hemi.groundColor.set('#6a5a4a').lerp(new THREE.Color('#2a3050'), this.night);
+    this.hemi.intensity = (1.15 + day * 0.75) * (cloudy ? 0.85 : 1) + flash * 2.5;
     this.sun.intensity = day * (cloudy ? 0.55 : 1.7);
     const a = ((hours - 6) / 12) * Math.PI; // sol nasce às 6 e se põe às 18
     const { cx, cz } = this.bounds;

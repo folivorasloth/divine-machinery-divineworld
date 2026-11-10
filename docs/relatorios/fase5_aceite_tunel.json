@@ -1,0 +1,95 @@
+{
+  "teleport": {
+    "t": 0,
+    "type": "teleport",
+    "phase": "start",
+    "id": "tech_apprentice",
+    "from_place": "server_room",
+    "to_place": "town_hall",
+    "from_screen": "tela_homelab",
+    "to_screen": "parede_centro",
+    "duration_s": 4.01
+  },
+  "skipped": [],
+  "inOriginBefore": true,
+  "inDestDuring": false,
+  "appearedInDest": true,
+  "inOriginAfter": false,
+  "appearedLog": [
+    {
+      "at": 4017,
+      "kind": "appeared",
+      "id": "tech_apprentice",
+      "place": "town_hall",
+      "now": "cathedral"
+    }
+  ],
+  "framesOrigin": [
+    {
+      "t": -1,
+      "type": "teleport",
+      "phase": "start",
+      "id": "tech_apprentice",
+      "from_place": "server_room",
+      "to_place": "town_hall",
+      "from_screen": "tela_homelab",
+      "to_screen": "parede_centro",
+      "duration_s": 4.01
+    },
+    {
+      "t": 984,
+      "type": "teleport",
+      "phase": "end",
+      "id": "tech_apprentice",
+      "from_place": "server_room",
+      "to_place": "town_hall",
+      "from_screen": "tela_homelab",
+      "to_screen": "parede_centro",
+      "duration_s": 4.01
+    }
+  ],
+  "framesDest": [
+    {
+      "t": 0,
+      "type": "teleport",
+      "phase": "start",
+      "id": "tech_apprentice",
+      "from_place": "server_room",
+      "to_place": "town_hall",
+      "from_screen": "tela_homelab",
+      "to_screen": "parede_centro",
+      "duration_s": 4.01
+    },
+    {
+      "t": 985,
+      "type": "teleport",
+      "phase": "end",
+      "id": "tech_apprentice",
+      "from_place": "server_room",
+      "to_place": "town_hall",
+      "from_screen": "tela_homelab",
+      "to_screen": "parede_centro",
+      "duration_s": 4.01
+    }
+  ],
+  "hellos": {
+    "parede_centro": [
+      "cathedral",
+      "cemetery",
+      "community_kitchen",
+      "fields",
+      "forge",
+      "houses",
+      "market",
+      "prison",
+      "tavern",
+      "town_hall",
+      "town_square"
+    ],
+    "tela_homelab": [
+      "server_room",
+      "underground"
+    ]
+  },
+  "errors": []
+}

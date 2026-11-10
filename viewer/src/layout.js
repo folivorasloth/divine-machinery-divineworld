@@ -53,22 +53,29 @@ function draw() {
   const speed = hello.config?.tunnel?.led_speed_cm_per_s || 60;
   const minDur = hello.config?.tunnel?.min_duration_s || 2;
   state.lines = {};
+  const pairCount = {};
+  const labels = []; // desenhados por último, por cima das telas
   for (const t of tunnelsBetweenScreens(hello)) {
     if (!t.fromScreen || !t.toScreen || t.fromScreen === t.toScreen) continue;
     const a = center(byId[t.fromScreen]), b = center(byId[t.toScreen]);
     const dist = Math.hypot(b.x - a.x, b.y - a.y);
     const dur = Math.max(minDur, dist / speed);
     const line = el('line', { x1: a.x, y1: -a.y, x2: b.x, y2: -b.y, class: 'tunnel' });
-    const mx = (a.x + b.x) / 2, my = -(a.y + b.y) / 2 - 2;
-    el('text', { x: mx, y: my, 'text-anchor': 'middle', class: 'tunnel-label' }).textContent =
-      `${names[t.from]} ⇄ ${names[t.to]} · ${Math.round(dist)} cm · ${dur.toFixed(1)} s`;
+    // dois túneis entre as mesmas telas: um rótulo embaixo do outro
+    const pair = [t.fromScreen, t.toScreen].sort().join('|');
+    pairCount[pair] = (pairCount[pair] || 0) + 1;
+    const mx = (a.x + b.x) / 2, my = -(a.y + b.y) / 2 - 2 + (pairCount[pair] - 1) * 4;
+    labels.push([mx, my, `${names[t.from]} ⇄ ${names[t.to]} · ${Math.round(dist)} cm · ${dur.toFixed(1)} s`]);
     state.lines[[t.from, t.to].sort().join('|')] = { line, a, b };
   }
   for (const s of screens) {
     const offline = s.places.length > 0 && s.places.every((p) => state.fog.has(p));
     const g = el('g', { class: 'screen' + (offline ? ' offline' : '') });
     el('rect', { x: s.position_cm.x, y: -(s.position_cm.y + s.size_cm.height), width: s.size_cm.width, height: s.size_cm.height, rx: 1.5 }, g);
-    el('text', { x: s.position_cm.x + 2, y: -(s.position_cm.y + s.size_cm.height) + 6 }, g).textContent = `${s.name}${offline ? ' (névoa)' : ''}`;
+    const title = `${s.name}${offline ? ' (névoa)' : ''}`;
+    // título cabe na largura da tela (telas pequenas, letra menor)
+    const fs = Math.min(4.2, (s.size_cm.width - 3) / (title.length * 0.55));
+    el('text', { x: s.position_cm.x + 2, y: -(s.position_cm.y + s.size_cm.height) + 2 + fs, style: `font-size:${fs.toFixed(2)}px` }, g).textContent = title;
     const list = s.places.map((p) => names[p] || p);
     // lista dos lugares em linhas curtas dentro do retângulo
     const lines = [];
@@ -81,6 +88,13 @@ function draw() {
     lines.forEach((ln, i) => {
       el('text', { x: s.position_cm.x + 2, y: -(s.position_cm.y + s.size_cm.height) + 10.5 + i * 3.4, class: 'places' }, g).textContent = ln;
     });
+  }
+  for (const [x, y, text] of labels) {
+    const tx = el('text', { x, y, 'text-anchor': 'middle', class: 'tunnel-label' });
+    tx.textContent = text;
+    const bb = tx.getBBox();
+    const bg = el('rect', { x: bb.x - 1, y: bb.y - 0.4, width: bb.width + 2, height: bb.height + 0.8, rx: 1, class: 'label-bg' });
+    svg.insertBefore(bg, tx);
   }
   details.innerHTML = '';
   for (const s of screens) {
@@ -110,7 +124,6 @@ function led(ev) {
   const key = [d.from_place, d.to_place].sort().join('|');
   const l = state.lines[key];
   if (!l) return;
-  const forward = [d.from_place, d.to_place].sort()[0] === d.from_place;
   const byId = Object.fromEntries(state.hello.screens.map((s) => [s.id, s]));
   const a = center(byId[d.from_screen] || {}) , b = center(byId[d.to_screen] || {});
   if (!byId[d.from_screen] || !byId[d.to_screen]) return;
@@ -118,7 +131,6 @@ function led(ev) {
   const dot = el('circle', { r: 2.2, class: 'led', cx: a.x, cy: -a.y });
   const ms = Math.max(300, (d.duration_s || 2) * 1000);
   const t0 = performance.now();
-  void forward;
   const step = (now) => {
     const k = Math.min(1, (now - t0) / ms);
     dot.setAttribute('cx', a.x + (b.x - a.x) * k);

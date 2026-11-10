@@ -517,7 +517,7 @@ const BUILDERS = {
   mountain(c) {
     const { P, R } = c;
     ground(c, mix(P.main, '#6c757d', 0.3));
-    for (const [x, z, r, h] of [[-2.6, -2.8, 2.6, 6.5], [1.6, -3.4, 2.9, 8.0], [4.0, -1.5, 1.8, 4.5]]) {
+    for (const [x, z, r, h] of [[-2.6, -3.0, 2.3, 4.6], [1.4, -3.4, 2.6, 5.6], [3.9, -2.2, 1.6, 3.4]]) {
       cone(c.root, r, h, mix(P.main, '#5a5f66', 0.4), x, 0, z, 5);
       cone(c.root, r * 0.38, h * 0.38, '#f8f9fa', x, h * 0.62, z, 5);
     }
@@ -625,13 +625,13 @@ const BUILDERS = {
   server_room(c) {
     const { P, R } = c;
     ground(c, P.secondary, { noNight: true });
-    walls(c, '#050a18', 3.4);
+    walls(c, '#1c2a4a', 3.4);
     const leds = [];
     for (let row = 0; row < 2; row++) {
       for (let k = 0; k < 5; k++) {
         const x = -3.6 + k * 1.5;
         const z = -3.8 + row * 2.4;
-        box(c.root, 0.9, 2.6, 0.8, '#111827', x, 0, z);
+        box(c.root, 0.9, 2.6, 0.8, '#2b3550', x, 0, z);
         for (let l = 0; l < 6; l++) {
           const led = box(c.root, 0.08, 0.06, 0.02, R() < 0.5 ? P.main : '#ff3355', x - 0.3 + (l % 3) * 0.12, 0.6 + Math.floor(l / 3) * 1.1 + R() * 0.3, z + 0.41, { glow: true, unique: true });
           led.userData.dynamic = true;
