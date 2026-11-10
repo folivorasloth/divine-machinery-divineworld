@@ -112,8 +112,7 @@ class Hub:
         out: list[dict] = [{"type": "event", "event": evd}]
         actor = ev.actors[0] if ev.actors else None
         if ev.type == "speech" and actor:
-            out.append({"type": "bubble", "id": actor, "place": ev.place, "text": evd["text_rendered"],
-                        "duration_s": 4})
+            out.append(self.bubble_message(actor, ev.place, evd["text_rendered"]))
         elif ev.type == "move_started" and d.get("from") in places and d.get("to") in places:
             out.append({"type": "move", "id": actor, "from": d.get("from"), "to": d.get("to"),
                         "duration_s": round(d.get("minutes", 1) * 60 / max(world.speed, 0.001), 2)})
@@ -130,6 +129,14 @@ class Hub:
                         "forced": world.weather.now.forced})
         elif ev.type == "period_changed":
             out.append(self.clock_message())
+        elif ev.type == "structure_changed":
+            st = world.structures  # estamos no thread da simulação: pode ler direto
+            out.append({"type": "structures", "place": ev.place,
+                        "structures": [{"id": sid, "state": st.state(sid), "hp": round(x.hp)}
+                                       for sid, x in st.items.items() if x.place == ev.place]})
+        elif ev.type in ("creature_spawned", "creature_gone"):
+            out.append({"type": "creature", "uid": d.get("instance"), "kind": d.get("creature"), "place": ev.place,
+                        "on": ev.type == "creature_spawned"})
         elif ev.type == "apparition":
             out.append({"type": "apparition", "screen": d.get("screen"), "places": d.get("places", []),
                         "duration_s": d.get("duration_s", 4)})
@@ -141,6 +148,16 @@ class Hub:
         return out
 
     # ------------------------------------------------------- mensagens
+    def bubble_message(self, cid: str, place: str | None, text: str) -> dict:
+        """Balão: o texto do Chat sem o "Nome: " do começo, encurtado, com duração pelo tamanho
+        (world.yaml > visual.baloes). `text` continua inteiro, para quem quiser."""
+        cfg = self.runtime.data.world.visual.bubbles
+        world = self.runtime.world
+        short = shorten_bubble(text, world.data.name_of(cid), cfg.max_chars)
+        seconds = cfg.min_seconds + len(short) * cfg.seconds_per_char
+        return {"type": "bubble", "id": cid, "place": place, "text": text, "short": short,
+                "duration_s": round(min(cfg.max_seconds, seconds), 1)}
+
     def clock_message(self) -> dict:
         snap = self.runtime.snapshot()
         return {"type": "clock", "ts": snap.get("ts"), "period": snap.get("period"),
@@ -154,7 +171,7 @@ class Hub:
         char = world.data.characters[cid]
         return {"type": "character", "id": cid, "name": char.name, "place": st.place, "alive": st.alive,
                 "action": st.activity.action if st.activity else None, "moving": st.moving,
-                "visual": char.visual.model_dump() if char.visual else None}
+                "visual": visual_of(char)}
 
     def hello(self, screen: str | None) -> dict:
         """Estado inicial para uma tela (ou para o chat). Lê só o snapshot e os dados (somente leitura)."""
@@ -165,7 +182,9 @@ class Hub:
         fog = set(snap.get("fog", []))
         screens = [{"id": s.id, "name": s.name, "places": list(s.places),
                     "position_cm": {"x": s.position_cm.x, "y": s.position_cm.y},
-                    "size_cm": {"width": s.size_cm.width, "height": s.size_cm.height}}
+                    "size_cm": {"width": s.size_cm.width, "height": s.size_cm.height},
+                    "max_fps": s.max_fps, "quality": s.quality, "offline": bool(set(s.places) & fog)
+                    and set(s.places) <= fog}
                    for s in data.world.screens]
         wanted = self.screen_places.get(screen) if screen else set(data.places)
         structures = snap.get("structures", {})
@@ -183,9 +202,35 @@ class Hub:
                 continue
             char = data.characters.get(cid)
             chars.append({"id": cid, "name": names.get(cid, cid), "place": c["place"], "action": c["action"],
-                          "moving": c["moving"], "visual": char.visual.model_dump() if char and char.visual else None})
+                          "moving": c["moving"], "visual": visual_of(char) if char else None})
+        creatures = [{"uid": c.get("uid"), "kind": c["kind"], "place": c["place"]}
+                     for c in snap.get("creatures", []) if wanted is None or c["place"] in wanted]
         return {"type": "hello", "screen": screen, "protocol": PROTOCOL,
                 "world": {"ts": snap.get("ts"), "period": snap.get("period"), "is_night": snap.get("is_night"),
                           "speed": snap.get("speed"), "paused": snap.get("paused"), "weather": snap.get("weather"),
                           "tension": snap.get("tension"), "population": snap.get("population")},
-                "screens": screens, "places": places, "characters": chars}
+                "screens": screens, "places": places, "characters": chars, "creatures": creatures,
+                "place_names": {pid: names.get(pid, p.name) for pid, p in data.places.items()},
+                "dead": sum(1 for c in (snap.get("characters") or {}).values() if not c["alive"]),
+                "config": {"visual": data.world.visual.model_dump(),
+                           "tunnel": data.world.tunnel.model_dump()}}
+
+
+def visual_of(char) -> dict | None:
+    """O `visual` do YAML (+ a aparência em texto: o placeholder procura "batina", "vestido"...)."""
+    if char is None or char.visual is None:
+        return None
+    return {**char.visual.model_dump(), "appearance": char.appearance, "movement": char.movement}
+
+
+def shorten_bubble(text: str, name: str | None, max_chars: int) -> str:
+    """'A Cozinheira: "Come que esfria!"' -> 'Come que esfria!' (e corta com … se passar do limite)."""
+    t = (text or "").strip()
+    if name and t.startswith(name + ":"):
+        t = t[len(name) + 1:].strip()
+    if len(t) >= 2 and t[0] in "\"“" and t[-1] in "\"”":
+        t = t[1:-1].strip()
+    if len(t) > max_chars:
+        cut = t[: max_chars - 1].rsplit(" ", 1)[0].rstrip(",;:. ")
+        t = cut + "…"
+    return t

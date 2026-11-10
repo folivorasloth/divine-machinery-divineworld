@@ -11,7 +11,11 @@
     POST /api/commands              {"cmd": "chefe", "arg": "reconstruam a ferraria"} -> 202
     GET  /api/commands[/{id}]       comandos recentes e o resultado de cada um
     GET  /health                    a simulação está viva?
+    GET  /api/models                quais .glb existem em viewer/public/models (substituem os placeholders)
     GET  /chat                      a página do Chat do Mundo (viewer/chat.html)
+    GET  /viewer/?screen=<id>       o mundo em 3D de uma tela (viewer/dist, `npm run build`)
+    GET  /viewer/layout.html        o mapa físico das telas na parede
+    GET  /viewer/models/...         os modelos .glb do João (direto da pasta, sem rebuild)
     WS   /ws?screen=<id>            telas;  WS /ws/chat: Chat do Mundo ao vivo
 
 A API nunca mexe no estado vivo: lê o snapshot (cópia sob lock), lê o SQLite
@@ -23,11 +27,12 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import os
 import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -38,6 +43,35 @@ from sim.events import EVENT_TYPES
 log = logging.getLogger("server.app")
 
 VIEWER_DIR = Path(__file__).resolve().parent.parent / "viewer"
+
+
+def viewer_dist() -> Path:
+    """O viewer 3D construído (`cd viewer && npm run build`). DW_VIEWER_DIST muda o caminho."""
+    return Path(os.environ.get("DW_VIEWER_DIST") or VIEWER_DIR / "dist")
+
+
+def models_dir() -> Path:
+    """Os .glb do João. Servidos direto da pasta: soltar um arquivo lá vale sem rebuild."""
+    return Path(os.environ.get("DW_MODELS_DIR") or VIEWER_DIR / "public" / "models")
+
+
+def list_models(folder: Path) -> dict:
+    out = {}
+    for kind in ("characters", "places"):
+        d = folder / kind
+        out[kind] = sorted(p.stem for p in d.glob("*.glb")) if d.is_dir() else []
+    return out
+
+
+NO_BUILD_PAGE = """<!doctype html><meta charset="utf-8"><title>Viewer não construído</title>
+<body style="font-family:sans-serif;background:#111;color:#eee;padding:2em;line-height:1.5">
+<h1>O viewer 3D ainda não foi construído</h1>
+<p>Rode uma vez (precisa do Node 18+):</p>
+<pre style="background:#222;padding:1em">cd viewer
+npm ci
+npm run build</pre>
+<p>e recarregue esta página. O Chat do Mundo funciona sem isso: <a style="color:#9cf" href="/chat">/chat</a>.</p>
+</body>"""
 READ_COMMANDS = {"status", "quem"}
 WAIT_SECONDS = 5.0
 
@@ -236,8 +270,27 @@ def create_app(runtime: Runtime | None = None, runtime_factory=None, start: bool
     def chat_page():
         return FileResponse(VIEWER_DIR / "chat.html", media_type="text/html")
 
-    if VIEWER_DIR.is_dir():
-        app.mount("/viewer", StaticFiles(directory=VIEWER_DIR, html=True), name="viewer")
+    @app.get("/api/models")
+    def api_models():
+        """Modelos .glb que substituem os placeholders (o viewer pergunta aqui em vez de tentar baixar)."""
+        return list_models(models_dir())
+
+    # Fase 5: os modelos vêm direto da pasta (antes do /viewer, para ganhar dele)
+    mdir = models_dir()
+    with contextlib.suppress(OSError):
+        mdir.mkdir(parents=True, exist_ok=True)
+    app.mount("/viewer/models", StaticFiles(directory=mdir, check_dir=False), name="models")
+    dist = viewer_dist()
+    if (dist / "index.html").is_file():
+        app.mount("/viewer", StaticFiles(directory=dist, html=True), name="viewer")
+    else:
+        log.warning("viewer 3D não construído (%s): rode `cd viewer && npm ci && npm run build`", dist)
+
+        @app.get("/viewer")
+        @app.get("/viewer/")
+        @app.get("/viewer/{rest:path}")
+        def viewer_missing(rest: str = ""):
+            return HTMLResponse(NO_BUILD_PAGE, status_code=503)
 
     # ---------------------------------------------------------- WebSocket
     async def pump(ws: WebSocket, screen: str | None):

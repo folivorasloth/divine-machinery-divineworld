@@ -345,6 +345,115 @@ telas:
     fps_max: 20
     qualidade: baixa
 
+# =====================================================================
+# Fase 5 — o visual (viewer 3D, uma página por tela: /viewer/?screen=<id>)
+# =====================================================================
+# Só as telas usam isto; a simulação ignora. Cada tela escolhe o nível em
+# telas[].qualidade (baixa | media | alta) e o limite em telas[].fps_max.
+# Para testar sem editar: /viewer/?screen=parede_centro&qualidade=alta&fps=60
+visual:
+  qualidades:
+    baixa:   # notebook ou celular velho
+      altura_render: 160      # pixels de altura da imagem interna (PS1 = 240)
+      gotas_de_chuva: 120
+      tremer_vertices: true   # a "tremidinha" dos vértices do PS1
+      luzes_extras: 0         # luzes de verdade de lampião/forja (pesam)
+      detalhe: 0.5            # menos árvores, pedras e enfeites
+    media:
+      altura_render: 240
+      gotas_de_chuva: 400
+      tremer_vertices: true
+      luzes_extras: 0
+      detalhe: 1.0
+    alta:
+      altura_render: 360
+      gotas_de_chuva: 900
+      tremer_vertices: true
+      luzes_extras: 6
+      detalhe: 1.3
+  # balões de fala: duração = mínimo + letras × segundos_por_letra (até o máximo)
+  baloes:
+    segundos_minimos: 2.5
+    segundos_por_letra: 0.06
+    segundos_maximos: 9
+    max_letras: 90            # texto maior é encurtado com "…" (o Chat do Mundo tem o inteiro)
+  # tamanho dos personagens em relação ao cenário (1 = tamanho real, 1,7 m;
+  # maior = mais fácil de ver do outro lado do quarto). Vale também para os .glb.
+  escala_personagens: 1.3
+  mostrar_nomes: true         # plaquinha com o nome embaixo de cada um
+  mostrar_relogio: true       # hora e clima no canto da tela
+  nevoa_comeca: 1.2           # névoa de distância (em tamanhos do cenário)
+  nevoa_termina: 3.0
+  # Que animação cada ação usa. Nomes possíveis (os mesmos dos .glb, ver
+  # docs/guias/06_modelos_3d_e_design.md): idle walk talk work sleep fall
+  # fight pray dance stare. Ação que não está aqui = idle.
+  animacao_por_acao:
+    andar: walk
+    viajar: walk
+    perambular: walk
+    fugir: walk
+    perseguir: walk
+    patrulhar: walk
+    andar_de_skate: walk
+    trabalhar: work
+    comer: work
+    tocar_sino: work
+    construir: work
+    pichar: work
+    fucar: work
+    roubar: work
+    pregar_peca: work
+    fazer_malabarismo: work
+    dormir: sleep
+    cochilar: sleep
+    encarar_tela: stare
+    espiar_seita: stare
+    conversar: talk
+    discutir: talk
+    fofocar: talk
+    consolar: talk
+    pedir_desculpas: talk
+    confessar: talk
+    recrutar: talk
+    pregar: talk
+    denunciar: talk
+    anunciar_ordem: talk
+    reuniao: talk
+    assembleia: talk
+    mandar_reconstruir: talk
+    rezar: pray
+    missa: pray
+    ritual: pray
+    participar_ritual: pray
+    revelar_visao: pray
+    velar: pray
+    visitar_tumulo: pray
+    festejar: dance
+    brigar: fight
+    quebrar: fight
+    prender: fight
+    enfrentar: fight
+  # eventos que interrompem a animação por alguns segundos (tombo, briga, o olhar)
+  animacao_por_evento:
+    slapstick: fall
+    fight: fight
+    creature_fight: fight
+    stare: stare
+    death: fall
+    prank: work
+  # se o .glb do personagem não tiver a animação, tenta estas (na ordem);
+  # se nenhuma existir, o viewer faz um movimento procedural por cima do idle
+  animacao_substituta:
+    talk: [idle]
+    work: [talk, idle]
+    fight: [work, idle]
+    dance: [walk, idle]
+    pray: [idle]
+    stare: [idle]
+    sleep: [idle]
+    fall: [idle]
+    walk: [idle]
+
 nivel_log: info
 
 # =====================================================================

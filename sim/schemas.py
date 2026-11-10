@@ -501,6 +501,64 @@ class DirectorConfig(DataModel):
     log_every_minutes: int = Field(60, alias="registrar_tensao_a_cada_minutos", ge=1)
 
 
+# --------------------------------------------------------------------------
+# Fase 5: o visual (viewer 3D). Só o viewer usa; a simulação ignora.
+# --------------------------------------------------------------------------
+
+# nomes de animação que o viewer conhece (os .glb do João usam estes nomes)
+ANIMATIONS = ("idle", "walk", "talk", "work", "sleep", "fall", "fight", "pray", "dance", "stare")
+AnimationName = Literal["idle", "walk", "talk", "work", "sleep", "fall", "fight", "pray", "dance", "stare"]
+
+
+class QualityPreset(DataModel):
+    """Um nível de qualidade do viewer (baixa/media/alta), escolhido por tela em `telas[].qualidade`."""
+
+    # altura da imagem interna em pixels (o PS1 era 240); a imagem é ampliada sem suavizar
+    render_height: int = Field(alias="altura_render", ge=90, le=1080)
+    rain_drops: int = Field(alias="gotas_de_chuva", ge=0, le=5000)
+    vertex_snap: bool = Field(True, alias="tremer_vertices")
+    # luzes pontuais de verdade (lampiões, forja); 0 = só brilho pintado (mais leve)
+    extra_lights: int = Field(0, alias="luzes_extras", ge=0, le=16)
+    # densidade de detalhes do cenário (árvores, pedras, gente na névoa...): 0.3 a 1.5
+    detail: float = Field(1.0, alias="detalhe", ge=0.2, le=2)
+
+
+class BubbleConfig(DataModel):
+    """Balões de fala: duração proporcional ao tamanho do texto."""
+
+    min_seconds: float = Field(2.5, alias="segundos_minimos", gt=0)
+    seconds_per_char: float = Field(0.06, alias="segundos_por_letra", ge=0)
+    max_seconds: float = Field(9, alias="segundos_maximos", gt=0)
+    max_chars: int = Field(90, alias="max_letras", ge=10)
+
+
+def _default_qualities() -> dict:
+    return {
+        "baixa": QualityPreset(altura_render=160, gotas_de_chuva=120, tremer_vertices=True, luzes_extras=0, detalhe=0.5),
+        "media": QualityPreset(altura_render=240, gotas_de_chuva=400, tremer_vertices=True, luzes_extras=0, detalhe=1.0),
+        "alta": QualityPreset(altura_render=360, gotas_de_chuva=900, tremer_vertices=True, luzes_extras=6, detalhe=1.3),
+    }
+
+
+class VisualConfig(DataModel):
+    qualities: dict[Literal["baixa", "media", "alta"], QualityPreset] = Field(
+        default_factory=_default_qualities, alias="qualidades")
+    bubbles: BubbleConfig = Field(default_factory=BubbleConfig, alias="baloes")
+    # ação (id de data/actions) -> animação. Ação fora da lista = idle.
+    action_animation: dict[Id, AnimationName] = Field(default_factory=dict, alias="animacao_por_acao")
+    # tipo de evento (slapstick, fight, stare...) -> animação curta que interrompe a da ação
+    event_animation: dict[Id, AnimationName] = Field(default_factory=dict, alias="animacao_por_evento")
+    # se faltar uma animação no .glb, tenta estas, na ordem (no fim, movimento procedural)
+    animation_fallback: dict[AnimationName, list[AnimationName]] = Field(default_factory=dict, alias="animacao_substituta")
+    # tamanho dos personagens em relação ao cenário (1 = tamanho real; maior = mais fácil de ver de longe)
+    character_scale: float = Field(1.3, alias="escala_personagens", gt=0.2, le=4)
+    show_names: bool = Field(True, alias="mostrar_nomes")
+    show_clock: bool = Field(True, alias="mostrar_relogio")
+    # névoa de distância: começa e termina em quantas vezes o tamanho do cenário
+    fog_near: float = Field(1.2, alias="nevoa_comeca", gt=0)
+    fog_far: float = Field(3.0, alias="nevoa_termina", gt=0)
+
+
 class WorldConfig(DataModel):
     name: str = Field(alias="nome")
     seed: int | None = None
@@ -519,6 +577,7 @@ class WorldConfig(DataModel):
     storage: StorageConfig = Field(alias="persistencia")
     tunnel: TunnelConfig = Field(alias="tunel")
     screens: list[Screen] = Field(default_factory=list, alias="telas")
+    visual: VisualConfig = Field(default_factory=VisualConfig)
     log_level: Literal["debug", "info", "aviso", "erro"] = Field("info", alias="nivel_log")
     # {humor} das falas quando nenhuma necessidade está alta
     neutral_mood: str = Field("de boa", alias="humor_neutro")

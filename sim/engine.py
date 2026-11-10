@@ -1625,7 +1625,8 @@ class World:
             "tension": self.director.tension,
             "population": sum(1 for st in self.states.values() if st.alive and not st.frozen),
             "fog": sorted(self.blocked_places),
-            "creatures": [{"kind": c.kind, "place": c.place, "service": c.service} for c in self.creatures.active],
+            "creatures": [{"uid": c.uid, "kind": c.kind, "place": c.place, "service": c.service}
+                          for c in self.creatures.active],
             "characters": {
                 cid: {"place": st.place, "action": st.activity.action if st.activity else None,
                       "moving": st.moving, "alive": st.alive, "needs": dict(st.needs),

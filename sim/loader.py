@@ -604,6 +604,16 @@ def _cross_check(
                 if data.places[pid].access == "nunca":
                     report.warn(world_file, f"telas: '{pid}' é um lugar que ninguém visita (acesso: nunca)")
 
+    # visual (Fase 5) -----------------------------------------------------------
+    for aid in data.world.visual.action_animation:
+        ref(world_file, "visual.animacao_por_acao", "ação", aid, data.actions)
+    from sim.events import EVENT_TYPES
+
+    known_events = set(EVENT_TYPES) | {"slapstick"} | {a.event for a in data.actions.values() if a.event}
+    for etype in data.world.visual.event_animation:
+        if etype not in known_events:
+            report.warn(world_file, f"visual.animacao_por_evento: '{etype}' não é um tipo de evento conhecido")
+
     # traits.yaml --------------------------------------------------------------
     for trait in data.traits.values():
         where = f"traço '{trait.id}'"

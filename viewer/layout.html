@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Divine Machinery — mapa das telas</title>
+  </head>
+  <body class="layout-page">
+    <header>
+      <h1>Mapa das telas na parede</h1>
+      <p>Posição e tamanho vêm de <code>data/world.yaml &gt; telas</code> (em cm, a partir do canto inferior
+        esquerdo da parede). As linhas são os túneis entre telas: a luz de LED percorre esse caminho, e o número é a
+        duração (distância ÷ <code>tunel.velocidade_led_cm_por_s</code>). Ao vivo: telas na névoa ficam cinzas e cada
+        teletransporte acende a linha.</p>
+    </header>
+    <svg id="wall"></svg>
+    <section id="details"></section>
+    <script type="module" src="./src/layout.js"></script>
+  </body>
+</html>
