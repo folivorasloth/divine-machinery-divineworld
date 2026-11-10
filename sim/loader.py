@@ -688,6 +688,15 @@ def _cross_check(
                 "Entre telas o normal é 'tipo: tunel' (para os LEDs).",
             )
 
+    # Fase 6: estrutura que ninguém consegue consertar (o mutirão marcava o conserto no
+    # Subterrâneo, onde 'construir' não existia, e fracassava sempre)
+    repairers = {a.id for a in data.actions.values() if a.repairs and a.active}
+    if repairers and not any(data.actions[a].anywhere for a in repairers):
+        for pid, place in data.places.items():
+            if place.structures and place.access == "normal" and not (set(place.actions) & repairers):
+                report.warn(source["lugar" + pid], f"tem estruturas, mas nenhuma ação de conserto em 'acoes' "
+                            f"(ex.: {sorted(repairers)[0]}): o que quebrar aqui nunca volta")
+
     # characters/ --------------------------------------------------------------
     for cid, char in data.characters.items():
         file = source["personagem" + cid]

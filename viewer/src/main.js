@@ -749,7 +749,8 @@ function start() {
   }
   // estado AO VIVO para os testes (o __dw.actors é atualizado só 1x por segundo)
   dbg.live = () => (view ? { actors: [...view.actors.keys()], pending: [...view.pending.keys()],
-    places: Object.fromEntries([...view.actors].map(([id, a]) => [id, a.place])) } : null);
+    places: Object.fromEntries([...view.actors].map(([id, a]) => [id, a.place])),
+    names: Object.fromEntries([...view.actors].map(([id, a]) => [id, a.info.name])), hellos: dbg.hellos } : null);
   requestAnimationFrame(frame);
   connect();
 }

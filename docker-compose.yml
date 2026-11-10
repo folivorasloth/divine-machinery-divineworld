@@ -27,7 +27,7 @@ services:
     ports:
       - "${DW_SERVER_PORT:-8000}:8000"
     volumes:
-      - ./data:/app/data      # os YAML: edite e reinicie (docker compose restart world)
+      - ./data:/app/data      # os YAML: edite e aplique com "docker compose exec world python -m tools.cli recarregar"
       - ./var:/app/var        # o SQLite, o cache do clima
       # Fase 5: os .glb do João (soltar um arquivo aqui troca o placeholder, sem rebuild)
       - ./viewer/public/models:/app/viewer/public/models

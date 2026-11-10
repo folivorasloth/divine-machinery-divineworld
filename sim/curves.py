@@ -46,12 +46,16 @@ INPUT_RANGES: dict[str, tuple[float, float]] = {
     "luto": (0, 100),  # meu luto mais forte agora (0 = nenhum; 100 = perdi quem eu mais amava)
     "criatura": (0, 1),  # 1 se há uma criatura no lugar candidato
     "chuva": (0, 1),  # 1 se está chovendo (clima com chuva: true)
+    # Fase 6: o líder ATUAL da facção (se o Padre morre, quem assumiu a Igreja)
+    "presenca_lider": (0, 1),  # 1 se o líder atual da facção está no lugar: presenca_lider.igreja
+    "afinidade_lider": (-100, 100),  # minha afinidade com o líder atual: afinidade_lider.seita
 }
 
 # entradas que precisam de ".<algo>" e o que é o algo
 DOTTED_INPUTS = {
     "necessidade": "necessidade", "alvo_necessidade": "necessidade", "afinidade_com": "personagem",
     "presenca": "personagem", "faccao": "facção", "memoria": "tipo de memória", "memoria_alvo": "tipo de memória",
+    "presenca_lider": "facção", "afinidade_lider": "facção",
 }
 # entradas que só funcionam em ações com alvo (condicoes.alvo)
 TARGET_INPUTS = {"afinidade", "alvo_necessidade", "afinidade_inicial", "conflito_alvo", "memoria_alvo",

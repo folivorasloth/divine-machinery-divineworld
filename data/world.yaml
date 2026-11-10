@@ -80,7 +80,8 @@ necessidades:
     modo: acumula
     inicial: 30
     taxa_dia: 6
-    taxa_noite: 4
+    # Fase 6: era 4 — a noite é quase toda de sono; com 4 a cidade acordava entediada
+    taxa_noite: 2
     humor: entediado
   raiva:
     nome: Raiva
@@ -139,13 +140,18 @@ limites:
   # (é a causa morte.causas.velhice; as outras causas têm chance própria).
   # Ninguém morre por acaso se a cidade estiver com min_populacao vivos.
   chance_morte_por_dia: 0.0013
+  # Fase 6: sem morte natural se alguém morreu há menos destes dias (as mortes vinham
+  # em rajadas: 3 em 4 dias). Briga, acidente, choque e criatura continuam valendo.
+  dias_minimos_entre_mortes_naturais: 8
   # chance de UM fantasma aparecer, por noite (se houver mortos que amavam ou
   # odiavam alguém vivo)
   chance_fantasma_por_noite: 0.12
   chance_ressurreicao_natural_por_ano: 0.05
   # em média, um nascimento a cada N dias (mais rápido quando há vagas abertas
   # por mortes recentes: vida.bonus_por_vaga; nunca acima de max_populacao)
-  intervalo_nascimento_dias: 9
+  # Fase 6: era 9 — no teste de 60 dias nasceram 10 e morreram 4 (a cidade ia de 21 para 28);
+  # com 12 a população fica mais estável
+  intervalo_nascimento_dias: 12
   # chance de cada personagem parar e encarar a tela, por hora
   chance_olhar_por_hora: 0.02
   cooldown_aparicao_dias: 7
@@ -772,13 +778,16 @@ leis:
   infracoes:
     pichar: {nome: pichação, gravidade: 1}
     roubar: {nome: roubo, gravidade: 2}
-    barulho: {nome: barulho, gravidade: 0.5, horarios: [{das: "22:00", ate: "06:00"}]}
+    # Fase 6: gravidade era 0.5 (com as raves dando certo, barulho virou a maior causa de prisão)
+    barulho: {nome: barulho, gravidade: 0.3, horarios: [{das: "22:00", ate: "06:00"}]}
     brigar: {nome: briga, gravidade: 1.5}
     quebrar: {nome: quebra-quebra, gravidade: 2}
     baderna: {nome: baderna, gravidade: 1}
     # Fase 4: desobedecer uma regra que o Chefe decretou (comando chefe "proibido ...")
     decreto: {nome: desobediência ao decreto do Chefe, gravidade: 0.5}
-  pontos_para_prisao: 2
+  # Fase 6: era 2 (um roubo só já prendia: ~13 prisões por semana). Com 2.5 um roubo
+  # sozinho rende advertência; roubo + outra infração (ou reincidência) prende.
+  pontos_para_prisao: 2.5
   pontos_para_limbo: 6
   pontos_somem_por_dia: 1
   mandado_horas: 24
@@ -861,13 +870,14 @@ morte:
       nome: acidente bobo
       quando: falha
       acoes: [andar_de_skate, fazer_malabarismo, pregar_peca, construir, quebrar]
-      chance: 0.006
+      chance: 0.004   # Fase 6: era 0.006 (com mais mutirões dando certo, mais gente construindo)
       por_traco: {desastrado: 1.5}
     choque:
       nome: choque na Sala do Servidor
       quando: falha
       acoes: [fucar]
-      chance: 0.03
+      # Fase 6: era 0.03 — o Aprendiz fuça todo dia e morria de choque quase todo mês
+      chance: 0.012
       lugares: [server_room]
     criatura:
       nome: coisa da noite

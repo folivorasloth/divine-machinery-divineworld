@@ -44,8 +44,10 @@ class Hub:
         self.runtime = runtime
         self.loop: asyncio.AbstractEventLoop | None = None
         self.clients: set[Client] = set()
-        data = runtime.data
-        self.screen_places = {s.id: set(s.places) for s in data.world.screens}
+        self.refresh_screens()
+
+    def refresh_screens(self) -> None:
+        self.screen_places = {s.id: set(s.places) for s in self.runtime.data.world.screens}
 
     # --------------------------------------------------------- clientes
     def attach_loop(self, loop: asyncio.AbstractEventLoop) -> None:
@@ -68,6 +70,17 @@ class Hub:
             except asyncio.QueueFull:
                 client.dropped += 1
 
+    def _resend_hello(self) -> None:
+        """(thread do asyncio) Depois do `recarregar`: cada tela redesenha com os nomes, cores e
+        lugares novos, como quando reconecta. O chat (sem tela) também recebe."""
+        cache: dict = {}
+        items = []
+        for c in list(self.clients):
+            if c.screen not in cache:
+                cache[c.screen] = self.hello(c.screen)
+            items.append((c, cache[c.screen]))
+        self._deliver(items)
+
     def broadcast(self, msg: dict, screens_only: bool = False) -> None:
         """Do thread do asyncio (ou de qualquer um): manda para todos."""
         items = [(c, msg) for c in list(self.clients) if not (screens_only and c.screen is None)]
@@ -76,6 +89,10 @@ class Hub:
 
     # ------------------------------------------------- do thread do mundo
     def on_event(self, ev: "Event") -> None:
+        if ev.type == "data_reloaded":  # Fase 6: telas novas/lugares mudados e um hello novo para todos
+            self.refresh_screens()
+            if self.loop is not None:
+                self.loop.call_soon_threadsafe(self._resend_hello)
         if self.loop is None or not self.clients or ev.type in HIDDEN:
             return
         world = self.runtime.world

@@ -69,7 +69,15 @@ situacoes:
     - "{eu} conta os fiéis na missa. Dá menos que a seita. Fica preocupad{o|a}."
     - texto: "{eu} vai à missa só para ser vista. Senta na primeira fila. De leque aberto."
       personagens: [lady]
-      peso: 3
+    # Fase 6: a de cima saiu 8× em 14 dias (era a única da Dama, com peso 3)
+    - texto: "{eu} chega à missa no meio do sermão, de vestido novo, e faz o corredor de passarela."
+      personagens: [lady]
+    - texto: "{eu} reza de olhos abertos, conferindo quem reparou no chapéu."
+      personagens: [lady]
+    - texto: "{eu} se abana com o leque a missa inteira. As velas da frente apagam."
+      personagens: [lady]
+    - texto: "{eu} comunga e comenta, baixinho, que a hóstia de antigamente era melhor."
+      personagens: [lady]
     - texto: "{eu} vai à missa e entrega uma flor pra cada fiel. \"{bordao}\""
       personagens: [florist]
       peso: 2

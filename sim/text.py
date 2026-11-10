@@ -146,7 +146,24 @@ def render(text: str, names: Mapping[str, str]) -> str:
     def replace(match: re.Match) -> str:
         field = match.group(1)
         if field.startswith("@"):
-            return names.get(field[1:], field[1:])
+            name = names.get(field[1:], field[1:])
+            # Fase 6: nome que começa com artigo minúsculo ("a bigorna", estruturas) também
+            # contrai ("em a bigorna" -> "na bigorna"); marcado para não mexer no resto da frase
+            if _LOWER_ARTICLE.match(name):
+                return _MARK + name
+            return name
         return match.group(0)
 
-    return contract(_FIELD.sub(replace, text))
+    text = contract(_FIELD.sub(replace, text))
+    if _MARK in text:
+        text = _CONTRACT_LOWER.sub(lambda m: _CONTRACTIONS[(m.group(1), m.group(2).capitalize())] + " ", text)
+        if text.startswith(_MARK):  # começo da frase: "A bigorna rachou."
+            text = text[1].upper() + text[2:]
+        text = text.replace(_MARK, "")
+    return text
+
+
+_MARK = "\x01"
+_CONTRACT_LOWER = re.compile(r"(?<!\w)(em|de|por|a|pra|da|do|das|dos|na|no|nas|nos|pela|pelo|à|ao|Em|De|Por|Pra) "
+                             r"\x01(os|as|o|a) (?=\w)")
+_LOWER_ARTICLE = re.compile(r"^(os|as|o|a) \w")

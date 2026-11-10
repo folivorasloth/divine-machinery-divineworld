@@ -95,6 +95,7 @@ sim/                      simulação (Python puro, sem rede, exceto weather/llm
                            decretos, reuniões, assuntos do momento; estado em meta.society.creator
   llm.py            ✅ F4  cliente Ollama opcional (thread próprio, httpx, timeout, limite/hora)
   presence.py       ✅ F4  o olhar (coletivo) e a Aparição (sala/camera/pessoas)
+  reload.py         ✅ F6  `recarregar`: data/ de novo sem perder o estado; cópia da última versão válida
 server/
   runtime.py        ✅ F4  monta Storage + World + thread da simulação + LLM + MQTT; comandos com Future
   app.py            ✅ F4  FastAPI: REST + WebSocket + /chat
@@ -106,8 +107,11 @@ tools/
   run.py            ✅ F1  `python -m tools.run --speed 60 [--fast] [--horas N|--dias N] [--personagem id]
                            [--lugar id] [--movimento] [--debug] [--resumo] [--saida arq] [--novo]
                            [--seed N] [--inicio HH:MM] [--banco arq]`
-  report.py         ✅ F3  `python -m tools.report --days 7 [--seed N] [--saida arq] [--estrito]`: relatório de variedade
-  cli.py            ✅ F4  `python -m tools.cli chefe "..."` (fala com a API; status/quem formatados; chat)
+  report.py         ✅ F3  `python -m tools.report --days 7 [--seed N] [--saida arq] [--estrito] [--sem-balanceamento]`:
+                           variedade (F3) + saúde do mundo (F6: prisões, eventos sociais, diretor, mortes,
+                           necessidades ≥ 95, ocupação dos lugares; limites em BALANCE_LIMITS)
+  cli.py            ✅ F4  `python -m tools.cli chefe "..."` (fala com a API; status/quem/recarregar formatados; chat)
+  backup.py         ✅ F6  `python -m tools.backup [--destino] [--manter N]`: cópia online do SQLite
 viewer/
   chat.html         ✅ F4  Chat do Mundo na web (HTML+JS puro, sem build), servido em /chat
   index.html        ✅ F5  uma tela: /viewer/?screen=<id> (sem screen: lista das telas)
@@ -180,8 +184,25 @@ cada arquivo (e cada item de listas) separadamente, depois cruza referências:
 `graph` (não direcionado: `dict[place_id, list[Edge(to, kind, minutes)]]`), `names()`,
 `name_of(id)`, `screen_of(place)`, `affinity(a, b)` (afinidade **inicial**).
 
-`load_data_or_raise()` lança `DataError` (usado pelo engine). Recarregar (Fase 6): carregar de
-novo; se tiver erro, manter o `WorldData` anterior e publicar evento `system` com o relatório.
+`load_data_or_raise()` lança `DataError` (usado pelo engine).
+
+**F6 ✅ — recarregar (`sim/reload.py`).** Comando `recarregar` (CLI, `POST /api/commands`, MQTT
+`world/commands`), executado no thread da simulação: `load_data(world.data_dir)`; com erro, nada muda,
+evento `system` (importância 2) com os primeiros erros e resposta `ok: false`. Sem erro, `apply_data`
+troca `world.data` (cópia rasa dos personagens, como no `__init__`) e acerta o estado vivo:
+`relations.data`, `structures.data` (+ estruturas novas), `memories.cfg`, `weather.cfg`,
+`director.watched`, `_mult_cache`, minutos de reavaliação, `refresh_blocked`, facções; reaplica as
+sucessões (`lifecycle.apply_all_overrides`); quem estava fazendo uma ação/plano que sumiu para;
+objetivos/criaturas/eventos sociais de tipos que sumiram somem; personagem com arquivo novo ganha
+estado (`World.new_state`, em casa); personagem cujo arquivo sumiu continua com a definição antiga
+(aviso `kept_old`). Salva, atualiza o snapshot e emite `data_reloaded` (o `Hub` do WebSocket
+recalcula as telas e manda um `hello` novo a cada cliente: o viewer redesenha com nomes/cores/telas
+novos sem F5). Seções que só valem ao ligar (`mqtt`, `servidor`, `persistencia`, `ollama`, fuso/passo
+do `relogio`) são listadas em `restart_needed`. **Última versão válida:** `server.runtime.load_with_valid_copy`
+guarda `data/` (sem os nascidos) em `<pasta do banco>/data_valido/` a cada start sem erro; se ao ligar
+`data/` tiver erro e a cópia existir, liga com ela (`Runtime.using_valid_copy`, aviso no Chat) e o
+`recarregar` continua lendo o `data/` de verdade (`world.data_dir`). `Runtime.data` virou propriedade
+(`world.data`).
 
 ## 4. Relógio e tick ✅ F1
 
@@ -813,6 +834,12 @@ nascimentos), ações mais/menos usadas e nunca usadas, falas exatas mais repeti
 repetidas (informativo), eventos por tipo, variedade por personagem e ALERTAS. Limite de
 repetição: uma fala exata (texto final do Chat, com nomes) no máximo `max(3, dias × 0,5)` vezes
 (justificativa no relatório da F3). `--estrito` sai com 1 se houver alerta.
+**F6:** tabelas de balanceamento (`build_balance`): prisões por semana, eventos sociais
+(planejados/sucesso/fracasso), eventos do diretor (fatia de cada um e os que nunca saíram), criaturas,
+mortes por causa e pior janela de 7 dias, necessidades ≥ 95 (amostradas a cada troca de período, por
+necessidade e por personagem) e ocupação média/máxima dos lugares. Alertas pelos limites de
+`tools/report.py > BALANCE_LIMITS` (8 prisões/semana, 25% de sucesso mínimo, 30% de fatia máxima do
+diretor, < 3 mortes em 7 dias, 15%/40% de necessidade ≥ 95). `--sem-balanceamento` desliga.
 
 ## 13. Fase 4 — Criador, API e integração ✅
 
@@ -841,7 +868,7 @@ dicionário `{"ok": bool, ...}` (vai para o `Future` de quem pediu, para `World.
 | `aparicao` | — | força uma Aparição (teste) |
 | `raio` | lugar | (teste) um raio destrói as estruturas do lugar — para ver uma reconstrução |
 | `tela`, `homelab`, `clima` | | (F3), agora também pelo MQTT |
-| `recarregar` | — | 📐 F6 |
+| `recarregar` | — | ✅ F6: seção 3.3 (data/ de novo, sem perder estado; erro = mantém a versão anterior) |
 
 Internos (pela mesma fila, nunca pela API): `_llm_fala` (resposta do LLM) e `_ordem_interpretada`.
 
@@ -1087,7 +1114,11 @@ Guia dos modelos: `docs/guias/06_modelos_3d_e_design.md`. Tudo que é número ou
 - F5 ✅: o viewer consome o contrato da seção 13.3 (com os acréscimos da F5). Layout dos lugares
   numa tela continua automático; um campo `visual` no YAML do lugar (posição/tamanho na grade) fica
   para quando o João pedir.
-- F6: `recarregar` (data/ sem reiniciar) continua planejado.
+- F6 ✅: `recarregar` (seção 3.3). Fase 6 também: entradas `presenca_lider.<facção>` e
+  `afinidade_lider.<facção>` (missa e ritual seguem o líder ATUAL), aviso do validador para lugar com
+  estruturas sem ação de conserto, `limites.dias_minimos_entre_mortes_naturais`, contração de nomes com
+  artigo minúsculo ("em a bigorna" → "na bigorna"), `tools.backup`, material emissivo no `.glb` de
+  personagem. Detalhes e balanceamento: `docs/relatorios/FASE_6.md`.
 - Técnicos: continuam trabalhando na Sala do Servidor como profissão (manhã/tarde); um problema real
   (`homelab/servicos/<nome>` down, agora pelo MQTT) traz o Gremlin do Rack e o objetivo de
   enfrentar (F3). Fazer o trabalho deles depender SÓ de problema aberto ficou para a F6.

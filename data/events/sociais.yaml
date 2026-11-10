@@ -77,13 +77,15 @@ eventos_sociais:
       personagens: [musician]
     vontade: {tedio: 55}
     chance_por_hora: 0.08
-    comeca_entre: {das: "22:00", ate: "01:30"}
-    antecedencia_horas: [1, 4]
+    # Fase 6: era 22:00–01:30 e 1–4 h antes: quase sempre fracassava (a cidade já dormia
+    # e os convidados esqueciam). Mais cedo, avisada em cima da hora e com mais vontade.
+    comeca_entre: {das: "21:00", ate: "23:30"}
+    antecedencia_horas: [0.5, 2]
     duracao_horas: [2, 4]
     convite_afinidade_min: 30
     max_convidados: 6
     quorum: 3
-    bonus: 10   # tem que valer mais que a festa de sempre na Taverna
+    bonus: 30   # tem que valer mais que a festa de sempre na Taverna (e que a cama); era 10
     cooldown_horas: 40
     memoria: festa
     memoria_fracasso: festa_fracassada
@@ -110,13 +112,15 @@ eventos_sociais:
       grupos: [cowboys]
     vontade: {tedio: 45}
     chance_por_hora: 0.05
-    comeca_entre: {das: "14:00", ate: "17:00"}
+    # Fase 6: era 14:00–17:00 e bonus 10 — festejar quase não vale à tarde (curva de hora
+    # da ação) e o trabalho ganhava: 0 de 3 rodeios davam certo
+    comeca_entre: {das: "16:00", ate: "18:00"}
     antecedencia_horas: [2, 6]
     duracao_horas: [2, 3]
     convite_afinidade_min: 30
     max_convidados: 8
     quorum: 4
-    bonus: 10   # tem que valer mais que a festa de sempre na Taverna
+    bonus: 20   # Fase 6: era 10 (tem que valer mais que o trabalho da tarde)
     cooldown_horas: 72
     memoria: festa
     memoria_fracasso: festa_fracassada
@@ -181,12 +185,13 @@ eventos_sociais:
     excluidos: [teen]
     chance_por_hora: 0.05
     comeca_entre: {das: "10:00", ate: "17:00"}
-    antecedencia_horas: [6, 20]
+    # Fase 6: era [6, 20] (marcado de um dia para o outro, os convidados esqueciam)
+    antecedencia_horas: [2, 6]
     duracao_horas: [1, 2]
     convite_afinidade_min: 25
     max_convidados: 10
     quorum: 4
-    bonus: 5
+    bonus: 10   # Fase 6: era 5
     cooldown_horas: 120
     memoria: casamento
     memoria_fracasso: festa_fracassada
@@ -211,13 +216,15 @@ eventos_sociais:
       tracos: [protetor, perfeccionista]
     vontade: {}
     chance_por_hora: 0.15
-    comeca_entre: {das: "07:00", ate: "16:00"}
+    # Fase 6: era 07:00–16:00 — ideias da madrugada caíam às 07:00, com a cidade dormindo
+    # ou no café, e o mutirão ia "só ele e um martelo" (0 de 13 numa rodada)
+    comeca_entre: {das: "09:00", ate: "16:00"}
     antecedencia_horas: [0.5, 2]
     duracao_horas: [1.5, 3]
     convite_afinidade_min: 20
     max_convidados: 6
     quorum: 3
-    bonus: 5
+    bonus: 25   # Fase 6: era 5 (construir tem peso baixo de propósito; o convite precisa pesar)
     cooldown_horas: 18
     memoria: mutirao
     importancia: 2

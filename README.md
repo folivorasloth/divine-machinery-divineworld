@@ -8,36 +8,41 @@ sozinhos: trabalham, constroem, destroem, festejam, brigam, morrem e lembram. Na
 - Relatórios de cada fase: [`docs/relatorios/`](docs/relatorios/)
 - Regras do projeto para o Claude Code: [`CLAUDE.md`](CLAUDE.md)
 
-## Estado atual
+## Guias (para o João, passo a passo)
 
-Fase 1 (núcleo): o mundo já vive sozinho, em texto. Os NPCs têm necessidades, escolhem ações por
-Utility AI, andam pelo grafo de lugares (com túneis), trabalham, comem, dormem e conversam; o
-Padre toca o sino; tudo aparece no Chat do Mundo no terminal e fica salvo em SQLite.
+| Guia | Para quando você quer... |
+|---|---|
+| [01 — Renomear e editar personagens](docs/guias/01_renomear_e_editar_personagens.md) | mudar nome, aparência, traços, bordões e falas (e renomear nascidos), sem desligar o mundo |
+| [02 — Criar personagem novo](docs/guias/02_criar_personagem_novo.md) | um morador novo a partir do `_MODELO.yaml`, com relações e ligação com o mundo real |
+| [03 — Falas e humor](docs/guias/03_falas_e_humor.md) | escrever templates, variáveis, filtros, e não deixar o mundo repetitivo |
+| [04 — Ações e eventos](docs/guias/04_acoes_e_eventos.md) | criar uma ação, um evento do diretor, um evento social ou uma criatura só com YAML (e quando precisa de código) |
+| [05 — Balanceamento](docs/guias/05_balanceamento.md) | os números do `world.yaml` e o que cada um muda; como medir com `tools.report` |
+| [06 — Modelos 3D e design](docs/guias/06_modelos_3d_e_design.md) | fazer personagens e cenários no Blender (estilo PS1) e trocar os placeholders |
+| [07 — Telas e layout físico](docs/guias/07_telas_e_layout_fisico.md) | adicionar uma tela, medir a parede, túneis de LED (WLED), página de layout |
+| [08 — Integrações reais](docs/guias/08_integracoes_reais.md) | MQTT do homelab, câmera de presença, status do homelab, clima, Ollama |
+| [09 — Rodar e manter](docs/guias/09_rodar_e_manter.md) | subir, parar, atualizar, backup, logs e o que fazer quando algo quebra |
+| [10 — Comandos do Criador](docs/guias/10_comandos_do_criador.md) | todos os comandos, com exemplos |
 
-Fase 2 (sociedade): afinidades vivas, memórias (que aparecem nas falas), fofoca com distorção,
-discussões, brigas de pastelão, pazes, pegadinhas e tombos, construções que quebram e são
-consertadas, o Fiscal com advertências, prisão e Limbo, Igreja × Seita, o Ganancioso roubando
-(e a cidade acusando, às vezes a pessoa errada) e festas, raves, rodeios, procissões, casamentos
-e mutirões organizados pelos próprios NPCs. `--resumo` mostra tudo que aconteceu.
+## O que existe (fases 0 a 6)
 
-Fase 3 (vida, morte e diretor): mortes permanentes com causas configuráveis, funeral com chuva,
-cortejo, reações por personalidade e lápide; luto, herança, fantasmas e ressurreição rara;
-nascimentos sorteados (viram YAML em `data/characters/born/`), sucessão de papéis (eleição do
-Chefe), criaturas noturnas e do homelab, clima de Botucatu (Open-Meteo, com cache), névoa nas
-telas desligadas e um Diretor que mede a tensão e injeta eventos. `tools.report` mede a variedade.
+- **O mundo vive sozinho** (F1–F3): 21 moradores da bible com necessidades, traços, rotina e Utility AI;
+  andam pelo grafo de 20 lugares (com túneis de teletransporte entre telas), trabalham, comem, dormem,
+  conversam, fofocam, discutem, brigam, fazem as pazes, roubam, vão presos ou para o Limbo, rezam, fazem
+  rituais, festejam e organizam festas, raves, rodeios, procissões, casamentos e mutirões. Morrem (de
+  verdade), têm funeral com chuva, luto, herança, fantasmas; nascem moradores novos; papéis vagos são
+  assumidos (eleição do Chefe). Criaturas à noite, clima real de Botucatu e um Diretor que controla o
+  ritmo. Tudo explicável no log e salvo em SQLite; nada roteirizado.
+- **O Criador** (F4): `chefe "..."`, `medium "..."`, `reviver`, `nascer`, a presença no quarto e a Aparição;
+  API HTTP, WebSocket, ponte MQTT, Chat do Mundo na web (`/chat`), Docker. Ollama opcional.
+- **O visual** (F5): cada tela abre `/viewer/?screen=<id>` e mostra, em 3D low-poly estilo PS1, os
+  lugares dela ao vivo; `.glb` próprios trocam os placeholders sem código; `/viewer/layout.html` é o mapa
+  da parede.
+- **Polimento** (F6): `recarregar` aplica mudanças de `data/` sem reiniciar e sem perder o estado (YAML
+  com erro mantém a última versão válida, também ao religar); `tools.report` mede a saúde do mundo
+  (prisões, eventos, mortes, necessidades, lugares); balanceamento de 60 dias; `tools.backup`; os guias.
 
-Fase 4 (o Criador, a API e a integração): `python -m server` sobe a simulação junto com a API
-HTTP, o WebSocket das telas, a ponte MQTT e o **Chat do Mundo na web** (`/chat`, com filtros e
-linha do tempo). O Criador intervém: `chefe "reconstruam a ferraria"` (vira um objetivo que a
-cidade cumpre — ou não — do seu jeito), `medium "..."` (a Médium ouve uma voz e às vezes entende
-errado), `reviver <id>`, `nascer`, `pausar`, `velocidade`, `status`, `quem <id>`. Gente no quarto
-(câmera) faz a cidade encarar a tela e, raramente, ver a Aparição. Ollama é opcional.
-
-Fase 5 (o visual): cada tela abre `http://<servidor>:8000/viewer/?screen=<id>` e mostra, ao vivo e em
-3D low-poly com cara de PS1, os lugares dela: personagens placeholder reconhecíveis (montados do
-YAML), balões de fala, dia e noite, chuva, névoa da tela desligada, o teletransporte entre telas e a
-Aparição. Um `.glb` em `viewer/public/models/characters/<id>.glb` troca o boneco sem mexer em código
-(`docs/guias/06_modelos_3d_e_design.md`). Mapa das telas na parede: `/viewer/layout.html`.
+Relatórios de cada fase, com o que foi testado e o que ficou pendente: [`docs/relatorios/`](docs/relatorios/)
+(o resumo geral e os próximos passos estão em [`FASE_6.md`](docs/relatorios/FASE_6.md)).
 
 ## Primeiros passos
 
@@ -61,6 +66,8 @@ O mundo com a API e o Chat do Mundo na web (Fase 4):
 .venv/bin/python -m tools.cli chefe "reconstruam a ferraria"    # noutro terminal
 .venv/bin/python -m tools.cli status
 .venv/bin/python -m tools.cli quem clown
+.venv/bin/python -m tools.cli recarregar                        # aplica mudanças de data/ sem reiniciar
+.venv/bin/python -m tools.backup                                # backup do mundo (seguro com ele rodando)
 
 # as telas 3D (Fase 5): uma vez, constrói o viewer (Node 18+); o servidor serve em /viewer
 (cd viewer && npm ci && npm run build)
@@ -91,7 +98,8 @@ Tudo em `data/`:
 | `data/traits.yaml` | traços, profissões e o sorteio dos nascimentos |
 | `data/world.yaml` | relógio, limites, telas, MQTT, Ollama, clima; memórias, fofoca, leis, facções, roubos |
 
-Depois de editar, rode `python -m tools.validate`.
+Depois de editar, rode `python -m tools.validate` e, com o servidor ligado, `python -m tools.cli recarregar`
+(guia 01).
 
 Endereços (MQTT, Ollama) e senhas não ficam no repositório (ele é público): copie `.env.example`
 para `.env` e ajuste. O `world.yaml` lê essas variáveis.

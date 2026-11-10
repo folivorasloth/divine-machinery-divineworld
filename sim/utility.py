@@ -145,6 +145,14 @@ def read_input(entry: str, ctx: DecisionContext, me: CharacterState, place: str,
         return 1.0 if w.creatures.at(place) else 0.0
     if kind == "chuva":
         return 1.0 if w.weather.is_rain() else 0.0
+    # Fase 6: o líder ATUAL da facção (missa e ritual seguem quem assumiu o papel)
+    if kind in ("presenca_lider", "afinidade_lider"):
+        leader = w.leader_of(item)
+        if not leader or leader == me.id or leader not in ctx.states or not ctx.states[leader].alive:
+            return 0.0
+        if kind == "presenca_lider":
+            return 1.0 if leader in ctx.present.get(place, []) else 0.0
+        return ctx.affinity(me.id, leader)
     return 0.0  # pragma: no cover - o validador impede entradas desconhecidas
 
 

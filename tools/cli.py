@@ -7,6 +7,7 @@
     python -m tools.cli pausar | continuar | velocidade 60
     python -m tools.cli status
     python -m tools.cli quem clown
+    python -m tools.cli recarregar                 # aplica as mudanças de data/ sem reiniciar
     python -m tools.cli chat --personagem clown --limite 20     # últimas falas (histórico)
     python -m tools.cli --url http://homelab.local:8000 status
 
@@ -73,6 +74,28 @@ def print_sheet(f: dict) -> None:
         print("Última decisão: " + f["ultima_decisao"])
 
 
+def print_reload(res: dict) -> None:
+    if not res.get("ok"):
+        print("NÃO recarregou: os YAML têm erro. O mundo continua com a versão anterior.")
+        for e in res.get("errors", []):
+            print("  - " + e)
+        if res.get("more_errors"):
+            print(f"  ... e mais {res['more_errors']}. Rode: python -m tools.validate")
+        return
+    print(f"Recarregado: {res['characters']} personagens, {res['places']} lugares, {res['actions']} ações, "
+          f"{res['lines']} falas.")
+    for r in res.get("renamed", []):
+        print(f"  {r['id']}: {r['old']} -> {r['new']}")
+    if res.get("added"):
+        print("  novos no mundo: " + ", ".join(res["added"]))
+    if res.get("kept_old"):
+        print("  sem arquivo (continuam com a versão antiga): " + ", ".join(res["kept_old"]))
+    if res.get("restart_needed"):
+        print("  só vale depois de reiniciar o servidor: " + ", ".join(res["restart_needed"]))
+    for w in res.get("warnings", []):
+        print("  aviso: " + w)
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Comandos do Criador (via API).")
     p.add_argument("--url", default=default_url(), help="endereço do servidor (padrão: DW_API_URL ou localhost)")
@@ -81,7 +104,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--lugar", default=None, help="(chat) filtra por lugar")
     p.add_argument("--tipo", default=None, help="(chat) filtra por categoria (briga, morte, criador...)")
     p.add_argument("--limite", type=int, default=20, help="(chat) quantas linhas")
-    p.add_argument("comando", help="chefe, medium, reviver, nascer, pausar, continuar, velocidade, status, quem, chat...")
+    p.add_argument("comando", help="chefe, medium, reviver, nascer, pausar, continuar, velocidade, status, quem, recarregar, chat...")
     p.add_argument("arg", nargs="*", help="o resto (a ordem, a mensagem, o id...)")
     args = p.parse_args(argv)
     arg = " ".join(args.arg)
@@ -115,6 +138,8 @@ def main(argv: list[str] | None = None) -> int:
         print_status(res["status"])
     elif args.comando == "quem" and res.get("ok"):
         print_sheet(res["sheet"])
+    elif args.comando == "recarregar":
+        print_reload(res)
     else:
         print(("ok: " if res.get("ok") else "não: ") + json.dumps({k: v for k, v in res.items() if k != "ok"},
                                                                   ensure_ascii=False))

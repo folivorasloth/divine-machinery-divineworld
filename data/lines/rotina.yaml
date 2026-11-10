@@ -145,7 +145,17 @@ situacoes:
       personagens: [fool]
     - texto: "{eu} laça um bezerro e quase é laçado por ele. \"{bordao}\""
       personagens: [cowboy_fat, cowboy_thin, cowboy_old]
-      peso: 2
+    # Fase 6: a do bezerro saiu 8× em 14 dias no relatório de variedade
+    - texto: "{eu} conserta a cerca do {lugar} com arame, cuspe e fé. \"{bordao}\""
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+    - texto: "{eu} tira leite da vaca errada. A vaca não reclama, o dono reclama."
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+    - texto: "{eu} ensina o cavalo a voltar sozinho pra casa. O cavalo aprende a ir pra Taverna."
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+    - texto: "{eu} empurra a carroça atolada enquanto o burro assiste, de braços cruzados (o burro não tem braços)."
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
+    - texto: "{eu} planta milho em fila torta e jura que é de propósito. \"{bordao}\""
+      personagens: [cowboy_fat, cowboy_thin, cowboy_old]
 
   dormir:
     - "{eu} vai dormir."

@@ -82,7 +82,7 @@ eventos:
     tipo: social
     tensao: agita
     peso: 1.0
-    cooldown_horas: 20
+    cooldown_horas: 32   # Fase 6: era 20 (21% de tudo que o diretor fazia em 60 dias)
     lugares: [market]
     condicoes:
       periodos: [manha, tarde]

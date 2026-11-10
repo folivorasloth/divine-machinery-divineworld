@@ -1,5 +1,9 @@
 # Guia pós-Max: tocando o Mundo Vivo sozinho
 
+> **A Fase 6 rodou:** os guias completos e testados estão em [`docs/guias/`](docs/guias/) (índice no
+> `README.md`). O comando de recarregar existe: `python -m tools.cli recarregar`. Este arquivo fica como
+> resumo.
+
 Este guia é o seguro caso a Fase 6 não termine a tempo. Ele explica, sem depender do código exato, como fazer as coisas que você mais vai querer depois: renomear e criar personagens, desenhar os modelos 3D, montar o layout físico das telas e integrar com o mundo real. Os detalhes finais (nomes exatos de comandos e campos) estarão nos relatórios das fases e em `docs/guias/`, se a Fase 6 rodar.
 
 ## 1. Renomear e editar personagens

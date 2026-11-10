@@ -77,14 +77,14 @@ acoes:
     condicoes:
       periodos: [noite, madrugada]
     consideracoes:
-      - entrada: presenca.medium
-        nota: só tem ritual onde a Médium está
+      - entrada: presenca_lider.seita
+        nota: só tem ritual onde a líder da Seita está (a Médium, ou quem assumir o papel)
         curva: {tipo: degrau, limite: 1}
       - entrada: faccao.seita
         curva: {tipo: pontos, pontos: [[0, 0.12], [1, 1]]}
       - entrada: necessidade.fe
         curva: {tipo: pontos, pontos: [[0, 0.2], [40, 0.6], [80, 1]]}
-      - entrada: afinidade_com.medium
+      - entrada: afinidade_lider.seita
         curva: {tipo: pontos, pontos: [[-100, 0.01], [0, 0.2], [50, 0.8], [100, 1]]}
     efeitos:
       necessidades: {fe: -40, medo: 10, tedio: -25, social: -15}
@@ -104,7 +104,7 @@ acoes:
     condicoes:
       periodos: [manha, tarde]
     consideracoes:
-      - entrada: presenca.priest
+      - entrada: presenca_lider.igreja   # Fase 6: o Padre, ou quem assumir a Igreja
         curva: {tipo: degrau, limite: 1}
       - entrada: faccao.igreja
         curva: {tipo: pontos, pontos: [[0, 0.3], [1, 1]]}
@@ -128,7 +128,7 @@ acoes:
       profissoes: [padre]
       periodos: [noite, madrugada]
     consideracoes:
-      - entrada: presenca.medium
+      - entrada: presenca_lider.seita
         curva: {tipo: degrau, limite: 1}
       - entrada: necessidade.tedio
         curva: {tipo: linear, minimo: 0.4}

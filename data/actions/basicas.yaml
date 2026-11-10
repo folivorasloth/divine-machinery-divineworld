@@ -129,7 +129,9 @@ acoes:
         nota: dormir de dia é menos provável
         curva: {tipo: pontos, pontos: [[0, 1], [6, 1], [8, 0.4], [10, 0.05], [19, 0.05], [21, 0.6], [22, 1], [24, 1]]}
     efeitos:
-      necessidades: {sono: -95, fome: 10}
+      # Fase 6: uma noite de sono também zera um pouco o tédio (antes, metade da cidade
+      # vivia com tédio >= 95 e a necessidade deixava de diferenciar quem está entediado)
+      necessidades: {sono: -95, fome: 10, tedio: -35}
     narracao: "{eu} vai dormir em {lugar}."
     narracao_fim: "{eu} acorda em {lugar}."
     fala: dormir

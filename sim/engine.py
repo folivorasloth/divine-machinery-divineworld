@@ -104,6 +104,8 @@ class World:
         # cópia rasa: nascimentos e sucessões mudam só o dicionário deste mundo
         data = dataclasses.replace(data, characters=dict(data.characters))
         self.data = data
+        # Fase 6: de onde o `recarregar` lê (o servidor troca se subiu com a cópia válida)
+        self.data_dir = data.root
         self.storage = storage
         self.bus = EventBus()
         self.commands: queue.Queue[Command] = queue.Queue()
@@ -208,10 +210,7 @@ class World:
         for cid, char in self.data.characters.items():
             row = rows.pop(cid, None)
             if row is None:  # personagem novo: entra em casa, com as necessidades iniciais
-                st = CharacterState(id=cid, place=char.home, needs=needs_mod.initial_needs(self.data, char))
-                st.faction = char.faction
-                # casal do YAML (relação "tipo: casal") já é casado
-                st.spouse = next((r.with_ for r in char.relations if r.kind == "casal"), None)
+                st = self.new_state(cid)
             else:
                 place = row["place"] if row["place"] in self.data.places else char.home
                 st = CharacterState(id=cid, place=place, needs=row["needs"], alive=row["alive"],
@@ -238,14 +237,24 @@ class World:
                     st.plan = None
             if row is None:
                 self._start_asleep_if_bedtime(st)
-                # espalha as reavaliações para não acontecerem todas no mesmo tick
-                st.next_review = self._now_minutes() + self.rng.uniform(0, self.data.world.decision.reevaluate_minutes)
             else:
                 st.next_review = row["flags"].get("next_review", self._now_minutes())
                 st.pending_review = row["flags"].get("pending_review", False)
             self.states[cid] = st
             self._review_minutes[cid] = self._trigger_minutes(char)
         self.frozen_rows = rows  # sobraram: estão no banco mas não no YAML (não apaga nada)
+
+    def new_state(self, cid: str) -> CharacterState:
+        """Estado de um personagem que ainda não existia no banco (mundo novo, YAML
+        novo, ou `recarregar` com um arquivo novo): em casa, necessidades iniciais."""
+        char = self.data.characters[cid]
+        st = CharacterState(id=cid, place=char.home, needs=needs_mod.initial_needs(self.data, char))
+        st.faction = char.faction
+        # casal do YAML (relação "tipo: casal") já é casado
+        st.spouse = next((r.with_ for r in char.relations if r.kind == "casal"), None)
+        # espalha as reavaliações para não acontecerem todas no mesmo tick
+        st.next_review = self._now_minutes() + self.rng.uniform(0, self.data.world.decision.reevaluate_minutes)
+        return st
 
     def _start_asleep_if_bedtime(self, st: CharacterState) -> None:
         """Mundo NOVO criado no meio da noite: quem tem um bloco de rotina de dormir
@@ -1423,7 +1432,7 @@ class World:
             if cmd.reply is not None and not cmd.reply.done():
                 cmd.reply.set_result(result)
 
-    COMMANDS = ("pausar", "continuar", "velocidade", "nascer", "tela", "homelab", "clima") + tuple(
+    COMMANDS = ("pausar", "continuar", "velocidade", "nascer", "tela", "homelab", "clima", "recarregar") + tuple(
         sorted(commands_mod.CREATOR_COMMANDS))
 
     def handle_command(self, cmd: Command) -> dict:
@@ -1477,6 +1486,10 @@ class World:
                 return {"ok": True, "weather": parts[0], "minutes": minutes}
             self.emit("system", f"clima desconhecido: {cmd.arg!r}", tags=["sistema"])
             return {"ok": False, "message": f"clima desconhecido: {cmd.arg!r}"}
+        if cmd.cmd == "recarregar":  # Fase 6: data/ de novo, sem perder o estado
+            from sim.reload import reload_world
+
+            return reload_world(self)
         if cmd.cmd in commands_mod.CREATOR_COMMANDS or cmd.cmd in commands_mod.INTERNAL_COMMANDS:
             return commands_mod.handle(self, cmd)
         self.emit("system", f"Comando '{cmd.cmd}' não existe.", tags=["sistema"], data={"cmd": cmd.cmd})

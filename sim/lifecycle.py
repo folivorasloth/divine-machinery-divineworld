@@ -147,6 +147,10 @@ def roll(world: "World", when: str, cid: str, *, action: str | None = None, plac
         return False
     if len(living(world)) <= world.data.world.limits.min_population:
         return False  # a cidade nunca se extingue por acaso
+    gap = world.data.world.limits.natural_death_gap_days
+    if when == "diario" and gap and world.life.deaths and \
+            world.now_minutes() - world.life.deaths[-1]["minute"] < gap * DAY:
+        return False  # Fase 6: o luto da última morte ainda nem acabou
     place = place or st.place
     traits = set(world.traits_of(cid))
     for cause_id in sorted(world.data.world.death.causes):

@@ -14,6 +14,6 @@ tem: [praia, barcos de pesca, destroços de naufrágio]
 conexoes:
   - {para: market, tipo: tunel, minutos: 5}
   - {para: desert, tipo: caminho, minutos: 40}
-acoes: [cochilar, festejar, rezar, enfrentar]
+acoes: [cochilar, festejar, rezar, enfrentar, construir]
 estruturas:
   - {id: sea_boat, nome: o barco de pesca}

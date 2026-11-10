@@ -12,7 +12,12 @@ nascidos TEMPORÁRIOS (nada fica em var/ nem em data/), e mostra:
   preenchidos), quantas vezes, de que situação — e ALERTA para as que passam
   do limite de repetição;
 - eventos por tipo; mortes, nascimentos e população;
-- personagens "parados" (fazem pouca coisa diferente).
+- personagens "parados" (fazem pouca coisa diferente);
+- Fase 6, **balanceamento** (`build_balance`): prisões por semana, eventos sociais
+  (planejados × sucesso × fracasso), eventos do diretor (o mais repetido e os que
+  nunca saíram), criaturas, mortes por causa e rajadas de morte, necessidades que
+  "explodem" (ficam ≥ 95) e ocupação dos lugares (vazios e lotados). Os limites dos
+  alertas estão em BALANCE_LIMITS, logo abaixo, explicados um por um.
 
 Limite de repetição (padrão): uma fala exata pode aparecer no máximo
 `max(3, dias × 0,5)` vezes — 3 numa semana, 15 num mês. Por quê: o Chat do
@@ -42,6 +47,23 @@ NOT_ACTION_TYPES = {"action_finished", "speech", "move_started", "move_arrived",
                     "teleport_finished", "decision", "missed", "tension"}
 
 
+# Limites dos alertas de BALANCEAMENTO (Fase 6). Por quê de cada um:
+BALANCE_LIMITS = {
+    # 21 moradores: mais de ~1 prisão por dia vira rotina e a Prisão vira o assunto da cidade
+    "prisoes_por_semana": 8,
+    # um evento social que fracassa em mais de 3 de cada 4 tentativas parece bug, não emergência
+    "sucesso_minimo_evento_social": 0.25,
+    # nenhum evento do diretor deve ser mais de 30% de tudo que ele injeta (repetição)
+    "fatia_maxima_evento_diretor": 0.30,
+    # 3 mortes em 7 dias numa cidade de ~20 é uma praga (o luto de uma ainda nem acabou)
+    "mortes_em_7_dias": 3,
+    # uma necessidade ≥ 95 em mais de 15% das amostras (de toda a cidade) está "explodindo"
+    "fatia_maxima_necessidade_95": 0.15,
+    # um personagem com a mesma necessidade ≥ 95 em mais de 40% das amostras está travado nela
+    "fatia_maxima_necessidade_95_por_personagem": 0.40,
+}
+
+
 class Collector:
     def __init__(self, world) -> None:
         self.world = world
@@ -55,6 +77,20 @@ class Collector:
         self.deaths: list[tuple[str, str, str]] = []
         self.births: list[tuple[str, str]] = []
         self.population: list[int] = []
+        # Fase 6: balanceamento
+        self.arrests: list[str] = []
+        self.social: dict[str, Counter] = defaultdict(Counter)  # evento -> planned/sucesso/fracasso
+        self.director: Counter = Counter()
+        self.creatures: Counter = Counter()
+        self.death_minutes: list[float] = []
+        self.death_causes: Counter = Counter()
+        self.need_samples = 0
+        self.need_high: Counter = Counter()  # necessidade -> amostras >= 95
+        self.char_samples: Counter = Counter()
+        self.char_need_high: Counter = Counter()  # (personagem, necessidade) -> amostras >= 95
+        self.place_samples = 0
+        self.place_total: Counter = Counter()
+        self.place_max: Counter = Counter()
 
     def __call__(self, ev) -> None:
         self.types[ev.type] += 1
@@ -78,6 +114,36 @@ class Collector:
             self.births.append((ev.ts[:16], ev.actors[0]))
         if ev.type == "period_changed":
             self.population.append(sum(1 for st in self.world.states.values() if st.alive and not st.frozen))
+            self._sample()
+        if ev.type == "arrest":
+            self.arrests.append(ev.ts)
+        elif ev.type == "social_event_planned":
+            self.social[ev.data.get("social_event", "?")]["planejado"] += 1
+        elif ev.type == "social_event_ended":
+            self.social[ev.data.get("social_event", "?")][ev.data.get("result", "?")] += 1
+        elif ev.type == "director_event":
+            self.director[ev.data.get("event", "?")] += 1
+        elif ev.type == "creature_spawned":
+            self.creatures[ev.data.get("creature", "?")] += 1
+        elif ev.type == "death":
+            self.death_minutes.append(self.world.now_minutes())
+            self.death_causes[ev.data.get("cause_name") or ev.data.get("cause", "?")] += 1
+
+    def _sample(self) -> None:
+        """4 vezes por dia (troca de período): necessidades e onde cada um está."""
+        living = [st for st in self.world.states.values() if st.alive and not st.frozen]
+        self.place_samples += 1
+        here: Counter = Counter(st.place for st in living)
+        for pid in self.world.data.places:
+            self.place_total[pid] += here[pid]
+            self.place_max[pid] = max(self.place_max[pid], here[pid])
+        for st in living:
+            self.char_samples[st.id] += 1
+            self.need_samples += 1  # uma amostra por pessoa (a fatia é de cada necessidade)
+            for nid, v in st.needs.items():
+                if v >= 95:
+                    self.need_high[nid] += 1
+                    self.char_need_high[(st.id, nid)] += 1
 
 
 def run(days: float, seed: int | None, start: str | None, data_dir: str):
@@ -194,6 +260,100 @@ def build_report(world, col: Collector, days: float, per_day: float, minimum: in
     return tables, alerts, limit
 
 
+def build_balance(world, col: Collector, days: float):
+    """Fase 6: tabelas e alertas de BALANCEAMENTO (limites em BALANCE_LIMITS)."""
+    names = world.names()
+    L = BALANCE_LIMITS
+    tables, alerts = [], []
+    weeks = max(days / 7, 1e-9)
+
+    t = Table(title="Balanceamento — saúde do mundo")
+    t.add_column("item")
+    t.add_column("valor")
+    t.add_column("limite")
+    per_week = len(col.arrests) / weeks
+    t.add_row("prisões por semana", f"{per_week:.1f} ({len(col.arrests)} no total)", f"≤ {L['prisoes_por_semana']}")
+    if days >= 7 and per_week > L["prisoes_por_semana"]:
+        alerts.append(f"prisões demais: {per_week:.1f} por semana (limite {L['prisoes_por_semana']})")
+    worst7 = 0
+    mins = sorted(col.death_minutes)
+    for i, m in enumerate(mins):
+        worst7 = max(worst7, sum(1 for x in mins[i:] if x - m < 7 * 1440))
+    t.add_row("mortes", f"{len(mins)} ({', '.join(f'{k} {n}' for k, n in col.death_causes.most_common())})", "")
+    t.add_row("pior janela de 7 dias", f"{worst7} morte(s)", f"< {L['mortes_em_7_dias']}")
+    if worst7 >= L["mortes_em_7_dias"]:
+        alerts.append(f"rajada de mortes: {worst7} em 7 dias (limite {L['mortes_em_7_dias'] - 1})")
+    pop = col.population or [0]
+    lim = world.data.world.limits
+    t.add_row("população (mín–máx)", f"{min(pop)}–{max(pop)}", f"{lim.min_population}–{lim.max_population}")
+    if min(pop) < lim.min_population or max(pop) > lim.max_population:
+        alerts.append(f"população saiu dos limites: {min(pop)}–{max(pop)}")
+    t.add_row("criaturas", ", ".join(f"{k} {n}" for k, n in col.creatures.most_common()) or "nenhuma", "")
+    tables.append(t)
+
+    t = Table(title="Eventos sociais (organizados pelos NPCs)")
+    for c in ("evento", "planejados", "sucesso", "fracasso", "taxa de sucesso"):
+        t.add_column(c)
+    for sid in sorted(set(world.data.social_events) | set(col.social)):
+        c = col.social.get(sid, Counter())
+        done = c["sucesso"] + c["fracasso"]
+        rate = c["sucesso"] / done if done else None
+        t.add_row(sid, str(c["planejado"]), str(c["sucesso"]), str(c["fracasso"]),
+                  f"{rate:.0%}" if rate is not None else "—")
+        if done >= 3 and rate < L["sucesso_minimo_evento_social"]:
+            alerts.append(f"evento social '{sid}' fracassa demais: {c['sucesso']}/{done} com sucesso")
+        if days >= 30 and c["planejado"] == 0:
+            alerts.append(f"evento social '{sid}' nunca foi organizado em {days:g} dias")
+    tables.append(t)
+
+    t = Table(title="Diretor: eventos injetados")
+    t.add_column("evento")
+    t.add_column("vezes", justify="right")
+    t.add_column("fatia", justify="right")
+    total = sum(col.director.values())
+    for eid, n in col.director.most_common():
+        t.add_row(eid, str(n), f"{n / total:.0%}")
+        if total >= 10 and n / total > L["fatia_maxima_evento_diretor"]:
+            alerts.append(f"diretor repete '{eid}': {n} de {total} ({n / total:.0%})")
+    never = sorted(e for e in world.data.events if e not in col.director)
+    if never:
+        t.caption = f"Nunca saíram: {', '.join(never)} (raros/lendários podem não sair num mês)"
+    tables.append(t)
+
+    t = Table(title="Necessidades ≥ 95 (explodindo)")
+    t.add_column("necessidade")
+    t.add_column("amostras ≥ 95", justify="right")
+    t.add_column("fatia", justify="right")
+    n_samples = max(1, col.need_samples)
+    for nid, n in col.need_high.most_common():
+        t.add_row(nid, str(n), f"{n / n_samples:.1%}")
+        if n / n_samples > L["fatia_maxima_necessidade_95"]:
+            alerts.append(f"necessidade '{nid}' explodindo: ≥ 95 em {n / n_samples:.0%} das amostras")
+    stuck = []
+    for (cid, nid), n in col.char_need_high.most_common():
+        frac = n / max(1, col.char_samples[cid])
+        if frac > L["fatia_maxima_necessidade_95_por_personagem"] and col.char_samples[cid] >= 8:
+            stuck.append(f"{names.get(cid, cid)}: {nid} {frac:.0%}")
+            alerts.append(f"{names.get(cid, cid)} vive com {nid} ≥ 95 ({frac:.0%} das amostras)")
+    if stuck:
+        t.caption = "Travados: " + "; ".join(stuck)
+    tables.append(t)
+
+    t = Table(title="Ocupação dos lugares (amostras 4× por dia)")
+    t.add_column("lugar")
+    t.add_column("média", justify="right")
+    t.add_column("máximo", justify="right")
+    samples = max(1, col.place_samples)
+    for pid in sorted(world.data.places, key=lambda p: -col.place_total[p]):
+        t.add_row(names.get(pid, pid), f"{col.place_total[pid] / samples:.1f}", str(col.place_max[pid]))
+    empty = [names.get(p, p) for p, pl in world.data.places.items()
+             if col.place_max[p] == 0 and pl.access == "normal"]
+    if empty:
+        t.caption = "Ninguém foi visto (nas amostras): " + ", ".join(empty)
+    tables.append(t)
+    return tables, alerts
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Simula N dias e mostra um relatório de variedade.")
     p.add_argument("--days", "--dias", type=float, default=7, help="dias simulados (padrão 7)")
@@ -205,12 +365,18 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--limite-minimo", type=int, default=3, help="limite mínimo de repetição (padrão 3)")
     p.add_argument("--saida", default=None, help="também grava o relatório neste arquivo (texto)")
     p.add_argument("--estrito", action="store_true", help="sai com código 1 se houver algum alerta")
+    p.add_argument("--sem-balanceamento", action="store_true",
+                   help="só o relatório de variedade (sem prisões, eventos, mortes, necessidades, lugares)")
     args = p.parse_args(argv)
 
     console = Console(highlight=False)
     console.print(f"Simulando {args.days:g} dias (pasta temporária, nada é gravado em data/ ou var/)...")
     world, col, elapsed = run(args.days, args.seed, args.inicio, args.dados)
     tables, alerts, _limit = build_report(world, col, args.days, args.limite_por_dia, args.limite_minimo, elapsed)
+    if not args.sem_balanceamento:
+        btables, balerts = build_balance(world, col, args.days)
+        tables += btables
+        alerts += balerts
     out = open(args.saida, "w", encoding="utf-8") if args.saida else None
     consoles = [console] + ([Console(file=out, no_color=True, highlight=False, width=180)] if out else [])
     for c in consoles:
@@ -221,7 +387,8 @@ def main(argv: list[str] | None = None) -> int:
             for a in alerts:
                 c.print(f"  - {a}")
         else:
-            c.print("[bold green]Nenhum alerta de repetição.[/]")
+            c.print("[bold green]Nenhum alerta (repetição" + ("" if args.sem_balanceamento else " e balanceamento")
+                    + ").[/]")
     if out:
         out.close()
     return 1 if (alerts and args.estrito) else 0

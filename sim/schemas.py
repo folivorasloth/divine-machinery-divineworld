@@ -217,6 +217,9 @@ class LimitsConfig(DataModel):
     prison_hours: float = Field(alias="horas_de_prisao", ge=0)
     limbo_days: float = Field(alias="dias_no_limbo", ge=0)
     funeral_rain_minutes: int = Field(alias="minutos_de_chuva_no_funeral", ge=0)
+    # Fase 6: morte "de velhice / de repente" não sorteia se alguém morreu (de qualquer
+    # causa) há menos destes dias — evita as rajadas de 3 mortes numa semana
+    natural_death_gap_days: float = Field(0, alias="dias_minimos_entre_mortes_naturais", ge=0)
 
     @model_validator(mode="after")
     def _population(self) -> "LimitsConfig":

@@ -72,7 +72,7 @@ npm ci
 npm run build</pre>
 <p>e recarregue esta página. O Chat do Mundo funciona sem isso: <a style="color:#9cf" href="/chat">/chat</a>.</p>
 </body>"""
-READ_COMMANDS = {"status", "quem"}
+READ_COMMANDS = {"status", "quem", "recarregar"}  # esperam a resposta por até WAIT_SECONDS
 WAIT_SECONDS = 5.0
 
 

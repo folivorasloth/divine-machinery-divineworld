@@ -232,8 +232,14 @@ def test_fiscal_warns_then_arrests_then_limbo(data):
     events = collect(world)
     assert law.register(world, "inspector", "teen", "pichar", "market", "flagrante") == "advertencia"
     assert law.register(world, "inspector", "teen", "pichar", "market", "flagrante") is None  # reincidência: já anotado
-    world.law.last.clear()
-    assert law.register(world, "inspector", "teen", "pichar", "market", "flagrante") == "prisao"
+    # Fase 6: quantas pichações prendem depende de leis.pontos_para_prisao (2.5 = a terceira)
+    results = []
+    for _ in range(5):
+        world.law.last.clear()
+        results.append(law.register(world, "inspector", "teen", "pichar", "market", "flagrante"))
+        if results[-1] == "prisao":
+            break
+    assert results[-1] == "prisao" and set(results[:-1]) <= {"advertencia"}
     assert world.states["teen"].jailed_until is not None and any(ev.type == "arrest" for ev in events)
     # preso só faz coisas na Prisão
     places = {c.place for c in ranked_for(world, "teen")}
@@ -263,6 +269,8 @@ def test_absent_offender_gets_a_warrant_and_the_fiscal_goes_after_him(data):
     put(world, "market", "greedy")
     world.remember("chef_wife", "sumico", subject="greedy", place="community_kitchen", detail="um pão inteiro")
     put(world, "town_hall", "chef_wife")
+    # Fase 6: um roubo sozinho (2 pontos) é advertência com pontos_para_prisao 2.5; reincidente vira mandado
+    world.law.points["greedy"] = 1
     events = collect(world)
     world._start_activity(world.states["chef_wife"], "denunciar", "town_hall", "inspector", 5, 1.0)
     assert "greedy" in world.law.warrants

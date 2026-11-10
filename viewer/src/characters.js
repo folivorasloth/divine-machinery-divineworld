@@ -720,6 +720,12 @@ export function prepareCharacterGlb(model, visual, fallback) {
         n.map = m.map;
       }
       if (m.vertexColors) n.vertexColors = true;
+      // Fase 6: material emissivo do Blender (Emission) continua aceso (olhos, lanterna, LED)
+      if (m.emissive && m.emissive.getHex() !== 0) {
+        n.emissive.copy(m.emissive);
+        n.emissiveIntensity = m.emissiveIntensity ?? 1;
+        if (m.emissiveMap) n.emissiveMap = m.emissiveMap;
+      }
       if (m.transparent) { n.transparent = true; n.opacity = m.opacity; }
       n.needsUpdate = true;
       return n;
