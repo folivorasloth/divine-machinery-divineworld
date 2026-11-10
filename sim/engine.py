@@ -39,10 +39,14 @@ import math
 import queue
 import threading
 import time
+from collections import deque
 from dataclasses import dataclass
+from typing import Any
 from datetime import datetime, timedelta
 
+from sim import commands as commands_mod
 from sim import creatures as creatures_mod
+from sim import llm as llm_mod
 from sim import factions as factions_mod
 from sim import lifecycle
 from sim import gossip as gossip_mod
@@ -50,7 +54,9 @@ from sim import law as law_mod
 from sim import needs as needs_mod
 from sim import rng as rng_mod
 from sim import social_events as social_mod
+from sim import presence as presence_mod
 from sim import speech, utility
+from sim import text as text_mod
 from sim.clock import WorldClock
 from sim.director import Director
 from sim.events import Event, EventBus
@@ -78,6 +84,10 @@ class Command:
     cmd: str
     arg: str = ""
     id: str = ""
+    # Fase 4: dados extras (comandos internos: resposta do LLM...) e um
+    # concurrent.futures.Future que recebe o resultado (a API espera por ele)
+    payload: dict | None = None
+    reply: Any = None
 
 
 class World:
@@ -124,6 +134,10 @@ class World:
         self.director.watched = set(data.world.director.event_weights)
         self.blocked_places: frozenset[str] = frozenset()
         self._mult_cache: dict[str, tuple[dict, dict]] = {}
+        # Fase 4: o Criador, o LLM opcional (o servidor liga) e o histórico dos comandos
+        self.llm: llm_mod.LLM | None = None
+        self.command_log: deque[dict] = deque(maxlen=100)
+        self._command_seq = 0
 
         if storage is not None:
             self.bus.subscribe(storage.insert_event)
@@ -165,6 +179,7 @@ class World:
         self.screens.load(society.get("screens", {}))
         self.creatures.load(society.get("creatures", {}))
         self.director.load(society.get("director", {}))
+        self.creator = commands_mod.CreatorState.from_json(society.get("creator"))
 
         self.states: dict[str, CharacterState] = {}
         self._review_minutes: dict[str, set[int]] = {}
@@ -185,6 +200,7 @@ class World:
             self.emit("system", f"'{cid}' está no banco mas não existe mais em data/characters: ficou congelado.",
                       tags=["sistema"], data={"frozen": cid})
         self.save()
+        self._update_snapshot()
 
     # ===================================================================== setup
     def _load_characters(self) -> None:
@@ -357,8 +373,22 @@ class World:
         if line is None:
             return None
         actors = [speaker] + ([target] if target else [])
+        edata = {"situation": situation, **(data or {})}
+        ocfg = self.data.world.ollama
+        if importance >= ocfg.min_importance and situation in ocfg.situations and self.llm_usable():
+            # Fase 4: o LLM reescreve a fala num thread próprio; ela sai quando ele
+            # responder (ou o template, se falhar). O mundo não espera.
+            payload = {"event_type": event_type, "line": line, "actors": actors, "place": place,
+                       "tags": list(tags), "importance": importance, "data": edata}
+            prompt = llm_mod.build_prompt(self, speaker, situation, line, place, target)
+
+            def done(answer, payload=payload):
+                self.submit_internal("_llm_fala", {**payload, "llm": answer})
+
+            if self.llm.rewrite(prompt, done):
+                return None
         return self.emit(event_type, line, actors=actors, place=place, tags=tags, importance=importance,
-                         data={"situation": situation, **(data or {})})
+                         data=edata)
 
     narrate = say
 
@@ -435,9 +465,12 @@ class World:
 
     # ------------------------------------------------------------- objetivos
     def add_goal(self, *, who: str | None, action: str, place: str | None, bonus: float, start: float,
-                 end: float, source: str) -> None:
-        self.goals.append({"who": who, "action": action, "place": place, "bonus": bonus, "start": start,
-                           "end": end, "source": source})
+                 end: float, source: str, penalty: bool = False) -> None:
+        goal = {"who": who, "action": action, "place": place, "bonus": bonus, "start": start,
+                "end": end, "source": source}
+        if penalty:  # bônus < 1 que vale (Fase 4: "parem de brigar" deixa brigar menos atraente)
+            goal["penalty"] = True
+        self.goals.append(goal)
 
     def remove_goals(self, source: str) -> None:
         self.goals[:] = [g for g in self.goals if g["source"] != source]
@@ -532,6 +565,13 @@ class World:
         m = actions.get(action.id)
         if m is not None and m != 1:
             out.append(("luto/clima", m))
+        # Fase 4: decretos do Chefe (proibido/liberado) e gente no quarto (o olhar)
+        m = commands_mod.decree_multiplier(self, cid, action.id)
+        if m is not None and m != 1:
+            out.append(("decreto", m))
+        m = presence_mod.stare_multiplier(self, action.id)
+        if m is not None and m != 1:
+            out.append(("presença no quarto", m))
         if self.data.places[place].environment == "externo" and not action.sleeping:
             outdoor = 1.0
             for key in self.weather.effect_keys():
@@ -572,6 +612,7 @@ class World:
         social_mod.update(self)
         lifecycle.update(self)
         creatures_mod.update(self)
+        commands_mod.update(self)
         if self._now_minutes() >= self._next_hourly:
             self._next_hourly += 60
             self._hourly()
@@ -632,7 +673,9 @@ class World:
         if target.hp >= 100:
             target.marks.clear()  # pintou por cima da pichação
         if before != after:
-            self.say(st.id, "estrutura_consertada", place=target.place, event_type="structure_changed",
+            # (F4) "destruído -> danificado" é só o começo da obra; "consertado" é quando fica inteiro
+            situation = "estrutura_consertada" if after == "inteiro" else "estrutura_reerguida"
+            self.say(st.id, situation, place=target.place, event_type="structure_changed",
                      tags=["trabalho"], importance=1, extra={"objeto": "{@" + target.id + "}"},
                      data={"structure": target.id, "from": before, "to": after, "hp": round(target.hp)},
                      fallback="{eu} termina o conserto de {objeto}.")
@@ -748,6 +791,13 @@ class World:
             situation = action.failure.speech
         elif edata.get("situation"):
             situation = edata.pop("situation")
+        elif target and situation == action.speech:
+            # Fase 4: o assunto do momento (ressurreição, Aparição, ordem do Chefe)
+            topic = commands_mod.topic_for(self, action_id, st.id, target)
+            if topic is not None:
+                situation, more = topic
+                extra.update(more)
+                edata["topic"] = situation
         spoken = None
         chance = 1.0 if (failed or action.special in ("fofoca", "confissao", "denuncia")) else action.speech_chance
         if situation and self.rng.random() < chance:
@@ -781,6 +831,8 @@ class World:
                       extra: dict) -> None:
         """O que muda no mundo quando uma ação começa: memórias, lei, efeitos no alvo..."""
         self.visitors.setdefault(place, []).append([self._now_minutes(), st.id])
+        if not failed:
+            commands_mod.on_action_started(self, st.id, action, place)
         if failed:
             if action.failure and action.failure.memory:
                 self.remember_scene(action.failure.memory, subject=st.id, object=None, place=place)
@@ -817,12 +869,14 @@ class World:
                     self.remember(st.id, action.observe.memory, subject=other, place=place)
                     break
         # lei: infração em flagrante, ou o Fiscal chegando e vendo o que acontece
-        if action.infraction:
+        # (Fase 4: um decreto do Chefe pode proibir ou liberar a ação)
+        infraction = commands_mod.infraction_of(self, action)
+        if infraction:
             for fiscal in law_mod.enforcers(self):
                 if fiscal != st.id and law_mod.watching(self, fiscal, place):
                     if st.activity is not None:
                         st.activity.seen_by_law = True
-                    law_mod.register(self, fiscal, st.id, action.infraction, place, "flagrante")
+                    law_mod.register(self, fiscal, st.id, infraction, place, "flagrante")
                     break
         if law_mod.is_enforcer(self, st.id):
             self._fiscal_looks(st.id, place)
@@ -834,10 +888,11 @@ class World:
         for other in self.present_at(place):
             ost = self.states[other]
             act = self.data.actions.get(ost.activity.action) if ost.activity else None
-            if other == fiscal or not act or not act.infraction or ost.activity.failed or ost.activity.seen_by_law:
+            infraction = commands_mod.infraction_of(self, act) if act else None
+            if other == fiscal or not infraction or ost.activity.failed or ost.activity.seen_by_law:
                 continue
             ost.activity.seen_by_law = True
-            if law_mod.register(self, fiscal, other, act.infraction, place, "flagrante"):
+            if law_mod.register(self, fiscal, other, infraction, place, "flagrante"):
                 caught += 1
                 if caught >= self.data.world.law.max_per_look:
                     break
@@ -878,6 +933,10 @@ class World:
             return bool(self.creatures.at(place)) and "criaturas" not in self.data.characters[me].immunities
         if sp == "assembleia":
             return lifecycle.assembly_active(self, place)
+        if sp == "anuncio_criador":
+            return commands_mod.announce_ok(self, me)
+        if sp == "reuniao_criador":
+            return commands_mod.meeting_at(self, place) is not None
         return True
 
     def _grave_to_visit(self, cid: str) -> str | None:
@@ -987,6 +1046,8 @@ class World:
             extra["morto"] = dead
             edata["dead"] = dead
             return True
+        if sp == "anuncio_criador":
+            return commands_mod.before_announce(self, st.id, place, extra, edata)
         if sp == "criatura":
             here = self.creatures.at(place)
             if not here:
@@ -1028,6 +1089,10 @@ class World:
                 lifecycle.joined(self, fun, st.id)
         elif sp == "assembleia":
             lifecycle.assembly_joined(self, st.id)
+        elif sp == "anuncio_criador":
+            commands_mod.after_announce(self, st.id, place)
+        elif sp == "reuniao_criador":
+            commands_mod.meeting_joined(self, st.id, place)
         elif sp == "ordem_reconstruir":
             where, _damage = self.structures.worst()
             repair = next((a for a in self.data.actions.values() if a.active and a.repairs), None)
@@ -1331,59 +1396,116 @@ class World:
         """Thread-safe: qualquer thread pode mandar comandos (API, MQTT, CLI)."""
         self.commands.put(cmd)
 
+    def submit_internal(self, name: str, payload: dict) -> None:
+        """Comandos internos (resposta do LLM, ordem interpretada): também pela fila."""
+        self.commands.put(Command(name, payload=payload))
+
     def _drain_commands(self) -> None:
+        handled = False
         while True:
             try:
                 cmd = self.commands.get_nowait()
             except queue.Empty:
+                if handled:
+                    self._update_snapshot()  # a API vê o efeito do comando mesmo com o mundo pausado
                 return
-            self.handle_command(cmd)
+            handled = True
+            try:
+                result = self.handle_command(cmd)
+            except Exception as exc:  # um comando quebrado não pode parar o mundo
+                log.exception("comando %s falhou", cmd.cmd)
+                result = {"ok": False, "message": f"erro: {exc}"}
+            if not cmd.cmd.startswith("_"):
+                self._command_seq += 1
+                entry = {"id": cmd.id or f"c{self._command_seq}", "cmd": cmd.cmd, "arg": cmd.arg,
+                         "world_ts": self.clock.iso(), "result": result}
+                self.command_log.append(entry)
+            if cmd.reply is not None and not cmd.reply.done():
+                cmd.reply.set_result(result)
 
-    def handle_command(self, cmd: Command) -> None:
+    COMMANDS = ("pausar", "continuar", "velocidade", "nascer", "tela", "homelab", "clima") + tuple(
+        sorted(commands_mod.CREATOR_COMMANDS))
+
+    def handle_command(self, cmd: Command) -> dict:
+        """Executa um comando (no thread da simulação). Devolve {"ok": bool, ...}."""
         if cmd.cmd == "pausar":
             self.paused = True
             self.emit("system", "O mundo foi pausado.", tags=["sistema"], data={"cmd": "pausar"})
-        elif cmd.cmd == "continuar":
+            return {"ok": True, "paused": True}
+        if cmd.cmd == "continuar":
             self.paused = False
             self.emit("system", "O mundo voltou a andar.", tags=["sistema"], data={"cmd": "continuar"})
-        elif cmd.cmd == "velocidade":
+            return {"ok": True, "paused": False}
+        if cmd.cmd == "velocidade":
             try:
                 value = float(cmd.arg)
                 if value <= 0:
                     raise ValueError
             except ValueError:
                 self.emit("system", f"velocidade inválida: {cmd.arg!r}", tags=["sistema"])
-                return
+                return {"ok": False, "message": f"velocidade inválida: {cmd.arg!r}"}
             self.speed = value
             self.emit("system", f"Velocidade do mundo: {value:g}×.", tags=["sistema"], data={"speed": value})
-        elif cmd.cmd == "nascer":
+            return {"ok": True, "speed": value}
+        if cmd.cmd == "nascer":
             traits = [t.strip() for t in cmd.arg.replace(",", " ").split() if t.strip()]
             unknown = [t for t in traits if t not in self.data.traits]
             if unknown:
                 self.emit("system", f"traço(s) desconhecido(s): {', '.join(unknown)}", tags=["sistema"])
-            lifecycle.birth(self, [t for t in traits if t in self.data.traits], reason="comando")
-        elif cmd.cmd == "tela":  # "parede_centro offline" (telas/<id>/status no MQTT)
+            cid = lifecycle.birth(self, [t for t in traits if t in self.data.traits], reason="comando")
+            return {"ok": cid is not None, "born": cid, "unknown_traits": unknown,
+                    "message": None if cid else "não nasceu ninguém (população no máximo?)"}
+        if cmd.cmd == "tela":  # "parede_centro offline" (telas/<id>/status no MQTT)
             parts = cmd.arg.split()
             if len(parts) == 2 and parts[1] in ("online", "offline"):
-                self.screens.set_status(self, parts[0], parts[1] == "online")
-            else:
-                self.emit("system", "uso: tela <id> online|offline", tags=["sistema"])
-        elif cmd.cmd == "homelab":  # "jellyfin down" (homelab/servicos/<nome> no MQTT)
+                changed = self.screens.set_status(self, parts[0], parts[1] == "online")
+                return {"ok": True, "screen": parts[0], "status": parts[1], "changed": bool(changed)}
+            self.emit("system", "uso: tela <id> online|offline", tags=["sistema"])
+            return {"ok": False, "message": "uso: tela <id> online|offline"}
+        if cmd.cmd == "homelab":  # "jellyfin down" (homelab/servicos/<nome> no MQTT)
             parts = cmd.arg.split()
             if len(parts) == 2:
                 creatures_mod.homelab(self, parts[0], parts[1])
-            else:
-                self.emit("system", "uso: homelab <serviço> down|up", tags=["sistema"])
-        elif cmd.cmd == "clima":  # "chuva 60": força um clima por N minutos (testes)
+                return {"ok": True, "service": parts[0], "status": parts[1]}
+            self.emit("system", "uso: homelab <serviço> down|up", tags=["sistema"])
+            return {"ok": False, "message": "uso: homelab <serviço> down|up"}
+        if cmd.cmd == "clima":  # "chuva 60": força um clima por N minutos (testes)
             parts = cmd.arg.split()
             if parts and parts[0] in self.data.world.weather.kinds:
                 minutes = float(parts[1]) if len(parts) > 1 else 120
                 self.weather.force(parts[0], minutes, "comando")
-            else:
-                self.emit("system", f"clima desconhecido: {cmd.arg!r}", tags=["sistema"])
-        else:
-            self.emit("system", f"Comando '{cmd.cmd}' ainda não existe (Fase 4).", tags=["sistema"],
-                      data={"cmd": cmd.cmd})
+                return {"ok": True, "weather": parts[0], "minutes": minutes}
+            self.emit("system", f"clima desconhecido: {cmd.arg!r}", tags=["sistema"])
+            return {"ok": False, "message": f"clima desconhecido: {cmd.arg!r}"}
+        if cmd.cmd in commands_mod.CREATOR_COMMANDS or cmd.cmd in commands_mod.INTERNAL_COMMANDS:
+            return commands_mod.handle(self, cmd)
+        self.emit("system", f"Comando '{cmd.cmd}' não existe.", tags=["sistema"], data={"cmd": cmd.cmd})
+        return {"ok": False, "message": f"comando desconhecido: {cmd.cmd}. Comandos: {', '.join(self.COMMANDS)}"}
+
+    # ------------------------------------------------------- ajudas da Fase 4
+    def start_activity(self, cid: str, action_id: str, place: str, target: str | None, duration: float) -> None:
+        self._start_activity(self.states[cid], action_id, place, target, duration, 0.0)
+
+    def speech_context(self, cid: str, place: str, target: str | None = None) -> speech.SpeechContext:
+        return self._speech_ctx(cid, place, target)
+
+    def llm_usable(self) -> bool:
+        """O LLM só entra com o mundo no relógio real (nunca em --fast nem nos testes)."""
+        return (self.llm is not None and self.realtime and not self.paused and self.speed <= 10
+                and self.llm.usable())
+
+    def llm_line_ready(self, p: dict) -> dict:
+        """Volta do LLM (comando interno): valida e publica; inválida ou vazia = o template."""
+        text = (p.get("llm") or "").strip().strip('"').strip()
+        used = False
+        known = set(self.names())
+        if text and len(text) <= self.data.world.ollama.max_chars and \
+                not text_mod.check_template(text, known, variables={}):
+            used = True
+        line = text if used else p["line"]
+        self.emit(p["event_type"], line, actors=p["actors"], place=p["place"], tags=p["tags"],
+                  importance=p["importance"], data={**p["data"], "llm": used})
+        return {"ok": True, "llm": used}
 
     # ============================================================ laço principal
     def run(self, until: datetime | None = None, fast: bool = False, max_ticks: int | None = None) -> None:
@@ -1410,8 +1532,10 @@ class World:
                     self.tick()
                     done += 1
                 continue
+            # comandos são atendidos na hora (não só no próximo tick: no tempo real,
+            # um tick é um minuto inteiro; a API espera a resposta de `status`/`quem`)
+            self._drain_commands()
             if self.paused or anchor_speed != self.speed:
-                self._drain_commands()
                 real_anchor, world_anchor, anchor_speed = time.monotonic(), self.clock.now, self.speed
                 if self.paused:
                     time.sleep(0.1)
@@ -1481,6 +1605,7 @@ class World:
             "next_hourly": self._next_hourly,
             "life": self.life.to_json(), "weather": self.weather.to_json(), "screens": self.screens.to_json(),
             "creatures": self.creatures.to_json(), "director": self.director.to_json(),
+            "creator": self.creator.to_json(),
         }, ensure_ascii=False))
         s.save_graves(self.life.graves)
         s.commit()
@@ -1509,6 +1634,10 @@ class World:
             },
             "structures": {sid: {"place": s.place, "hp": round(s.hp), "state": self.structures.state(sid)}
                            for sid, s in self.structures.items.items()},
+            # Fase 4: nomes atuais (a API renderiza o histórico sem tocar no WorldData vivo)
+            "names": self.names(),
+            "seed": self.seed,
+            "ticks": self.ticks,
         }
         with self._lock:
             self._snapshot = snap

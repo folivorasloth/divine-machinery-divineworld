@@ -37,6 +37,17 @@ def messages(report) -> str:
     return "\n".join(str(i) for i in report.issues)
 
 
+@pytest.fixture(scope="module", autouse=True)
+def _isolated_born_per_module(tmp_path_factory):
+    """Fase 4: cada arquivo de teste tem a sua pasta de nascidos também para as fixtures de
+    MÓDULO (ex.: a semana simulada de test_society). Antes, os nascidos de uma semana iam para
+    a pasta global e o próximo módulo que carregasse data/ os via como personagens."""
+    mp = pytest.MonkeyPatch()
+    mp.setenv("DW_BORN_DIR", str(tmp_path_factory.mktemp("nascidos_modulo")))
+    yield
+    mp.undo()
+
+
 @pytest.fixture(autouse=True)
 def _isolated_life(tmp_path_factory, monkeypatch):
     """Fase 3: nascimentos nunca gravam em data/characters/born durante os testes

@@ -1,15 +1,15 @@
 # Roda o Mundo Vivo no homelab (VM Ubuntu + Docker).
-#   docker compose up --build
-# Endereços e senhas vêm do arquivo .env (copie de .env.example; o .env
-# não vai para o git).
+#   cp .env.example .env      # ajuste MQTT_HOST, OLLAMA_URL... (o .env não vai para o git)
+#   docker compose up -d --build
+#   docker compose logs -f world
+# Depois: http://<ip-do-homelab>:8000/chat (Chat do Mundo) e /api/state.
 #
-# Fase 1: o serviço "sim" roda a simulação headless em tempo real, com o
-# Chat do Mundo no log do container (docker compose logs -f sim). O estado
-# fica em ./var/world.sqlite e sobrevive a reinícios.
-# Fase 4 troca o "command" por `python -m server` (simulação + API/WebSocket
-# + ponte MQTT no mesmo processo, com a porta publicada).
+# Um serviço só ("world") com a simulação E o servidor no mesmo processo
+# (python -m server): a simulação é a dona do estado e a única que escreve no
+# SQLite; a API lê o snapshot e manda comandos pela fila (docs/arquitetura.md 1.1).
+# Sem broker MQTT e sem Ollama o mundo funciona igual (só avisa no log).
 services:
-  sim:
+  world:
     build: .
     image: divine-world:dev
     container_name: dw-world
@@ -18,8 +18,16 @@ services:
         required: false
     environment:
       DW_DB_PATH: /app/var/world.sqlite
+      DW_WEATHER_CACHE: /app/var/clima.json
+      # dentro do container o servidor sempre escuta na 8000; a porta do host
+      # é a de DW_SERVER_PORT (em "ports", abaixo)
+      DW_SERVER_HOST: 0.0.0.0
+      DW_SERVER_PORT: "8000"
+    ports:
+      - "${DW_SERVER_PORT:-8000}:8000"
     volumes:
-      - ./data:/app/data
-      - ./var:/app/var
-    command: ["python", "-m", "tools.run"]
+      - ./data:/app/data      # os YAML: edite e reinicie (docker compose restart world)
+      - ./var:/app/var        # o SQLite, o cache do clima
+    command: ["python", "-m", "server", "--porta", "8000"]
     restart: unless-stopped
+    stop_grace_period: 20s    # dá tempo de salvar o mundo no SIGTERM

@@ -504,8 +504,10 @@ def ghost(world: "World") -> bool:
     return True
 
 
-def resurrect(world: "World", cid: str, how: str = "natural") -> bool:
-    """O morto volta, mudado. `how`: natural (raríssimo, pelo diretor) ou criador (Fase 4)."""
+def resurrect(world: "World", cid: str, how: str = "natural", *, fear: float = 85.0,
+              forget_chance: float = 0.5) -> bool:
+    """O morto volta, mudado. `how`: natural (raríssimo, pelo diretor) ou criador (Fase 4:
+    comando `reviver`, com `medo` e `chance_esquecer` de data/events/criador.yaml)."""
     st = world.states.get(cid)
     if st is None or st.alive:
         return False
@@ -515,7 +517,7 @@ def resurrect(world: "World", cid: str, how: str = "natural") -> bool:
     st.place = place
     st.activity, st.plan = None, None
     st.needs = needs_mod.initial_needs(world.data, char)
-    st.needs["medo"] = 85.0
+    st.needs["medo"] = float(fear)
     st.next_review = world.now_minutes()
     trait = world.draw_new_trait(cid)
     if trait:
@@ -523,9 +525,15 @@ def resurrect(world: "World", cid: str, how: str = "natural") -> bool:
     mine = world.memories.of(cid)
     forgot = 0
     for m in list(mine):  # volta com buracos na memória
-        if not m.permanent and world.rng.random() < 0.5:
+        if not m.permanent and world.rng.random() < forget_chance:
             mine.remove(m)
             forgot += 1
+    # voltou antes do próprio enterro: o funeral é cancelado
+    for fun in world.life.funerals:
+        if fun["dead"] == cid and fun["status"] != "terminado":
+            fun["status"] = "terminado"
+            fun["cancelled"] = True
+            world.remove_goals(f"funeral#{fun['id']}")
     for grave in world.life.graves:
         if grave["cid"] == cid:
             grave["resurrected"] = True

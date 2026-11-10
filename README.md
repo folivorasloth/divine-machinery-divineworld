@@ -26,6 +26,13 @@ nascimentos sorteados (viram YAML em `data/characters/born/`), sucessão de pap�
 Chefe), criaturas noturnas e do homelab, clima de Botucatu (Open-Meteo, com cache), névoa nas
 telas desligadas e um Diretor que mede a tensão e injeta eventos. `tools.report` mede a variedade.
 
+Fase 4 (o Criador, a API e a integração): `python -m server` sobe a simulação junto com a API
+HTTP, o WebSocket das telas, a ponte MQTT e o **Chat do Mundo na web** (`/chat`, com filtros e
+linha do tempo). O Criador intervém: `chefe "reconstruam a ferraria"` (vira um objetivo que a
+cidade cumpre — ou não — do seu jeito), `medium "..."` (a Médium ouve uma voz e às vezes entende
+errado), `reviver <id>`, `nascer`, `pausar`, `velocidade`, `status`, `quem <id>`. Gente no quarto
+(câmera) faz a cidade encarar a tela e, raramente, ver a Aparição. Ollama é opcional.
+
 ## Primeiros passos
 
 ```bash
@@ -40,6 +47,20 @@ python3 -m venv .venv
 .venv/bin/python -m tools.run --help                           # filtros e outras opções
 .venv/bin/python -m tools.report --days 7                      # relatório de variedade (pasta temporária)
 ```
+O mundo com a API e o Chat do Mundo na web (Fase 4):
+
+```bash
+.venv/bin/python -m server                     # tempo real; abra http://localhost:8000/chat
+.venv/bin/python -m server --speed 60 --sem-mqtt --sem-llm
+.venv/bin/python -m tools.cli chefe "reconstruam a ferraria"    # noutro terminal
+.venv/bin/python -m tools.cli status
+.venv/bin/python -m tools.cli quem clown
+
+# no homelab
+cp .env.example .env && docker compose up -d --build           # http://<homelab>:8000/chat
+docker compose exec world python -m tools.cli status
+```
+
 Simulações de teste (`--fast` ou `--banco`) gravam os nascidos em `var/nascidos/<banco>/`, não em
 `data/characters/born/` (ou use `--nascidos PASTA`, ou a variável `DW_BORN_DIR`).
 
@@ -55,6 +76,7 @@ Tudo em `data/`:
 | `data/actions/*.yaml` | ações (verbos) e como cada uma é pontuada |
 | `data/lines/*.yaml` | falas (templates) |
 | `data/events/*.yaml` | eventos do diretor e eventos sociais organizados pelos NPCs (`sociais.yaml`) |
+| `data/events/criador.yaml` | o que as ordens do Chefe e as vozes da Médium viram, quem obedece, o olhar e a Aparição |
 | `data/traits.yaml` | traços, profissões e o sorteio dos nascimentos |
 | `data/world.yaml` | relógio, limites, telas, MQTT, Ollama, clima; memórias, fofoca, leis, facções, roubos |
 

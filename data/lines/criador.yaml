@@ -1,0 +1,202 @@
+# =====================================================================
+# Falas da Fase 4: o Criador (ordens ao Chefe, vozes da Médium, reviver,
+# o olhar e a Aparição, e os "assuntos do momento").
+#
+# Variáveis destas situações:
+#   {fato}     o texto da ordem / da voz (como o Criador escreveu, ou torto,
+#              quando a Médium entende errado)
+#   {evento}   como a ordem foi entendida ("reconstrução", "festa", "regra nova"...)
+#   {objeto}   o lugar ou a coisa da ordem ("a Ferraria", "andar de skate")
+#   {terceiro} de quem se fala (assunto_ressurreicao: quem voltou)
+#   {morto}    quem voltou dos mortos (reações à ressurreição)
+# Filtros: profissoes: [lider] vale para quem for Chefe (inclusive um sucessor).
+# =====================================================================
+
+situacoes:
+  # ------------------------------------------------- o Chefe recebe a ordem
+  ordem_intuicao:
+    - "{eu} acorda com uma intuição esquisita: \"{fato}\". Fica com medo dela."
+    - "{eu} sente um arrepio na nuca e uma certeza que não é dele: \"{fato}\"."
+    - "{eu} para no meio do caminho, ajeita os óculos e murmura: \"{fato}... de onde veio isso?\""
+    - "Uma intuição cai em cima de {eu} feito um balde de água: \"{fato}\". {bordao}"
+    - "{eu} sua frio. A intuição de novo: \"{fato}\". Ninguém pode saber de onde vem."
+    - "{eu} olha para o céu, depois para a tela, depois para o chão. \"{fato}\". Vai ter que anunciar."
+    - "{eu} esfrega a barriga, preocupad{o|a}: a intuição mandou \"{fato}\"."
+  ordem_confusa:
+    - "{eu} coça a cabeça: \"{fato}\"? Não entendeu nada. Decide que é {evento}. {bordao}"
+    - "{eu} lê a intuição três vezes, de cabeça para baixo. \"Deve ser {evento}\", conclui."
+    - "{eu} não faz ideia do que significa \"{fato}\". Na dúvida, {evento}."
+    - "{eu} rabisca na prancheta (onde nunca escreve nada) e chega a uma conclusão: {evento}."
+  # ------------------------------------------------- o anúncio na Praça
+  ordem_anuncio:
+    - "{eu} sobe no caixote: \"Atenção, povo! A partir de agora: {evento}! {objeto}!\" {bordao}"
+    - "{eu}, de prancheta na mão: \"Por decisão da prefeitura, {evento}. {objeto}. Sem reclamação.\""
+    - "{eu} pigarreia: \"Tive uma intuição. {evento}, {objeto}. Quem não gostar fala com o Fiscal.\""
+    - "{eu} anuncia em {lugar}: \"{evento}! {objeto}!\" e olha de lado, como se alguém escutasse."
+    - "{eu} junta coragem e grita em {lugar}: \"{evento}, {objeto}!\" Depois precisa sentar."
+    - "{eu} aprova a própria ordem em voz alta: \"{evento}, {objeto}. Aprovado. Vamo vê isso aí.\""
+  ordem_resiste:
+    - "{eu} cruza os braços: \"{evento}? Nem morto.\""
+    - "{eu} ri da ordem: \"{evento}? o chefe bateu a cabeça.\""
+    - "{eu} finge que não ouviu a ordem e volta ao que estava fazendo."
+    - "{eu} resmunga: \"Ordem é pra quem gosta de ordem.\""
+    - "{eu}: \"Eu? {evento}? Só se pagarem. Ah, é, não tem dinheiro.\""
+    - "{eu} dá de ombros para a ordem do Chefe. {bordao}"
+  ordem_atrasa:
+    - "{eu} promete ajudar com {evento}... daqui a pouco. Bem daqui a pouco."
+    - "{eu}: \"Já vou, já vou.\" Não vai."
+    - "{eu} diz que vai cuidar de {evento} assim que terminar uma coisa. Que coisa? Ninguém sabe."
+  ordem_aceita:
+    - "{eu} arregaça as mangas: \"Ordem é ordem.\""
+    - "{eu} já sai andando para cumprir: {evento}. {bordao}"
+    - "{eu} bate continência para o Chefe, meio sem saber por quê."
+  visao_aceita:
+    - "{eu} acredita na hora: \"Se as vozes disseram, está dito.\""
+    - "{eu} já sai procurando velas: {evento}."
+    - "{eu} se arrepia inteir{o|a} com a visão e promete obedecer."
+  ordem_cumprida:
+    - "{eu} olha {objeto} de pé de novo e enxuga uma lágrima: \"A intuição estava certa.\" {bordao}"
+    - "{eu} declara a obra de {objeto} terminada e corta uma fita imaginária. A cidade aplaude, meio sem graça."
+    - "{eu} junta {convidados} na frente de {objeto}: \"Obra entregue. Ninguém se machucou. Muito.\""
+    - "Missão cumprida: {objeto} está inteiro. {eu} vai cochilar, merecidamente."
+    - "{eu} passa a mão no que foi consertado em {objeto}: \"Quem diria. A cidade fez.\""
+    - "{eu} anuncia que acabou a obra de {objeto}. Quem pegou no pesado: {convidados}."
+  ordem_abandonada:
+    - "A ordem de {evento} cai no esquecimento. {eu} finge que nunca deu ordem nenhuma."
+    - "Ninguém mais fala da ordem ({evento}). {eu} suspira de alívio e de vergonha."
+    - "{eu} risca a ordem da prancheta (onde nunca escreveu nada): {evento} fica para outro dia."
+  ordem_sem_estrago:
+    - "{eu} manda consertar {objeto}, vai até lá e... está tudo inteiro. \"Era só pra conferir.\""
+    - "{eu} anuncia a reconstrução de {objeto}, mas {objeto} está perfeito. A cidade ri baixinho."
+  ordem_festa_marcada:
+    - "{eu} manda fazer festa, mas já tem festa marcada. \"Então duas! Aprovado!\" Só cabe uma."
+  regra_proibida:
+    - "{eu} decreta: está proibido {objeto} por três dias. {@inspector} anota com um sorriso."
+    - "{eu}: \"A partir de hoje, nada de {objeto}!\" {@teen} já está fazendo."
+    - "{eu} anuncia a lei nova: {objeto}, proibido. Ninguém pediu, como sempre."
+  regra_liberada:
+    - "{eu} decreta: {objeto} está liberado. {@inspector} quase desmaia."
+    - "{eu}: \"Pode {objeto} à vontade!\" A cidade não acredita."
+    - "{eu} libera {objeto} por três dias. \"Aprovado tudo. Vamo vê isso aí.\""
+  regra_fim:
+    - "Acabou o decreto: {objeto} volta a ser como era. {eu} nem lembrava mais."
+  # ------------------------------------------------- reunião
+  reuniao:
+    - "{eu} chega na reunião e já vai reclamando de alguma coisa."
+    - "{eu} senta no chão em {lugar} para a reunião: \"Vai demorar?\""
+    - "{eu} chega na reunião com uma pergunta e sai com três."
+    - "{eu} aparece na reunião só para ver quem veio."
+    - "{eu} chega à reunião bocejando. {bordao}"
+  reuniao_convocada:
+    - "{eu} convoca a cidade inteira para uma reunião em {lugar} às {hora}. Ninguém sabe o assunto, nem ele."
+    - "{eu} anuncia: reunião às {hora} em {lugar}, presença obrigatória (mais ou menos)."
+  reuniao_fim:
+    - "Fim da reunião em {lugar}. Estavam lá: {convidados}. Decidiram que vão decidir depois."
+    - "A reunião em {lugar} acaba sem conclusão nenhuma. Foram {convidados}. {eu} aprovou tudo."
+    - "Termina a reunião. {convidados} saem discutindo o que foi discutido."
+  reuniao_vazia:
+    - "{eu} espera em {lugar} a reunião que ninguém veio. Aprova sozinho a própria pauta."
+
+  # ------------------------------------------------- a Médium e a voz
+  voz_recebida:
+    - "{eu} acorda no meio do sono com uma voz dentro da cabeça: \"{fato}\"."
+    - "{eu} sente as velas do cabelo tremerem. Uma voz: \"{fato}\". As vozes voltaram."
+    - "{eu} para, olhos brancos: \"{fato}\"... As vozes disseram."
+    - "Uma voz de fora fala com {eu}: \"{fato}\". {eu} sorri devagar."
+    - "{eu} ouve, bem baixinho, vindo da tela: \"{fato}\"."
+  voz_confusa:
+    - "{eu} não entende direito a voz, mas não vai admitir. Decide que é {evento}."
+    - "A voz chega embaralhada. {eu} interpreta como dá: {evento}."
+  visao_anuncio:
+    - "{eu} abre os braços: \"As vozes disseram: {fato}. Isso quer dizer {evento}.\""
+    - "{eu} sussurra para quem estiver perto: \"{fato}\". \"É um sinal. {evento}.\""
+    - "{eu}, de olhos fechados: \"Os anjos falaram comigo. {fato}. Preparem-se: {evento}.\""
+    - "{eu} conta a visão em {lugar}: \"{fato}\". A seita entende: {evento}."
+    - "{eu} desenha um olho no chão de {lugar}: \"As vozes pediram {evento}. Eu só obedeço.\""
+  visao_desastre:
+    - "{eu} anuncia, tremendo: \"As vozes disseram: {fato}! É {evento}!\" Não era isso. Ninguém sabe."
+    - "{eu} entende tudo errado, do jeito mais teatral possível: \"{fato}! {evento}!\""
+    - "{eu} grita em {lugar}: \"{fato}!\" e a seita entra em pânico: {evento}."
+    - "{eu} jura que a voz pediu {evento}. A voz não pediu. {eu} sabe disso? Talvez."
+  visao_resiste:
+    - "{eu} ouve a visão e revira os olhos: \"Lá vem a Médium inventando.\""
+    - "{eu} faz o sinal da cruz e se afasta da visão da seita."
+    - "{eu}: \"As vozes disseram, as vozes disseram... as vozes deviam trabalhar.\""
+
+  # ------------------------------------------------- o olhar
+  olhar_coletivo:
+    - "Em {lugar}, todo mundo para ao mesmo tempo e encara a tela: {convidados}. Depois, nada."
+    - "{convidados} param tudo em {lugar} e olham para a tela. Ninguém comenta."
+    - "Um silêncio esquisito em {lugar}: {convidados} encaram a tela por um minuto inteiro."
+    - "{convidados} viram a cabeça ao mesmo tempo para a tela, como se alguém tivesse chamado."
+  # ------------------------------------------------- a Aparição
+  aparicao:
+    - "Por um instante, uma silhueta borrada enorme aparece do lado de fora da tela, sobre {lugar}. E some."
+    - "O céu de {lugar} escurece num formato de gente. Uma silhueta borrada, olhando para dentro."
+    - "Todo mundo em {lugar} vê: uma sombra gigante e borrada, do outro lado da tela. Ela se mexe."
+  aparicao_padre:
+    - "{eu} cai de joelhos: \"MILAGRE! Eu vi! Deus me livre e guarde!\""
+    - "{eu} sai correndo para tocar o sino: \"É um anjo! Ou o capeta! Mas é MILAGRE!\""
+    - "{eu} chora agarrado no crucifixo: \"Ele olhou pra mim. Ele OLHOU pra mim.\""
+  aparicao_seita:
+    - "{eu} rasga a própria roupa e dança em círculos: \"O ANJO! O ANJO VEIO!\""
+    - "{eu} grita até perder a voz: \"Nós somos vistos! Somos VISTOS!\""
+    - "{eu} acende todas as velas que tem e sai correndo para a floresta."
+    - "{eu} abraça a primeira árvore que vê e jura fidelidade eterna à silhueta."
+  aparicao_medium:
+    - "{eu} ergue os braços: \"Eu chamei e ele veio! As vozes têm rosto!\""
+    - "{eu} anuncia que foi ela quem invocou a silhueta. A seita acredita na hora."
+  # só para quem é estranho (o Esquisito; um nascido estranho também anotaria)
+  aparicao_esquisito:
+    - texto: "{eu} anota tudo num caderninho: a hora, o formato, a cor do borrão. \"...isso é importante...\""
+      tracos: [estranho]
+    - texto: "{eu} mede a silhueta com o dedão e escreve: altura, umas três cidades."
+      tracos: [estranho]
+    - texto: "{eu} desenha a silhueta de memória e esconde o desenho no carrinho."
+      tracos: [estranho]
+  aparicao_outros:
+    - "{eu} esfrega os olhos. Viu ou não viu?"
+    - "{eu} fica parad{o|a}, de boca aberta, olhando para a tela."
+    - "{eu} se esconde atrás da primeira parede que acha."
+    - "{eu} jura que viu alguém do lado de fora. Ninguém pergunta mais nada."
+    - "{eu} diz que não viu nada, mas a voz treme."
+
+  # ------------------------------------------------- assuntos do momento
+  assunto_ressurreicao:
+    - "{eu} cochicha com {outro}: \"Você viu {terceiro}? Voltou do cemitério. Não está certo.\""
+    - "{eu} para {outro}: \"Eu juro que {terceiro} não pisca mais.\""
+    - "{eu} pergunta a {outro} se {terceiro} ainda tem cheiro de terra."
+    - "{eu} e {outro} discutem quem trouxe {terceiro} de volta: o padre diz milagre, a médium diz que foi ela."
+    - "{eu}: \"Se {terceiro} voltou, quem mais volta?\" {outro} não quer pensar nisso."
+    - "{eu} conta para {outro} que {terceiro} agora dorme de luz acesa."
+    - "{eu} jura para {outro} que viu {terceiro} olhando para a tela, agradecendo alguém."
+    - texto: "{eu} diz a {outro}: \"Milagre. Não tem outra palavra.\" sobre {terceiro}."
+      profissoes: [padre]
+      peso: 3
+    - texto: "{eu} lembra a {outro}: \"Fui eu que trouxe {terceiro}. As vozes disseram.\""
+      profissoes: [medium]
+      peso: 3
+    - texto: "{eu} anota o que {outro} sabe sobre {terceiro}. \"...isso é importante...\""
+      personagens: [weirdo]
+      peso: 3
+  assunto_aparicao:
+    - "{eu} pergunta a {outro}: \"Você também viu a silhueta?\""
+    - "{eu} e {outro} discutem o tamanho da silhueta. Cada um viu de um jeito."
+    - "{eu} para {outro}: \"Tem alguém do lado de fora. Sempre teve.\""
+    - "{eu} conta a {outro} que não dorme desde a silhueta."
+    - "{eu} jura a {outro} que a silhueta acenou. {outro} acha que foi só um borrão."
+    - "{eu}: \"E se ela voltar?\" {outro} olha para a tela sem querer."
+    - texto: "{eu} mostra a {outro} o caderninho com tudo anotado sobre a silhueta. \"...isso é importante...\""
+      personagens: [weirdo]
+      peso: 3
+    - texto: "{eu} garante a {outro} que a silhueta era um anjo. \"Milagre!\""
+      profissoes: [padre]
+      peso: 3
+    - texto: "{eu} diz a {outro}: \"Fui eu que chamei. Ela vai voltar.\""
+      profissoes: [medium]
+      peso: 3
+  assunto_ordem:
+    - "{eu} comenta com {outro}: \"De onde o Chefe tira essas ideias?\""
+    - "{eu} e {outro} falam da ordem do Chefe. Um acha boa, o outro acha que ele bateu a cabeça."
+    - "{eu} diz a {outro} que o Chefe anda tendo umas intuições estranhas."
+    - "{eu}: \"Ordem do Chefe é igual chuva: vem do céu e ninguém pergunta.\" {outro} ri."

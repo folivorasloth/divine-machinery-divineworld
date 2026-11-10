@@ -27,3 +27,5 @@ include = ["sim*", "server*", "tools*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+# o TestClient do FastAPI avisa que vai trocar de httpx; não é problema nosso
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient`"]

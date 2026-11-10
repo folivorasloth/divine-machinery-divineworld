@@ -23,7 +23,7 @@ conexoes:
   - {para: prison, tipo: caminho, minutos: 3}
   - {para: fields, tipo: caminho, minutos: 8}
   - {para: forest, tipo: tunel, minutos: 5}
-acoes: [cochilar, construir, quebrar, pichar, andar_de_skate, fazer_malabarismo, assembleia]
+acoes: [cochilar, construir, quebrar, pichar, andar_de_skate, fazer_malabarismo, assembleia, anunciar_ordem, reuniao]
 estruturas:
   - {id: square_fountain, nome: o chafariz}
   - {id: square_benches, nome: os bancos da Praça}

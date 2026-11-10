@@ -55,6 +55,7 @@ from sim.schemas import (
     WorldEvent,
     SocialEventDef,
     CreatureDef,
+    CreatorConfig,
 )
 
 # --------------------------------------------------------------------------
@@ -134,6 +135,8 @@ class WorldData:
     source_files: dict[str, str] = field(default_factory=dict)  # id -> arquivo de origem
     social_events: dict[str, SocialEventDef] = field(default_factory=dict)  # Fase 2
     creatures: dict[str, CreatureDef] = field(default_factory=dict)  # Fase 3
+    creator: CreatorConfig | None = None  # Fase 4 (data/events/criador.yaml)
+    creator_file: str = ""
     # Fase 3: onde os nascidos são gravados (data/characters/born, ou DW_BORN_DIR)
     born_dir: Path | None = None
 
@@ -455,6 +458,8 @@ def load_data(data_dir: str | Path = "data", environ: dict[str, str] | None = No
     events: dict[str, WorldEvent] = {}
     social_events: dict[str, SocialEventDef] = {}
     creatures: dict[str, CreatureDef] = {}
+    creator: CreatorConfig | None = None
+    creator_file = ""
     for path in _yaml_files(root / "events"):
         raw = read_yaml(path, report, rel(path))
         if raw is None:
@@ -483,6 +488,12 @@ def load_data(data_dir: str | Path = "data", environ: dict[str, str] | None = No
                 mark_broken(item)
             if cre:
                 register("criatura", creatures, cre, rel(path))
+        if container.creator is not None:
+            if creator is not None:
+                report.error(rel(path), f"'criador' já foi definido em {creator_file}: só um arquivo pode ter")
+            else:
+                creator = validate_model(CreatorConfig, container.creator, report, rel(path), prefix="criador: ")
+                creator_file = rel(path)
 
     if world is None or traits_file is None:
         return None, report
@@ -503,6 +514,8 @@ def load_data(data_dir: str | Path = "data", environ: dict[str, str] | None = No
         social_events=social_events,
         creatures=creatures,
         born_dir=born_dir,
+        creator=creator,
+        creator_file=creator_file,
     )
     _cross_check(data, report, source, line_sources, rel(world_path), rel(traits_path), broken)
     return data, report
@@ -873,6 +886,9 @@ def _cross_check(
     _check_phase3(data, report, source, line_sources, world_file, traits_file, ref, needs, periods, memory_kinds,
                   known_ids)
 
+    # Fase 4: o Criador ---------------------------------------------------------
+    _check_creator(data, report, ref, memory_kinds)
+
     # tags usadas em ações e eventos devem ser categorias do chat conhecidas
     categories = set(w.chat_categories)
     for sid, sev in data.social_events.items():
@@ -992,6 +1008,66 @@ def _check_phase3(data, report, source, line_sources, world_file, traits_file, r
             ref(file, f"situação '{situation}': mortos", "personagem", c, data.characters)
         for p in line.professions:
             ref(file, f"situação '{situation}': profissoes", "profissão", p, data.professions)
+
+
+def _check_creator(data, report, ref, memory_kinds) -> None:
+    c = data.creator
+    if c is None:
+        return
+    file = data.creator_file
+    w = data.world
+
+    def goals(where, items):
+        for i, g in enumerate(items):
+            ref(file, f"{where}.objetivos[{i}].acao", "ação", g.action, data.actions)
+            ref(file, f"{where}.objetivos[{i}].lugar", "lugar", g.place, data.places, True)
+
+    def situation(where, sit):
+        if sit and sit not in data.lines:
+            report.warn(file, f"{where}: não há falas para a situação '{sit}' em data/lines/")
+
+    for key, ann in (("chefe", c.chief), ("medium", c.medium)):
+        ref(file, f"criador.{key}.profissao", "profissão", ann.profession, data.professions)
+        ref(file, f"criador.{key}.acao", "ação", ann.action, data.actions)
+        situation(f"criador.{key}.fala_recebe", ann.speech_received)
+        situation(f"criador.{key}.fala_confusa", ann.speech_confused)
+        for t in ann.resistance.traits:
+            ref(file, f"criador.{key}.resistencia.tracos", "traço", t, data.traits)
+        for oid, order in ann.orders.items():
+            where = f"criador.{key}.interpretacoes.{oid}"
+            goals(where + ".efeitos", order.effects.goals)
+            for n in order.effects.needs:
+                ref(file, f"{where}.efeitos.necessidades", "necessidade", n, w.needs)
+            ref(file, f"{where}.efeitos.evento_social", "evento social", order.effects.social_event,
+                data.social_events, True)
+            ref(file, f"{where}.efeitos.memoria", "tipo de memória", order.effects.memory, memory_kinds, True)
+            ref(file, f"{where}.efeitos.assunto", "assunto (criador.assuntos)", order.effects.topic, c.topics, True)
+            situation(where + ".fala", order.speech)
+            if not order.words and order.confused_weight == 0:
+                report.warn(file, f"{where}: sem 'palavras' e com peso_sem_entender 0: nunca acontece")
+    rule = c.chief.rule
+    ref(file, "criador.chefe.regra.infracao", "infração (world.yaml > leis.infracoes)", rule.infraction,
+        w.law.infractions)
+    for a in list(rule.aliases) + list(rule.suggestions):
+        ref(file, "criador.chefe.regra", "ação", a, data.actions)
+    for t in rule.obey_traits:
+        ref(file, "criador.chefe.regra.obediencia_tracos", "traço", t, data.traits)
+    ref(file, "criador.chefe.reuniao.acao", "ação", c.chief.meeting.action, data.actions)
+    ref(file, "criador.chefe.reuniao.lugar", "lugar", c.chief.meeting.place, data.places)
+    ref(file, "criador.chefe.reuniao.memoria", "tipo de memória", c.chief.meeting.memory, memory_kinds, True)
+    for key in ("done_speech", "expired_speech", "resist_speech"):
+        situation(f"criador.chefe.{key}", getattr(c.chief, key))
+    ref(file, "criador.reviver.assunto", "assunto (criador.assuntos)", c.revive.topic, c.topics, True)
+    for tid, topic in c.topics.items():
+        for a in topic.actions:
+            ref(file, f"criador.assuntos.{tid}.acoes", "ação", a, data.actions)
+        situation(f"criador.assuntos.{tid}", topic.situation or f"assunto_{tid}")
+    pr = c.presence
+    ref(file, "criador.presenca.acao_olhar", "ação", pr.stare_action, data.actions)
+    ref(file, "criador.presenca.memoria_aparicao", "tipo de memória", pr.apparition_memory, memory_kinds, True)
+    ref(file, "criador.presenca.assunto_aparicao", "assunto", pr.apparition_topic, c.topics, True)
+    ref(file, "criador.presenca.faccao_que_enlouquece", "facção", pr.faction_crazy, w.factions)
+    goals("criador.presenca", pr.goals)
 
 
 def _check_input(entry: str, valid: dict[str, set[str]], has_target: bool) -> str | None:

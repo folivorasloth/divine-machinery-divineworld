@@ -584,7 +584,7 @@ acoes:
     nome: Construir ou consertar
     descricao: Conserta o que está estragado (mutirão do Ferreiro, ordem do Chefe).
     tipo: individual
-    peso: 0.7
+    peso: 0.12  # F4: menor (antes 0.7) — o que é destruído só volta rápido se alguém mandar (bible)
     duracao_minutos: [40, 120]
     conserta: 45
     condicoes:

@@ -1,0 +1,71 @@
+# =====================================================================
+# Ações da Fase 4: o Criador intervém (ver data/events/criador.yaml)
+# =====================================================================
+#   anuncio_criador — só vale para quem tem uma ordem/voz do Criador ainda não
+#                     anunciada (o Chefe ou a Médium). Quando a ação COMEÇA, o
+#                     anúncio vale: a cidade ganha os objetivos da ordem.
+#   reuniao_criador — só vale durante uma reunião convocada pelo Chefe.
+# A vontade de fazer vem quase toda do OBJETIVO criado pelo comando; o peso
+# baixo garante que ninguém anuncia nada sozinho.
+# =====================================================================
+
+acoes:
+  - id: anunciar_ordem
+    nome: Anunciar uma ordem
+    descricao: O Chefe sobe num caixote na Praça e anuncia a "intuição" que teve.
+    tipo: individual
+    especial: anuncio_criador
+    peso: 0.2
+    duracao_minutos: [5, 15]
+    condicoes:
+      profissoes: [lider]
+      periodos: [manha, tarde, noite]   # de madrugada nem o Chefe acorda para isso
+    consideracoes:
+      # o Chefe é preguiçoso: com muito sono, deixa para depois
+      - entrada: necessidade.sono
+        curva: {tipo: pontos, pontos: [[0, 1], [60, 0.7], [85, 0.15], [100, 0.05]]}
+    efeitos:
+      necessidades: {tedio: -10, social: -10, medo: 5}
+    narracao: "{eu} sobe num caixote em {lugar} e pede silêncio."
+    fala: ordem_anuncio
+    chance_fala: 1
+    tags: [criador, evento]
+    importancia: 2
+
+  - id: revelar_visao
+    nome: Revelar a visão
+    descricao: A Médium conta para quem estiver por perto o que as vozes disseram.
+    tipo: individual
+    especial: anuncio_criador
+    em_qualquer_lugar: true
+    peso: 0.2
+    duracao_minutos: [5, 20]
+    condicoes:
+      profissoes: [medium]
+    consideracoes:
+      - entrada: necessidade.sono
+        curva: {tipo: pontos, pontos: [[0, 1], [70, 0.6], [90, 0.1], [100, 0.05]]}
+    efeitos:
+      necessidades: {fe: -15, tedio: -10}
+    narracao: "{eu} fecha os olhos, abre os braços e começa a falar devagar em {lugar}."
+    fala: visao_anuncio
+    chance_fala: 1
+    tags: [criador, seita]
+    importancia: 2
+
+  - id: reuniao
+    nome: Ir à reunião
+    descricao: Vai à reunião que o Chefe convocou na Praça.
+    tipo: individual
+    especial: reuniao_criador
+    peso: 1.0
+    duracao_minutos: [30, 60]
+    consideracoes:
+      - entrada: necessidade.sono
+        curva: {tipo: pontos, pontos: [[0, 1], [80, 0.5], [100, 0.1]]}
+    efeitos:
+      necessidades: {social: -20, tedio: -10}
+    narracao: "{eu} chega na reunião em {lugar} e procura um lugar para ficar."
+    fala: reuniao
+    chance_fala: 0.5
+    tags: [evento, criador]

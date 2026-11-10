@@ -156,6 +156,8 @@ class MqttTopics(DataModel):
     presence: str = Field(alias="presenca")
     homelab: str = Field(alias="homelab")
     screen_status: str = Field(alias="status_telas")
+    # Fase 4: resposta dos comandos recebidos por world/commands
+    command_results: str = Field("world/commands/result", alias="respostas")
 
 
 class MqttConfig(DataModel):
@@ -176,6 +178,14 @@ class OllamaConfig(DataModel):
     model: str = Field(alias="modelo")
     timeout_seconds: float = Field(4, alias="timeout_segundos", gt=0)
     max_per_hour: int = Field(30, alias="max_por_hora", ge=0)
+    # Fase 4: situações de fala que o LLM pode reescrever (as importantes)
+    situations: list[str] = Field(default_factory=list, alias="situacoes")
+    min_importance: int = Field(1, alias="importancia_min", ge=0, le=3)
+    # de quanto em quanto tempo pergunta se o Ollama está no ar
+    check_every_seconds: float = Field(60, alias="checar_a_cada_segundos", gt=0)
+    max_chars: int = Field(220, alias="max_caracteres", ge=20)
+    # o LLM também tenta entender ordens livres do Criador (sem palavra-chave)
+    interpret_orders: bool = Field(True, alias="interpretar_ordens")
 
 
 class ServerConfig(DataModel):
@@ -918,7 +928,8 @@ class Action(DataModel):
     signs: bool = Field(False, alias="assina")
     # comportamentos especiais (regra no código, documentada em docs/arquitetura.md)
     special: Literal["fofoca", "confissao", "denuncia", "prender", "roubar", "recrutar", "ordem_reconstruir",
-                     "funeral", "tumulo", "criatura", "assembleia"] | None = Field(
+                     "funeral", "tumulo", "criatura", "assembleia",
+                     "anuncio_criador", "reuniao_criador"] | None = Field(
         None, alias="especial")
     # recrutar: para qual facção
     faction: Id | None = Field(None, alias="faccao")
@@ -1096,6 +1107,7 @@ class SocialEventDef(DataModel):
 
 class EventsFile(DataModel):
     events: list[dict] = Field(default_factory=list, alias="eventos")
+    creator: dict | None = Field(None, alias="criador")  # Fase 4 (data/events/criador.yaml)
     social_events: list[dict] = Field(default_factory=list, alias="eventos_sociais")
     creatures: list[dict] = Field(default_factory=list, alias="criaturas")
 
@@ -1140,3 +1152,158 @@ class LinesFile(DataModel):
 
 DeathConsequence.model_rebuild()
 Character.model_rebuild()
+
+
+# --------------------------------------------------------------------------
+# Fase 4: o Criador (data/events/criador.yaml > criador)
+# --------------------------------------------------------------------------
+
+GoalWho = Literal["quem_recebe", "seita", "igreja", "todos"]
+
+
+class CreatorGoal(DataModel):
+    """Um objetivo que a ordem/visão cria (a nota da `acao` é multiplicada por `bonus`)."""
+
+    who: GoalWho = Field("todos", alias="para")
+    action: Id = Field(alias="acao")
+    # lugar fixo; vazio + no_lugar_da_ordem = o lugar citado na mensagem (ou qualquer lugar)
+    place: Id | None = Field(None, alias="lugar")
+    order_place: bool = Field(False, alias="no_lugar_da_ordem")
+    bonus: float = Field(alias="bonus", gt=0)
+    hours: float = Field(alias="horas", gt=0)
+
+
+class CreatorEffects(DataModel):
+    goals: list[CreatorGoal] = Field(default_factory=list, alias="objetivos")
+    needs: dict[Id, float] = Field(default_factory=dict, alias="necessidades")
+    needs_for: GoalWho = Field("todos", alias="necessidades_para")
+    social_event: Id | None = Field(None, alias="evento_social")  # o anunciante organiza este evento
+    memory: Id | None = Field(None, alias="memoria")  # quem ouviu o anúncio lembra
+    topic: Id | None = Field(None, alias="assunto")  # a cidade comenta por dias (assuntos)
+
+
+class OrderKind(DataModel):
+    """Um jeito de entender uma ordem do Chefe ou uma voz da Médium."""
+
+    name: str = Field(alias="nome", min_length=1)
+    # pedaços de palavra, sem acento ("reconstru" pega reconstruir, reconstruam...)
+    words: list[str] = Field(default_factory=list, alias="palavras")
+    # regras com código próprio: reconstruir (até o lugar ficar inteiro), festa,
+    # regra (proibir/liberar uma ação), reuniao (assembleia na Praça)
+    special: Literal["reconstruir", "festa", "regra", "reuniao"] | None = Field(None, alias="especial")
+    effects: CreatorEffects = Field(default_factory=CreatorEffects, alias="efeitos")
+    speech: str | None = Field(None, alias="fala")  # situação de data/lines do anúncio
+    # peso quando ninguém entendeu nada (escolha "como dá") ou para a Médium errar
+    confused_weight: float = Field(1.0, alias="peso_sem_entender", ge=0)
+    hours: float = Field(48, alias="horas", gt=0)  # prazo (reconstruir, regra)
+    bonus: float = Field(4, alias="bonus", gt=0)
+
+
+class Resistance(DataModel):
+    """Como cada um recebe uma ordem: fator = Π traços × (1 + afinidade_com_quem_manda/100 × peso_afinidade)."""
+
+    traits: dict[Id, Multiplier] = Field(default_factory=dict, alias="tracos")
+    affinity_weight: float = Field(0.5, alias="peso_afinidade", ge=0)
+    resist_below: float = Field(0.45, alias="resiste_abaixo", ge=0)
+    delay_below: float = Field(0.8, alias="atrasa_abaixo", ge=0)
+    delay_hours: tuple[float, float] = Field((2, 8), alias="atraso_horas")
+    max_lines: int = Field(3, alias="max_falas", ge=0)
+
+
+class RuleOrder(DataModel):
+    """`chefe "proibido brigar"` / `chefe "liberem o skate"`."""
+
+    infraction: Id = Field("decreto", alias="infracao")
+    prohibit_words: list[str] = Field(default_factory=list, alias="palavras_proibir")
+    allow_words: list[str] = Field(default_factory=list, alias="palavras_liberar")
+    # ação -> palavras que a identificam na ordem (o id e o nome da ação já valem)
+    aliases: dict[Id, list[str]] = Field(default_factory=dict, alias="apelidos")
+    # se a ordem não diz qual ação: o Chefe inventa uma destas
+    suggestions: list[Id] = Field(default_factory=list, alias="sugestoes")
+    # nota de uma ação proibida: × isto (por traço; o maior multiplicador vale)
+    obey: float = Field(0.4, alias="obediencia", ge=0)
+    obey_traits: dict[Id, Multiplier] = Field(default_factory=dict, alias="obediencia_tracos")
+    allowed_bonus: float = Field(1.4, alias="bonus_liberado", ge=0)
+
+
+class MeetingOrder(DataModel):
+    action: Id = Field("reuniao", alias="acao")
+    place: Id = Field("town_square", alias="lugar")
+    minutes: int = Field(60, alias="minutos", gt=0)
+    starts_in_minutes: int = Field(40, alias="comeca_em_minutos", ge=0)
+    bonus: float = Field(6, alias="bonus", gt=0)
+    memory: Id | None = Field(None, alias="memoria")
+
+
+class AnnouncerConfig(DataModel):
+    """Quem recebe (Chefe / Médium), a ação de anunciar e o objetivo de ir anunciar."""
+
+    profession: Id = Field(alias="profissao")
+    action: Id = Field(alias="acao")
+    bonus: float = Field(20, alias="bonus", gt=0)
+    hours: float = Field(12, alias="horas", gt=0)  # se não anunciar até lá, a ordem se perde
+    speech_received: str = Field(alias="fala_recebe")  # situação ao receber
+    speech_confused: str | None = Field(None, alias="fala_confusa")
+    orders: dict[Id, OrderKind] = Field(default_factory=dict, alias="interpretacoes")
+    resistance: Resistance = Field(default_factory=Resistance, alias="resistencia")
+
+
+class ChiefConfig(AnnouncerConfig):
+    rule: RuleOrder = Field(default_factory=RuleOrder, alias="regra")
+    meeting: MeetingOrder = Field(default_factory=MeetingOrder, alias="reuniao")
+    # quanto da cidade precisa estar consertado para a ordem "reconstruir" acabar
+    done_speech: str = Field("ordem_cumprida", alias="fala_cumprida")
+    expired_speech: str = Field("ordem_abandonada", alias="fala_abandonada")
+    resist_speech: str = Field("ordem_resiste", alias="fala_resiste")
+
+
+class MediumConfig(AnnouncerConfig):
+    # chance de a Médium entender errado (de propósito); com erro, às vezes do jeito mais desastroso
+    error_chance: float = Field(0.3, alias="chance_erro", ge=0, le=1)
+    # interpretações erradas preferidas (as "desastrosas"); vazio = qualquer outra
+    disasters: list[Id] = Field(default_factory=list, alias="desastres")
+    # palavras que ela troca na mensagem quando entende errado
+    swap_words: list[str] = Field(default_factory=list, alias="palavras_trocadas")
+
+
+class ReviveConfig(DataModel):
+    fear: Percent = Field(85, alias="medo")
+    forget_chance: float = Field(0.5, alias="chance_esquecer", ge=0, le=1)
+    topic: Id | None = Field("ressurreicao", alias="assunto")
+
+
+class TopicDef(DataModel):
+    """Assunto do momento: nas conversas, com `chance` (que cai com os dias), falam disso."""
+
+    days: float = Field(3, alias="dias", gt=0)
+    chance: float = Field(0.3, alias="chance", ge=0, le=1)
+    actions: list[Id] = Field(default_factory=lambda: ["conversar"], alias="acoes")
+    situation: str | None = Field(None, alias="fala")  # padrão: assunto_<id>
+
+
+class PresenceConfig(DataModel):
+    """O olhar e a Aparição (MQTT sala/camera/pessoas)."""
+
+    stare_action: Id = Field("encarar_tela", alias="acao_olhar")
+    # com alguém no quarto, a nota de encarar a tela é multiplicada por isto
+    stare_multiplier: float = Field(3, alias="multiplicador_olhar", ge=0)
+    # olhar coletivo: chance por hora (limites.chance_olhar_por_hora) × isto com presença
+    group_stare_multiplier: float = Field(4, alias="multiplicador_olhar_coletivo", ge=0)
+    group_stare_max: int = Field(5, alias="max_no_olhar_coletivo", ge=1)
+    # Aparição: chance a cada vez que alguém ENTRA no quarto (0 -> 1+ pessoas)
+    apparition_chance: float = Field(0.03, alias="chance_aparicao", ge=0, le=1)
+    apparition_memory: Id | None = Field("aparicao", alias="memoria_aparicao")
+    apparition_topic: Id | None = Field("aparicao", alias="assunto_aparicao")
+    apparition_seconds: float = Field(4, alias="duracao_aparicao_s", gt=0)
+    # presença "vale" por este tempo depois da última mensagem com pessoas
+    presence_timeout_minutes: float = Field(10, alias="presenca_expira_minutos", gt=0)
+    faction_crazy: Id = Field("seita", alias="faccao_que_enlouquece")
+    goals: list[CreatorGoal] = Field(default_factory=list, alias="objetivos")
+
+
+class CreatorConfig(DataModel):
+    chief: ChiefConfig = Field(alias="chefe")
+    medium: MediumConfig = Field(alias="medium")
+    revive: ReviveConfig = Field(default_factory=ReviveConfig, alias="reviver")
+    topics: dict[Id, TopicDef] = Field(default_factory=dict, alias="assuntos")
+    presence: PresenceConfig = Field(default_factory=PresenceConfig, alias="presenca")

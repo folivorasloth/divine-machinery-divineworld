@@ -97,7 +97,15 @@ situacoes:
       peso: 2
     - texto: "{eu} mede a calçada com a régua. \"{bordao}\""
       personagens: [inspector]
-      peso: 2
+    # Fase 4: mais variações do Fiscal (o relatório de variedade pegou a da régua 5× numa semana)
+    - texto: "{eu} mede a altura do meio-fio. Três milímetros fora da norma. \"{bordao}\""
+      personagens: [inspector]
+    - texto: "{eu} confere se as janelas da {lugar} estão alinhadas. Não estão. Anota."
+      personagens: [inspector]
+    - texto: "{eu} cronometra quanto tempo cada um leva para atravessar a rua. Ninguém passa no teste."
+      personagens: [inspector]
+    - texto: "{eu} preenche um formulário em três vias para pedir mais formulários."
+      personagens: [inspector]
     - texto: "{eu} inventa uma regra nova: proibido assobiar perto da Prefeitura."
       personagens: [inspector]
     - texto: "{eu} cozinha batendo a colher de pau em tudo e em todos. \"{bordao}\""
@@ -114,7 +122,15 @@ situacoes:
       peso: 2
     - texto: "{eu} revira o lixo e encontra uma tampinha. \"...isso é importante...\""
       personagens: [weirdo]
-      peso: 2
+    # Fase 4: mais achados do Esquisito (a da tampinha saiu 5× numa semana no relatório de variedade)
+    - texto: "{eu} acha um parafuso torto e guarda no bolso de dentro. \"...isso é importante...\""
+      personagens: [weirdo]
+    - texto: "{eu} cheira uma meia perdida, pensa muito e põe no carrinho."
+      personagens: [weirdo]
+    - texto: "{eu} desenterra uma colher sem cabo e olha para ela como quem olha um tesouro."
+      personagens: [weirdo]
+    - texto: "{eu} encontra um botão vermelho. Não aperta. Ainda."
+      personagens: [weirdo]
     - texto: "{eu} olha pro fundo da Sala do Servidor e sussurra: \"{bordao}\""
       personagens: [tech_old]
       peso: 2

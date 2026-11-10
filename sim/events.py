@@ -40,6 +40,8 @@ EVENT_TYPES |= {
     "creature_spawned", "creature_gone", "creature_fight", "weather_changed", "fog_on", "fog_off",
     "director_event", "tension",
 }
+# Fase 4: o Criador (comandos, ordens do Chefe, vozes da Médium), o olhar e a Aparição
+EVENT_TYPES |= {"creator_command", "creator_order", "creator_voice", "stare", "apparition"}
 
 # tipos que não são gravados no banco (muito volume, só para depuração)
 NOT_PERSISTED = {"decision"}

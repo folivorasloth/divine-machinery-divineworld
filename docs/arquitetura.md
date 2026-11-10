@@ -44,6 +44,17 @@ internet; toda decisão é explicável no log.
   o asyncio do FastAPI; o do MQTT chama `client.publish` (não bloqueia com `loop_start()`).
 - **Leitura pela API:** `World.snapshot()` devolve um dicionário imutável (cópia) protegido por um
   `threading.Lock` curto. A API nunca toca no estado vivo.
+- **F4 ✅ (como ficou):** `server.runtime.Runtime` monta `Storage` + `World` e roda `World.run()`
+  num thread ("simulacao"); o asyncio do uvicorn é o thread principal; o paho tem o seu thread
+  (`loop_start`) e o LLM, outro. Decisão: **um processo, não dois** — a simulação é a dona do estado
+  e a única que escreve no SQLite; a API lê (a) o snapshot (agora com os nomes atuais), (b) o Chat
+  do Mundo numa conexão SQLite própria só de leitura por requisição (`Storage.reader`,
+  `PRAGMA query_only`; o WAL deixa ler enquanto o mundo escreve) e (c) a ficha viva (`quem`), que
+  precisa de memórias e relações, **pela fila de comandos** com um `concurrent.futures.Future` que o
+  thread da simulação responde (`Command.reply`). Comandos são atendidos fora do tick também (no
+  tempo real um tick é 1 minuto inteiro): o laço de `run()` drena a fila a cada volta. Dois
+  processos teriam de trocar estado por arquivo/socket e disputar o SQLite — mais código e mais
+  jeitos de quebrar.
 
 ## 2. Estrutura de pastas e módulos
 
@@ -80,22 +91,26 @@ sim/                      simulação (Python puro, sem rede, exceto weather/llm
   weather.py        ✅ F3  Open-Meteo com cache e fallback; clima sorteado no tempo acelerado
   screens.py        ✅ F3  telas online/offline → névoa nos lugares
   director.py       ✅ F3  tensão do mundo e injeção de eventos de data/events
-  commands.py       📐 F4  comandos do Criador (chefe, medium, reviver, nascer, ...)
-  llm.py            📐 F4  cliente Ollama opcional (httpx, timeout curto, limite/hora)
-  presence.py       📐 F4  o olhar e a Aparição (sala/camera/pessoas)
+  commands.py       ✅ F4  comandos do Criador (chefe, medium, reviver, status, quem, raio...),
+                           decretos, reuniões, assuntos do momento; estado em meta.society.creator
+  llm.py            ✅ F4  cliente Ollama opcional (thread próprio, httpx, timeout, limite/hora)
+  presence.py       ✅ F4  o olhar (coletivo) e a Aparição (sala/camera/pessoas)
 server/
-  app.py            📐 F4  FastAPI: REST + WebSocket
-  ws.py             📐 F4  gerência de conexões por tela, filtro por lugares da tela
-  mqtt_bridge.py    📐 F4  paho-mqtt 2.x (CallbackAPIVersion.VERSION2), reconexão, LWT
-  __main__.py       📐 F4  `python -m server`: sobe World + uvicorn + MQTT
+  runtime.py        ✅ F4  monta Storage + World + thread da simulação + LLM + MQTT; comandos com Future
+  app.py            ✅ F4  FastAPI: REST + WebSocket + /chat
+  ws.py             ✅ F4  Hub: conexões por tela, filtro por lugares da tela, mensagens derivadas
+  mqtt_bridge.py    ✅ F4  paho-mqtt 2.x (CallbackAPIVersion.VERSION2), reconexão, LWT, respostas
+  __main__.py       ✅ F4  `python -m server`: sobe tudo (uvicorn) e mostra o Chat no stdout
 tools/
   validate.py       ✅ F0  `python -m tools.validate`
   run.py            ✅ F1  `python -m tools.run --speed 60 [--fast] [--horas N|--dias N] [--personagem id]
                            [--lugar id] [--movimento] [--debug] [--resumo] [--saida arq] [--novo]
                            [--seed N] [--inicio HH:MM] [--banco arq]`
   report.py         ✅ F3  `python -m tools.report --days 7 [--seed N] [--saida arq] [--estrito]`: relatório de variedade
-  cli.py            📐 F4  `python -m tools.cli chefe "..."` (fala com a API)
-viewer/             📐 F5  Three.js + Vite; index.html?screen=<id>, chat.html, layout.html
+  cli.py            ✅ F4  `python -m tools.cli chefe "..."` (fala com a API; status/quem formatados; chat)
+viewer/
+  chat.html         ✅ F4  Chat do Mundo na web (HTML+JS puro, sem build), servido em /chat
+                    📐 F5  Three.js + Vite; index.html?screen=<id>, layout.html
 tests/              pytest (um arquivo por módulo)
 var/                (fora do git) SQLite, cache de clima, logs
 ```
@@ -107,6 +122,7 @@ var/                (fora do git) SQLite, cache de clima, logs
 | Arquivo | Conteúdo | Esquema |
 |---|---|---|
 | `world.yaml` | relógio, necessidades, Utility AI, limites, regiões, grupos, categorias do chat, clima, MQTT, Ollama, servidor, persistência, túnel, telas | `WorldConfig` |
+| `events/criador.yaml` (F4) | `criador:` ordens do Chefe, vozes da Médium, resistência, decretos, reunião, reviver, assuntos, presença (só um arquivo pode ter) | `CreatorConfig` |
 | `places/<id>.yaml` | um lugar por arquivo | `Place` |
 | `characters/<id>.yaml` e `characters/born/<id>.yaml` | um personagem por arquivo | `Character` |
 | `actions/*.yaml` | `acoes: [ ... ]` (vários por arquivo, por tema) | `Action` |
@@ -191,6 +207,8 @@ novo; se tiver erro, manter o `WorldData` anterior e publicar evento `system` co
    memórias decaem, afinidades voltam, pontos da lei somem, facções, ideias de eventos ✅ F2
    F3 ✅: a cada tick funerais (fases) e criaturas vencidas; de hora em hora mortes "do dia",
    nascimentos, sucessões, lutos que acabaram, sustos/aparições de criaturas
+   F4 ✅: a cada tick `commands.update` (ordens: prazo, obra pronta, reuniões, decretos e
+   assuntos vencidos; de hora em hora o olhar coletivo de `presence`)
 10. diretor: 1× a cada 10 min do mundo                        ✅ F3
 11. snapshot para a API; commit dos eventos; salvar estado a cada salvar_a_cada_minutos (e ao sair)  ✅ F1
 ```
@@ -429,7 +447,7 @@ Tipos (`type`) planejados:
 | F1 | `system`, `period_changed`, `decision` (debug), `action_started`, `action_finished`, `speech`, `move_started`, `move_arrived`, `teleport_started`, `teleport_finished`, `bell` |
 | F2 ✅ | `relation_changed`, `gossip`, `argument`, `fight`, `reconcile`, `prank`, `slapstick`, `chase`, `theft`, `suspicion`, `found`, `missed`, `structure_changed`, `infraction`, `arrest`, `released`, `limbo_in`, `limbo_out`, `faction`, `ritual`, `social_event_planned`, `social_event_started`, `social_event_ended` (o `memory_formed` planejado não foi criado: cada briga gera memórias em todas as testemunhas e inundaria o Chat; as memórias ficam no banco e aparecem nas falas) |
 | F3 ✅ | `death`, `grief`, `inheritance`, `funeral_planned`, `funeral_started`, `funeral_procession`, `funeral_ended`, `grave`, `death_consequence`, `ghost`, `resurrection`, `birth`, `succession`, `election`, `creature_spawned`, `creature_gone`, `creature_fight`, `weather_changed`, `fog_on`, `fog_off`, `director_event`, `tension` (a cada hora; o terminal só mostra com --debug) |
-| F4 | `creator_command`, `creator_order`, `creator_voice`, `resurrection`, `stare`, `apparition` |
+| F4 ✅ | `creator_command` (o Criador mandou), `creator_order` (o Chefe recebeu / anunciou / reação da cidade / obra pronta / ordem perdida; `data.phase`), `creator_voice` (a Médium), `stare` (olhar coletivo), `apparition`; `resurrection` com `data.how = "criador"` |
 
 ## 9. Falas ✅ F1
 
@@ -463,11 +481,19 @@ F2 ✅:
 - `World.say(...)` é o atalho que os sistemas usam: escolhe a fala de uma situação, cai num
   `fallback` se não houver nenhuma e publica o evento do tipo pedido.
 
-LLM (F4): `sim.llm.enrich(evento, contexto)` reescreve só falas de `importance >= 1` em situações
-listadas no `world.yaml`, com timeout `ollama.timeout_segundos` e limite `max_por_hora`. Falhou →
-fica o template. O LLM recebe o template preenchido, bordões, humor, memórias recentes e ids; a
-resposta só pode citar personagens por `{@id}` (validado com `text.check_template`, senão
-descarta).
+LLM (F4 ✅, `sim.llm`): em `World.say`, uma fala de `importance >= ollama.importancia_min` numa
+situação de `ollama.situacoes` vai para o LLM **só se** o mundo está no relógio real
+(`World.realtime`, velocidade ≤ 10, não pausado) **e** o Ollama respondeu à última checagem
+(`GET /api/tags` a cada `checar_a_cada_segundos`) **e** não passou de `max_por_hora`. Aí `say()`
+não emite nada: o pedido vai para a fila do thread do LLM (`POST /api/generate`, timeout
+`timeout_segundos`) e a resposta volta como comando interno `_llm_fala` pela fila do mundo; o
+engine valida (até `max_caracteres`, só `{@id}` existentes, nenhuma outra variável) e emite com
+`data.llm = true` — ou o template original com `data.llm = false`. O prompt leva: quem fala (id,
+papel, traços, bordões, humor), lugar, clima, hora, as 3 memórias mais fortes, a situação e a frase
+do template. Ollama fora do ar = a fala sai na hora, do template (sem esperar nada). O LLM também
+tenta classificar ordens livres do Criador (`interpretar_ordens`); sem ele, "como dá". Só falas
+que passam por `World.say` (sistemas: morte, funeral, ordens, Aparição...) são candidatas; as falas
+das ações comuns nunca vão ao LLM.
 
 ## 10. Persistência (SQLite) ✅ F1 (tabelas F2-F3 📐)
 
@@ -524,6 +550,8 @@ CREATE TABLE weather_log (ts TEXT PRIMARY KEY, kind TEXT, label TEXT, temp REAL,
 -- a tabela cooldowns planejada não foi criada: o estado da vida (mortes, funerais, lutos,
 -- vagas, papéis assumidos, objetos herdados), do clima, das telas, das criaturas e do
 -- diretor (histórico da tensão, cooldowns) vai em meta.society (JSON), como na F2.
+-- F4 ✅: sem migração nova. O estado do Criador (ordens com as respostas de cada um, decretos,
+-- reuniões, assuntos do momento, presença/última Aparição) vai em meta.society.creator.
 ```
 
 Na F1: `events.id` é dado pelo `World` (não é AUTOINCREMENT); eventos `decision` não são gravados;
@@ -774,97 +802,186 @@ repetidas (informativo), eventos por tipo, variedade por personagem e ALERTAS. L
 repetição: uma fala exata (texto final do Chat, com nomes) no máximo `max(3, dias × 0,5)` vezes
 (justificativa no relatório da F3). `--estrito` sai com 1 se houver alerta.
 
-## 13. Fase 4 — Criador, API e integração 📐
+## 13. Fase 4 — Criador, API e integração ✅
 
-### 13.1 Comandos (`sim.commands`)
+Números, palavras e textos ficam no YAML: `data/events/criador.yaml` (`criador:` — ordens, vozes,
+resistência, decretos, reunião, reviver, assuntos do momento, presença), `data/actions/criador.yaml`
+(`anunciar_ordem`, `revelar_visao`, `reuniao`), `data/lines/criador.yaml`, `world.yaml > ollama`
+(situações do LLM), `mqtt.topicos.respostas`, `leis.infracoes.decreto`, 4 tipos de memória novos
+(`ordem_do_chefe`, `visao`, `reuniao`, `aparicao`). O código só tem as regras.
 
-Mesmo formato vindo da CLI, da API e do MQTT: `{"cmd": "<nome>", "arg": "<texto>", "id": "<opcional>"}`.
+### 13.1 Comandos (`sim.commands`, `World.handle_command`)
+
+Mesmo formato vindo da CLI, da API e do MQTT: `Command(cmd, arg, id)`. Todo comando devolve um
+dicionário `{"ok": bool, ...}` (vai para o `Future` de quem pediu, para `World.command_log` —
+`GET /api/commands` — e, no MQTT, para `world/commands/result`).
 
 | cmd | arg | efeito |
 |---|---|---|
-| `chefe` | ordem livre | o Chefe recebe um objetivo cívico (palavras-chave: reconstruir, festa, regra, reunião; LLM opcional); repassa à cidade como `goals`; personalidades podem atrasar/resistir |
-| `medium` | mensagem | chega como "voz"; a Médium interpreta (chance de erro configurável) e age/convence a seita |
-| `reviver` | id | ressurreição lendária (traço novo, memórias faltando ou medo de morrer); reações do Padre/Médium/cidade |
-| `nascer` | traços opcionais | nascimento imediato |
-| `pausar` / `continuar` | — | |
-| `velocidade` | n | multiplicador |
-| `status` | — | resumo |
-| `quem` | id | ficha viva: necessidades, ação, plano, humor, memórias, relações, última explicação de decisão |
-| `recarregar` | — | (F6) recarrega `data/` sem perder estado |
+| `chefe` | ordem livre | ver 13.1.1 |
+| `medium` | mensagem | ver 13.1.2 |
+| `reviver` | id | `lifecycle.resurrect(cid, "criador", medo, chance_esquecer)` + funeral pendente cancelado + assunto `ressurreicao` (a cidade comenta por dias). Vivo/inexistente: `ok: false` |
+| `nascer` | traços opcionais | nascimento imediato (F3) |
+| `pausar` / `continuar` / `velocidade n` | | (F1) |
+| `status` | — | resumo: hora, clima, tensão, população, mortos, névoa, criaturas, ordens (com reações), decretos, assuntos, presença, LLM |
+| `quem` | id | ficha viva: necessidades, humor, ação, plano, traços (+ganhos), facção, preso/Limbo/luto, 12 memórias mais fortes (frase), 5 de quem mais/menos gosta, objetivos ativos, última explicação de decisão |
+| `presenca` | n | pessoas no quarto (MQTT `sala/camera/pessoas`), ver 13.6 |
+| `aparicao` | — | força uma Aparição (teste) |
+| `raio` | lugar | (teste) um raio destrói as estruturas do lugar — para ver uma reconstrução |
+| `tela`, `homelab`, `clima` | | (F3), agora também pelo MQTT |
+| `recarregar` | — | 📐 F6 |
 
-### 13.2 REST (FastAPI, `server.app`)
+Internos (pela mesma fila, nunca pela API): `_llm_fala` (resposta do LLM) e `_ordem_interpretada`.
+
+#### 13.1.1 `chefe "<ordem>"` — objetivo cívico, nunca mágica
+
+1. **Entender**: o texto (minúsculo, sem acento) é comparado com as `palavras` de cada
+   `chefe.interpretacoes` (pedaços no começo de palavra: `reconstru` pega "reconstruam"); ganha a
+   com mais acertos. Sem acerto: o LLM classifica (se no ar), senão "como dá" (sorteio por
+   `peso_sem_entender`, fala `ordem_confusa`). O lugar citado vem dos nomes de lugares/estruturas
+   ("a ferraria", "a bigorna" → `forge`).
+2. **Intuição**: quem tem a profissão `lider` (o sucessor também) recebe (`creator_order`
+   `phase: received`, fala `ordem_intuicao`) e ganha um objetivo pessoal: `anunciar_ordem` (só vale
+   para quem tem ordem pendente; só na Praça; não de madrugada; com sono alto, adia) com `bonus`
+   por `horas`. Sem Chefe vivo, a ordem espera (`esperando`) até haver um. Não anunciou no prazo →
+   `perdida`.
+3. **Anúncio** (`especial: anuncio_criador`): fala `ordem_anuncio` (ou `regra_*`), memória para
+   quem está na Praça e a ordem vira, para cada morador, uma **resposta** pela personalidade:
+   `fator = Π resistencia.tracos × (1 + afinidade_com_o_Chefe/100 × peso_afinidade)`;
+   `< resiste_abaixo` = resiste (sem objetivo; reclama em voz alta se está no lugar),
+   `< atrasa_abaixo` = atrasa (`atraso_horas`), senão aceita; bônus pessoal = `1 + (bonus−1)×fator`.
+   Resumo no Chat: "Reação à ordem (reconstrução): 16 aceitam, 2 vão atrasar, 3 resistem."
+4. **Especiais**:
+   - `reconstruir`: objetivo `construir` no lugar (o citado, ou o pior estrago) para quem aceitou.
+     O conserto é o de sempre (ação `conserta`, aos poucos, manhã/tarde, falha de pastelão). Quem
+     começa `construir` lá entra em `builders`. Pronto quando todas as estruturas do lugar
+     voltam ao estado `inteiro` (`commands.needs_rebuild`): `creator_order phase: done` com os construtores, memória `mutirao`, +2 de
+     afinidade com o Chefe. Prazo `horas` (72) → `abandonada`. Nada estragado → `ordem_sem_estrago`.
+   - `festa`: `social_events.plan_now` (o Chefe organiza a `festa_taverna`; convidados, quórum e
+     fracasso são os da F2).
+   - `regra`: `proibido` / `liberado` + a ação (id, nome ou `apelidos`; sem ação, o Chefe inventa uma
+     das `sugestoes`). **Decreto** por `horas`: proibido → a ação vira a infração `decreto` (ou mantém
+     a sua) para o Fiscal, e a nota dela × `obediencia` (por traço: o rebelde faz MAIS, ×1,6);
+     liberado → a lei não vê a infração e a nota ×`bonus_liberado`. Fim: `regra_fim`.
+   - `reuniao`: assembleia na Praça daqui a `comeca_em_minutos`, objetivo `reuniao` para quem não
+     resistiu; no fim, `creator_order phase: done` com os presentes e memória `reuniao`.
+   - outras (`paz`, `trabalho`, `missa`): só `efeitos.objetivos` (com resistência; bônus < 1 vira
+     objetivo `penalty`: "parem de brigar" deixa `brigar` menos atraente — mudança em
+     `utility.goal_bonus`: objetivos com `penalty` multiplicam pelo menor bônus).
+5. Assunto do momento `ordem` (as conversas comentam a ordem por 1,5 dia).
+
+#### 13.1.2 `medium "<mensagem>"`
+
+Igual ao Chefe, com `medium.*`: recebe como VOZ (`creator_voice`, `voz_recebida`; se dorme, ouve
+em sonho), interpreta por palavras, e com `chance_erro` **entende errado de propósito**: troca a
+interpretação por um dos `desastres` (castigo do céu, ritual no Cemitério, festa no meio do
+ritual) e repete a mensagem torta (uma palavra trocada por uma de `palavras_trocadas`: "a lua pede
+**sapos** na floresta"). Ao `revelar_visao` (em qualquer lugar), os `efeitos` valem: objetivos
+para `quem_recebe` (ela), `seita` (os membros atuais), `igreja` ou `todos`, com a resistência dela
+(devotos e burocratas ignoram); necessidades; evento social (`rave_secreta`).
+
+### 13.2 REST (FastAPI, `server.app`) ✅
 
 ```
-GET  /api/state                         resumo: hora, período, clima, tensão, população, pausado
-GET  /api/characters                    lista (id, nome, lugar, ação, vivo)
-GET  /api/characters/{id}               ficha viva (igual a `quem`)
-GET  /api/places                        lugares + quem está lá + névoa + tela
-GET  /api/screens                       telas do world.yaml + status
-GET  /api/chat?character=&place=&tag=&since=&until=&limit=&before_id=   histórico filtrado
-GET  /api/timeline?min_importance=2     grandes acontecimentos
-POST /api/commands   {"cmd": "chefe", "arg": "reconstruam a ferraria"}  → 202 + id do comando
+GET  /health                            simulação viva? ticks, erro, MQTT, LLM
+GET  /api/state                         hora, período, clima, tensão, população, mortos, névoa, criaturas, pausado
+GET  /api/characters                    lista (id, nome, lugar, ação, vivo, preso, facção, profissão)
+GET  /api/characters/{id}               ficha viva (comando `quem`, pela fila; 404 se não existe)
+GET  /api/places                        lugares + quem está lá + névoa + tela + estruturas
+GET  /api/screens                       telas do world.yaml + offline
+GET  /api/meta                          personagens, lugares, categorias, tipos, comandos (filtros do Chat)
+GET  /api/chat?character=&place=&tag=&type=a,b&since=&until=&min_importance=&limit=&before_id=&after_id=&include_moves=
+GET  /api/timeline?min_importance=2&limit=50&before_id=
+POST /api/commands   {"cmd": "chefe", "arg": "reconstruam a ferraria", "id": "opcional"}
+     → 202 {"id", "status": "feito"|"na_fila", "result"}   (espera até 2 s; `status`/`quem` até 5 s)
+GET  /api/commands, /api/commands/{id}   últimos comandos e o resultado de cada um
+GET  /chat (viewer/chat.html), /viewer/*, / → /chat, /docs (OpenAPI do FastAPI)
 ```
+`since`/`until` são horas do MUNDO em ISO (comparação de texto; o fuso é sempre o do world.yaml).
+`/api/chat` esconde `tension` e os passos de caminhada (a não ser `include_moves=true`).
+`Storage.query_events` ganhou `after_id`, `since`, `until`, `min_importance`, `exclude_types` e
+vários tipos separados por vírgula.
 
-### 13.3 WebSocket `/ws?screen=<id>` (contrato com o viewer)
+### 13.3 WebSocket `/ws?screen=<id>` (contrato com o viewer) ✅
 
-Mensagens JSON com campo `type`. Servidor → cliente:
+Implementado em `server/ws.py` (`Hub`). Servidor → cliente:
 
 ```jsonc
 // 1) logo ao conectar
 {"type": "hello", "screen": "parede_centro", "protocol": 1,
- "world": {"ts": "...", "period": "tarde", "is_night": false, "speed": 1, "weather": {"label": "chuva fraca", "code": 61}},
- "screens": [{"id": "...", "places": ["..."], "position_cm": {"x": 0, "y": 0}, "size_cm": {"width": 0, "height": 0}}],
- "places": [{"id": "town_square", "name": "A Praça", "palette": {...}, "sinister": false, "environment": "externo",
-             "fog": false, "connections": [{"to": "forest", "kind": "tunel"}], "structures": []}],
- "characters": [{"id": "clown", "name": "O Palhaço", "place": "market", "action": "trabalhar",
-                 "visual": {"color": "#e63946", "secondary_color": "#f1faee", "height": 1.05, "body": "magro", "hat": "nenhum", "accessory": "nariz vermelho"},
-                 "moving": null}]}
-// 2) depois, fluxo (só o que interessa aos lugares desta tela, mais o global)
-{"type": "event", "event": { ...Event com text_rendered... }}
-{"type": "clock", "ts": "...", "period": "noite", "is_night": true}          // 1×/min do mundo
-{"type": "weather", "label": "chuva", "code": 63, "forced": "funeral"}
-{"type": "character", "id": "clown", "name": "...", "place": "...", "action": "...", "visual": {...}}  // mudança de estado/renomeação
-{"type": "move", "id": "clown", "from": "market", "to": "tavern", "duration_s": 3.0}  // dentro da tela
-{"type": "teleport", "phase": "start"|"end", "id": "clown", "from_place": "...", "to_place": "...",
- "from_screen": "...", "to_screen": "...", "duration_s": 4.2}
+ "world": {"ts", "period", "is_night", "speed", "paused", "weather": {"label", "kind", "temp", "forced"}, "tension", "population"},
+ "screens": [{"id", "name", "places": [], "position_cm": {"x", "y"}, "size_cm": {"width", "height"}}],
+ "places": [{"id", "name", "palette": {"main", "secondary", "light", "night"}, "sinister", "environment",
+             "fog", "connections": [{"to", "kind", "minutes"}], "structures": [{"id", "name", "place", "hp", "state"}]}],
+ "characters": [{"id", "name", "place", "action", "moving", "visual": {"color", "secondary_color", "height", "body", "hat", "accessory"}}]}
+// 2) fluxo: só o que toca os lugares desta tela (place, from/to, from_place/to_place) + o global (place nulo) + Aparição
+{"type": "event", "event": { ...Event (seção 8) com text_rendered... }}
+{"type": "bubble", "id": "chef_wife", "place": "...", "text": "A Cozinheira: \"Come que esfria!\"", "duration_s": 4}
+{"type": "character", "id", "name", "place", "alive", "action", "moving", "visual"}   // depois de ação, chegada, morte...
+{"type": "move", "id", "from", "to", "duration_s"}          // caminhada dentro da tela (minutos × 60 ÷ velocidade)
+{"type": "teleport", "phase": "start"|"end", "id", "from_place", "to_place", "from_screen", "to_screen", "duration_s"}
 {"type": "fog", "place": "forest", "on": true}
-{"type": "bubble", "id": "chef_wife", "text": "Come que esfria!", "duration_s": 4}  // balão (fala)
-{"type": "apparition", "places": ["..."], "duration_s": 3}
+{"type": "weather", "label", "kind", "forced"}
+{"type": "clock", "ts", "period", "is_night", "speed", "paused"}   // a cada 5 s reais e na troca de período
+{"type": "apparition", "screen", "places": [...], "duration_s": 4}
 ```
+(Diferenças do plano: `palette` usa as chaves em inglês do `Palette`; `bubble` leva o texto
+renderizado inteiro — o viewer encurta; `clock` vai a cada 5 s reais, não a cada minuto do mundo.)
 
-Cliente → servidor: `{"type": "ping"}` (o servidor responde `pong`) e `{"type": "resync"}` (reenvia
-`hello`). Sem comandos pelo WebSocket (comandos só via REST/MQTT/CLI). `/ws/chat` (sem `screen`)
-manda todos os eventos para a página do Chat do Mundo.
+Cliente → servidor: `{"type": "ping"}` → `pong`; `{"type": "resync"}` → `hello` de novo. Tela
+inexistente: `{"type": "error", "screens": [...]}` e fecha. `/ws/chat` (e `/ws` sem `screen`):
+`hello` com todos os lugares e depois **todos** os eventos (`{"type": "event"}`), menos `decision` e
+`tension`. Cada cliente tem uma fila (2000); cliente lento perde mensagens, o mundo nunca espera.
 
-### 13.4 MQTT (`server.mqtt_bridge`)
+### 13.4 MQTT (`server.mqtt_bridge`) ✅
 
-paho-mqtt 2.x com `mqtt.Client(callback_api_version=CallbackAPIVersion.VERSION2,
-client_id=...)`, `loop_start()`, reconexão a cada `reconectar_segundos`, LWT em `world/status`
-(`offline`, retido) e `online` retido ao conectar. Broker fora: loga aviso **uma vez** por queda e
-segue. Tópicos vêm de `world.yaml > mqtt.topicos`.
+paho-mqtt 2.x: `mqtt.Client(callback_api_version=CallbackAPIVersion.VERSION2, client_id=...)`,
+`connect_async` + `loop_start()`, `reconnect_delay_set(1, reconectar_segundos)`, LWT
+`world/status = offline` (retido), `online` retido ao conectar e `offline` ao sair. Broker fora:
+**um** aviso no log por queda e a simulação segue. O handler só converte o payload
+(`parse_message`, testável sem broker) num `Command` e põe na fila.
 
 | Tópico | Direção | Payload |
 |---|---|---|
-| `world/events` | publica | Event (JSON da seção 8) com `importance >= 1` (rotina não, para não inundar) |
-| `world/state` | publica, retido, a cada `estado_a_cada_minutos` | `{"ts","period","is_night","weather","tension","population","alive","places":{id:[ids]}}` |
-| `world/chat` | publica | `{"from": "<id>", "from_name": "...", "text": "...", "ts": "<real>", "meta": {"world_ts", "place", "to": "<id>|null", "situation", "tags"}}` (mesmo molde de `npc/<id>/fala`) |
-| `leds/tunnel` | publica | `{"phase": "start"|"end", "char": "<id>", "from_screen", "to_screen", "from_cm": {x,y}, "to_cm": {x,y}, "duration_ms", "color": "#hex"}` |
-| `world/status` | publica, retido | `online` / `offline` |
-| `world/commands` | escuta | `{"cmd": "...", "arg": "..."}` (seção 13.1) |
-| `sala/camera/pessoas` | escuta | `{"count": n}` ou número puro; `count > 0` = presença |
-| `homelab/servicos/#` | escuta | `{"status": "down"|"up"|"degraded", "name": "..."}` (o sufixo do tópico é o serviço) |
-| `telas/+/status` | escuta | `online` / `offline` (o `+` é o id da tela) |
+| `world/events` | publica | Event (seção 8, com `text_rendered`) com `importance >= 1` |
+| `world/state` | publica, retido, a cada `estado_a_cada_minutos` (÷ velocidade, mín. 2 s reais) | `{"ts","period","is_night","weather","tension","population","alive","places":{id:[ids]},"fog","paused","speed"}` |
+| `world/chat` | publica (toda fala) | `{"from","from_name","text","ts","meta":{"world_ts","place","to","situation","tags"}}` |
+| `leds/tunnel` | publica | `{"phase":"start"|"end","char","from_screen","to_screen","from_cm":{x,y},"to_cm":{x,y},"duration_ms","color"}` |
+| `world/status` | publica, retido | `online` / `offline` (LWT) |
+| `world/commands/result` | publica | `{"id","cmd","arg","result","ts"}` (resposta de cada comando recebido) |
+| `world/commands` | escuta | `{"cmd","arg","id"}` ou texto `chefe reconstruam a ferraria` |
+| `sala/camera/pessoas` | escuta | `{"count": n}` (ou `pessoas`/`people`), número, `true/false` → `presenca n` |
+| `homelab/servicos/#` | escuta | `{"status": "down"|"up"|"degraded", "name"?}` ou texto; o sufixo do tópico é o serviço → `homelab <serviço> <status>` |
+| `telas/+/status` | escuta | `online`/`offline` (ou `{"status"}`, `on/off`, `1/0`) → `tela <id> online|offline` |
 
-Os NPCs do mundo **não** publicam em `npc/<id>/fala` por padrão (evita o Grilo responder a cada
-fala do mundo); dá para ligar depois com uma opção no `world.yaml`.
+### 13.5 Docker ✅
 
-### 13.5 Docker
+`Dockerfile` (python:3.12-slim): instala o pacote, copia `data/` e `viewer/`, `EXPOSE 8000`,
+`HEALTHCHECK` em `/health`, `CMD python -m server --porta 8000`. `docker-compose.yml`: **um serviço**
+`world` (simulação + servidor no mesmo processo, seção 1.1), porta `${DW_SERVER_PORT:-8000}:8000`,
+volumes `./data` e `./var`, `.env` opcional, `restart: unless-stopped`, `stop_grace_period: 20s`
+(o SIGTERM do Docker faz o uvicorn desligar e o `Runtime.stop()` salvar). O Chat do Mundo também
+sai no stdout (`docker compose logs -f world`; `--sem-chat` desliga). O viewer da F5 entra no mesmo
+container (`/viewer`).
 
-`Dockerfile` (python:3.12-slim) + `docker-compose.yml`: um serviço `sim` com `./data` e `./var`
-como volumes e `.env` para endereços. F1 ✅ mudou o comando para `python -m tools.run` (tempo real,
-`restart: unless-stopped`; `tzdata` no pyproject garante o fuso na imagem enxuta); F4 para
-`python -m server` com a porta `${DW_SERVER_PORT:-8000}` publicada e `restart: unless-stopped`.
-O viewer (F5) é servido como estático pelo próprio FastAPI (`viewer/dist`), sem segundo container.
+### 13.6 O olhar e a Aparição (`sim.presence`) ✅
+
+`presenca n` liga a "sensação" de gente no quarto por `presenca_expira_minutos`. Com presença: nota
+de `encarar_tela` × `multiplicador_olhar` (fator "presença no quarto" na explicação) e o **olhar
+coletivo** (de hora em hora, `limites.chance_olhar_por_hora` × `multiplicador_olhar_coletivo`; num
+lugar visível numa tela, até `max_no_olhar_coletivo` acordados param e encaram; evento `stare`).
+**Aparição**: a cada ENTRADA no quarto (0 → 1+), com `chance_aparicao` e cooldown
+`limites.cooldown_aparicao_dias`: evento `apparition` (importância 3, tela com mais gente acordada),
+reações (Padre `aparicao_padre`, Médium `aparicao_medium` — os dois mesmo dormindo —, quem é
+`estranho` `aparicao_esquisito`, até 3 da seita `aparicao_seita`, 2 outros), medo +20 em todos, a
+seita em êxtase (fé −30), memória permanente `aparicao` (quem dormia, mais fraca), objetivos de
+`presenca.objetivos` (ritual, missa, encarar a tela) e assunto `aparicao` por 5 dias.
+
+### 13.7 Assuntos do momento
+
+`criador.assuntos.<id>` (`dias`, `chance`, `acoes`): depois de uma ressurreição, de uma Aparição ou
+de uma ordem, quando alguém começa `conversar`, com `chance × (1 − tempo_passado/dias)` a fala sai
+da situação `assunto_<id>` com `{terceiro}` = de quem se fala (nunca com ele mesmo).
 
 ## 14. Fase 5 — visual 📐
 
@@ -897,12 +1014,13 @@ O viewer (F5) é servido como estático pelo próprio FastAPI (`viewer/dist`), s
 
 - Layout interno dos lugares numa tela (posições 3D) — F5 decide; pode ganhar campo no YAML.
 - Esquema das criaturas — F3 ✅ (seção 12.7).
-- F4: ligar `world/commands`, `homelab/servicos/#` e `telas/+/status` nos comandos `nascer`,
-  `homelab`, `tela` (já existem no `World.handle_command`); `reviver` usa
-  `lifecycle.resurrect(cid, "criador")`.
-- Lista de situações reescritas pelo LLM — F4.
-- Técnicos: na F1 trabalham na Sala do Servidor como qualquer profissão (manhã/tarde). Quando a F4
-  ligar `homelab/servicos/#`, o trabalho deles deve depender de objetivo (problema real aberto).
+- F4 ✅: `world/commands`, `homelab/servicos/#` e `telas/+/status` ligados (`server.mqtt_bridge`);
+  `reviver` usa `lifecycle.resurrect(cid, "criador")`; situações do LLM em `ollama.situacoes`.
+- F5: o viewer consome o contrato da seção 13.3 (já implementado e testado do lado do servidor).
+- F6: `recarregar` (data/ sem reiniciar) continua planejado.
+- Técnicos: continuam trabalhando na Sala do Servidor como profissão (manhã/tarde); um problema real
+  (`homelab/servicos/<nome>` down, agora pelo MQTT) traz o Gremlin do Rack e o objetivo de
+  enfrentar (F3). Fazer o trabalho deles depender SÓ de problema aberto ficou para a F6.
 - Médium: com o `ritual` (F2) as noites dela são de ritual; o bloco provisório de `rezar` saiu.
 - Diretor (F3) deve usar `World.add_goal` e `World.say` (mesmo mecanismo dos convites) e pode
   medir a tensão pelas contagens de `fight`/`argument`/`arrest` recentes.

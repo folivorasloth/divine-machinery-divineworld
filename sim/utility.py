@@ -305,6 +305,7 @@ def score(
 def goal_bonus(ctx: DecisionContext, cid: str, action_id: str, place: str) -> tuple[float, str]:
     """Maior bônus entre os objetivos ativos agora para (quem, ação, lugar)."""
     best, source = 1.0, ""
+    worst = 1.0  # Fase 4: objetivos com "penalty" (bônus < 1) deixam a ação MENOS atraente
     for g in ctx.goals:
         if g["action"] != action_id or g["who"] not in (None, cid):
             continue
@@ -314,7 +315,10 @@ def goal_bonus(ctx: DecisionContext, cid: str, action_id: str, place: str) -> tu
             continue
         if g["bonus"] > best:
             best, source = g["bonus"], g["source"]
-    return best, source
+        elif g.get("penalty") and g["bonus"] < worst:
+            worst = g["bonus"]
+            source = source or g["source"]
+    return best * worst, source
 
 
 def blocked_for(ctx: DecisionContext, me: CharacterState) -> frozenset[str]:

@@ -88,6 +88,18 @@ MIGRATIONS: list[str] = [
 
 
 class Storage:
+    @classmethod
+    def reader(cls, path: str | Path) -> "Storage":
+        """Conexão só de leitura (Fase 4: a API lê o Chat do Mundo enquanto a simulação
+        escreve; o WAL do SQLite deixa ler sem travar quem escreve). Não migra nada."""
+        self = cls.__new__(cls)
+        self.path = str(path)
+        self.conn = sqlite3.connect(self.path, check_same_thread=False, timeout=5)
+        self.conn.row_factory = sqlite3.Row
+        self.conn.execute("PRAGMA query_only=1")
+        self._dirty = False
+        return self
+
     def __init__(self, path: str | Path):
         self.path = str(path)
         if self.path != ":memory:":
@@ -212,10 +224,30 @@ class Storage:
         self._dirty = True
 
     def query_events(self, *, character: str | None = None, place: str | None = None, tag: str | None = None,
-                     type: str | None = None, limit: int = 100, before_id: int | None = None) -> list[Event]:
-        """Histórico do Chat do Mundo, mais novos primeiro (base do /api/chat da Fase 4)."""
+                     type: str | None = None, limit: int = 100, before_id: int | None = None,
+                     after_id: int | None = None, since: str | None = None, until: str | None = None,
+                     min_importance: int | None = None, exclude_types: tuple[str, ...] = ()) -> list[Event]:
+        """Histórico do Chat do Mundo, mais novos primeiro (base do /api/chat da Fase 4).
+
+        `type` aceita vários separados por vírgula; `since`/`until` são horas do MUNDO
+        (ISO, comparadas como texto: o fuso é sempre o do world.yaml)."""
         sql = "SELECT * FROM events e WHERE 1=1"
         args: list = []
+        if after_id:
+            sql += " AND e.id > ?"
+            args.append(after_id)
+        if since:
+            sql += " AND e.ts >= ?"
+            args.append(since)
+        if until:
+            sql += " AND e.ts <= ?"
+            args.append(until)
+        if min_importance:
+            sql += " AND e.importance >= ?"
+            args.append(min_importance)
+        for t in exclude_types:
+            sql += " AND e.type != ?"
+            args.append(t)
         if character:
             sql += " AND EXISTS (SELECT 1 FROM event_actors a WHERE a.event_id = e.id AND a.char_id = ?)"
             args.append(character)
@@ -226,8 +258,9 @@ class Storage:
             sql += " AND EXISTS (SELECT 1 FROM event_tags t WHERE t.event_id = e.id AND t.tag = ?)"
             args.append(tag)
         if type:
-            sql += " AND e.type = ?"
-            args.append(type)
+            types = [t.strip() for t in type.split(",") if t.strip()]
+            sql += " AND e.type IN (" + ",".join("?" * len(types)) + ")"
+            args += types
         if before_id:
             sql += " AND e.id < ?"
             args.append(before_id)

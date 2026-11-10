@@ -236,3 +236,22 @@ def _finish(world: "World", sev: SocialEventDef, inst: SocialInstance) -> None:
     if inst.partner:
         world.states[inst.organizer].spouse = inst.partner
         world.states[inst.partner].spouse = inst.organizer
+
+
+# ------------------------------------------------- a pedido (Fase 4: o Criador)
+def plan_now(world: "World", sid: str, organizer: str, earliest: float) -> SocialInstance | None:
+    """Marca um evento social já (a ordem do Chefe "façam uma festa", a rave da Médium).
+    Só o "quando" e o "quem organiza" vêm de fora; quem vai e se dá certo continua
+    saindo das afinidades e da Utility AI. None se já há um desse tipo marcado."""
+    sev = world.data.social_events.get(sid)
+    if sev is None or any(i.kind == sid for i in world.social.active()):
+        return None
+    start = _next_start(world, sev, earliest)
+    if start is None:
+        start = earliest
+    duration = world.rng.uniform(*sev.duration_hours) * 60
+    place = sev.place
+    if sev.where == "dano":
+        place = world.structures.worst()[0] or sev.place
+    _plan(world, sev, organizer, place, start, start + duration, _partner(world, sev, organizer))
+    return world.social.instances[-1]

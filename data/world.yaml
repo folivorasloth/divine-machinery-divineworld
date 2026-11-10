@@ -270,14 +270,31 @@ mqtt:
     presenca: sala/camera/pessoas
     homelab: homelab/servicos/#
     status_telas: telas/+/status # o + é o id da tela
+    # publica: resposta de cada comando recebido em world/commands
+    respostas: world/commands/result
 
 # LLM local opcional (o "Oráculo"). Sem ele, tudo funciona com templates.
+# Só é usado com o mundo no relógio real (python -m server, velocidade 1); no
+# tempo acelerado e nos testes, nunca. Se o Ollama não responder em
+# timeout_segundos, ou passar de max_por_hora, a fala sai do template de sempre.
 ollama:
-  ativo: true
+  ativo: ${DW_OLLAMA_ATIVO:-true}
   url: ${OLLAMA_URL:-http://oraculo.local:11434}
   modelo: ${OLLAMA_MODEL:-qwen2.5:7b}
   timeout_segundos: 4
   max_por_hora: 30
+  checar_a_cada_segundos: 60
+  max_caracteres: 220
+  # falas que o LLM pode reescrever (só as de importância >= importancia_min)
+  importancia_min: 1
+  situacoes: [morte_briga, morte_velhice, morte_acidente, morte_choque, morte_criatura, morte_limbo,
+              funeral_personalidade, funeral_amigo, funeral_inimigo, funeral_anuncio, epitafio,
+              ressurreicao_criador, ressurreicao_padre, ressurreicao_medium,
+              ordem_intuicao, ordem_anuncio, ordem_cumprida, ordem_resiste,
+              voz_recebida, visao_anuncio, aparicao_padre, aparicao_seita, aparicao_esquisito,
+              virou_inimigo, virou_amigo]
+  # também tenta entender ordens livres do Criador (sem palavra-chave conhecida)
+  interpretar_ordens: true
 
 # API HTTP + WebSocket (Fase 4)
 servidor:
@@ -593,6 +610,36 @@ memoria:
       afinidade: 3
       fato: "{quem} juntou gente para consertar {lugar}"
       lembranca: "aquele mutirão em {lugar}"
+    # Fase 4: o Criador
+    ordem_do_chefe:
+      nome: Ordem do Chefe
+      intensidade: 35
+      sentimento: 0.1
+      decai_por_dia: 12
+      fato: "{quem} anunciou uma ordem nova em {lugar}"
+      lembranca: "aquela ordem que {quem} deu em {lugar}"
+    visao:
+      nome: Visão da Médium
+      intensidade: 45
+      sentimento: 0.2
+      decai_por_dia: 10
+      fato: "{quem} contou que ouviu as vozes em {lugar}"
+      lembranca: "aquela visão que {quem} contou em {lugar}"
+    reuniao:
+      nome: Reunião na Praça
+      intensidade: 30
+      sentimento: 0.2
+      decai_por_dia: 12
+      afinidade: 1
+      fato: "{quem} juntou a cidade em {lugar} para uma reunião"
+      lembranca: "aquela reunião em {lugar}"
+    aparicao:
+      nome: A Aparição
+      intensidade: 100
+      sentimento: 0.1
+      permanente: true
+      fato: "apareceu em {lugar} uma silhueta borrada, olhando de fora da tela"
+      lembranca: "aquele dia da silhueta em {lugar}"
 
 fofoca:
   # chance de a fofoca chegar torta (troca quem fez por outra pessoa).
@@ -620,6 +667,8 @@ leis:
     brigar: {nome: briga, gravidade: 1.5}
     quebrar: {nome: quebra-quebra, gravidade: 2}
     baderna: {nome: baderna, gravidade: 1}
+    # Fase 4: desobedecer uma regra que o Chefe decretou (comando chefe "proibido ...")
+    decreto: {nome: desobediência ao decreto do Chefe, gravidade: 0.5}
   pontos_para_prisao: 2
   pontos_para_limbo: 6
   pontos_somem_por_dia: 1

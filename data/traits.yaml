@@ -197,7 +197,7 @@ tracos:
     sorteavel: false
     efeitos:
       necessidades: {social: 0.2, tedio: 0.3}
-      acoes: {perambular: 3.0, conversar: 0.3, festejar: 0.2, rezar: 0.2, missa: 0.2, fofocar: 0, discutir: 0.1, velar: 0.15, visitar_tumulo: 0.1, enfrentar: 0}
+      acoes: {perambular: 3.0, conversar: 0.3, festejar: 0.2, rezar: 0.2, missa: 0.2, fofocar: 0, discutir: 0.1, velar: 0.15, visitar_tumulo: 0.1, enfrentar: 0, construir: 0.1}
   - id: calmo
     nome: Calmo
     opostos: [bravo, irritado]
@@ -251,7 +251,7 @@ tracos:
   - id: protetor
     nome: Protetor
     efeitos:
-      acoes: {consolar: 1.3, enfrentar: 2.0}
+      acoes: {consolar: 1.3, enfrentar: 2.0, construir: 2.0}   # o Ferreiro lidera as reconstruções
 
   # --- A Florista
   - id: alegre

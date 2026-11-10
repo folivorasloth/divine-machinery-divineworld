@@ -1,0 +1,324 @@
+# =====================================================================
+# criador.yaml — o que acontece quando o CRIADOR (o João) intervém
+# =====================================================================
+# Fase 4. Os comandos chegam pela CLI (python -m tools.cli), pela API
+# (POST /api/commands) e pelo MQTT (world/commands). Nada aqui é roteiro:
+# uma ordem vira um OBJETIVO (a nota de uma ação fica maior para quem
+# aceitou a ordem) e os NPCs decidem o resto com as necessidades de sempre.
+#
+#   chefe "<ordem>"     o Chefe sente uma "intuição", vai até a Prefeitura/Praça
+#                       e anuncia. Cada morador reage pela personalidade:
+#                       aceita, atrasa ou resiste (criador.chefe.resistencia).
+#   medium "<mensagem>" a Médium ouve uma "voz". Às vezes entende errado de
+#                       propósito (chance_erro) e age, ou convence a seita.
+#   reviver <id>        o morto volta mudado; o Padre grita milagre, a
+#                       Médium diz que foi ela e a cidade comenta por dias.
+#
+# Como as ordens são entendidas: o texto é comparado (sem acento, minúsculo)
+# com as `palavras` de cada interpretação; ganha a que tiver mais pedaços
+# encontrados. Se nenhuma bater e o Ollama estiver no ar, ele tenta; senão o
+# Chefe "interpreta como dá" (sorteio pelo `peso_sem_entender`).
+#
+# Objetivos (`objetivos`):
+#   para:  quem_recebe (o Chefe/a Médium) | seita | igreja | todos
+#   acao:  a ação que fica mais atraente;  lugar: lugar fixo (opcional)
+#   no_lugar_da_ordem: true = o lugar citado na mensagem ("a ferraria")
+#   bonus: multiplica a nota;  horas: quanto tempo vale
+# =====================================================================
+
+criador:
+  # ------------------------------------------------------------- o Chefe
+  chefe:
+    profissao: lider          # quem tiver esta profissão recebe (vale para o sucessor)
+    acao: anunciar_ordem      # a ação de ir anunciar (data/actions/criador.yaml)
+    bonus: 25                 # vontade de ir anunciar (o preguiçoso às vezes termina o cochilo antes)
+    horas: 12                 # se não anunciar em 12 h, a ordem se perde
+    fala_recebe: ordem_intuicao
+    fala_confusa: ordem_confusa
+    fala_cumprida: ordem_cumprida
+    fala_abandonada: ordem_abandonada
+    fala_resiste: ordem_resiste
+    # Como cada morador recebe a ordem. fator = Π tracos × (1 + afinidade com o
+    # Chefe / 100 × peso_afinidade). Abaixo de resiste_abaixo: não obedece (e
+    # reclama). Abaixo de atrasa_abaixo: obedece, mas só depois de atraso_horas.
+    resistencia:
+      tracos:
+        preguicoso: 0.6
+        rebelde: 0.3
+        sarcastico: 0.7
+        debochado: 0.7
+        vazio: 0.05        # o Mike nem percebe que houve uma ordem
+        ganancioso: 0.6
+        soberbo: 0.4       # a Dama não carrega tijolo
+        irritado: 0.9
+        protetor: 1.6
+        honesto: 1.3
+        leal: 1.4
+        perfeccionista: 1.3
+        empolgado: 1.4
+        alegre: 1.3
+        burocrata: 1.5     # o Fiscal adora uma ordem
+        devoto: 1.1
+        conciliador: 1.3
+      peso_afinidade: 0.6
+      resiste_abaixo: 0.45
+      atrasa_abaixo: 0.85
+      atraso_horas: [2, 10]
+      max_falas: 3
+    interpretacoes:
+      reconstruir:
+        nome: reconstrução
+        especial: reconstruir
+        palavras: [reconstru, constru, consert, arrum, refaz, refac, reform, levant, reergu, conserto, obra]
+        fala: ordem_anuncio
+        horas: 72            # prazo: se não ficar inteiro em 3 dias, a ordem cai no esquecimento
+        bonus: 5             # vontade de construir no lugar da ordem (× o fator de cada um)
+        peso_sem_entender: 1
+        efeitos:
+          memoria: ordem_do_chefe
+      festa:
+        nome: festa
+        especial: festa
+        palavras: [festa, festej, comemor, baile, celebr, dancar, arrasta, forro]
+        fala: ordem_anuncio
+        peso_sem_entender: 2  # na dúvida, o Chefe acha que é festa
+        efeitos:
+          evento_social: festa_taverna
+          memoria: ordem_do_chefe
+      regra:
+        nome: regra nova
+        especial: regra
+        palavras: [proib, regra, lei, decret, liber, permit, nao pode, vetad, banid, vale tudo]
+        fala: ordem_anuncio
+        horas: 72
+        peso_sem_entender: 1
+        efeitos:
+          memoria: ordem_do_chefe
+      reuniao:
+        nome: reunião
+        especial: reuniao
+        palavras: [reuni, assembl, convoc, junt, conversar todo, todo mundo na praca, encontro]
+        fala: ordem_anuncio
+        peso_sem_entender: 1
+        efeitos:
+          memoria: ordem_do_chefe
+      paz:
+        nome: paz na cidade
+        palavras: [paz, parem de brigar, sem briga, perdo, desculp, amor, abrac, harmonia]
+        fala: ordem_anuncio
+        peso_sem_entender: 0.5
+        efeitos:
+          memoria: ordem_do_chefe
+          objetivos:
+            - {para: todos, acao: pedir_desculpas, bonus: 4, horas: 12}
+            - {para: todos, acao: abracar, bonus: 3, horas: 12}
+            - {para: todos, acao: brigar, bonus: 0.3, horas: 24}   # bônus < 1 = menos vontade
+          necessidades: {raiva: -15}
+      trabalho:
+        nome: mais trabalho
+        palavras: [trabalh, produz, servico, mais esforco]
+        fala: ordem_anuncio
+        peso_sem_entender: 0.5
+        efeitos:
+          memoria: ordem_do_chefe
+          objetivos:
+            - {para: todos, acao: trabalhar, bonus: 2, horas: 10}
+            - {para: todos, acao: cochilar, bonus: 0.4, horas: 10}
+      missa:
+        nome: todo mundo na missa
+        palavras: [missa, igreja, catedral, rezar, reza, deus]
+        fala: ordem_anuncio
+        peso_sem_entender: 0.3
+        efeitos:
+          memoria: ordem_do_chefe
+          objetivos:
+            - {para: todos, acao: missa, bonus: 5, horas: 10}
+            - {para: todos, acao: rezar, bonus: 2, horas: 10}
+    # chefe "proibido brigar" / chefe "liberem o skate"
+    regra:
+      infracao: decreto
+      palavras_proibir: [proib, nao pode, nao podem, vetad, banid, chega de, acabou o, acabou a, parem de, nada de]
+      palavras_liberar: [liber, permit, pode, podem, vale tudo, a vontade]
+      # palavras que identificam cada ação na ordem (o id e o nome da ação já contam)
+      apelidos:
+        brigar: [briga, tapa, porrada, soco]
+        discutir: [discuss, grito, gritar, bate-boca]
+        festejar: [festa, festej, baile, farra, bebedeira]
+        andar_de_skate: [skate]
+        pichar: [pichac, pichar, muro]
+        roubar: [roub, furt]
+        quebrar: [quebr]
+        pregar_peca: [pegadinha, peca, zoeira]
+        fofocar: [fofoc]
+        ritual: [ritual, seita, macumba]
+        participar_ritual: [ritual, seita]
+        fucar: [fucar, mexer no servidor]
+        cochilar: [cochil, soneca, dormir na praca]
+        perambular: [vagabund, perambul, andar a toa]
+        fazer_malabarismo: [malabar]
+        encarar_tela: [encarar, olhar para a tela]
+      # sem dizer qual ação: o Chefe inventa uma destas regras
+      sugestoes: [cochilar, andar_de_skate, fofocar, pregar_peca, festejar]
+      # com a ação proibida, a nota dela × obediencia (por traço, o maior vale)
+      obediencia: 0.35
+      obediencia_tracos:
+        rebelde: 1.6        # o Adolescente faz MAIS o que foi proibido
+        debochado: 1.2
+        briguento: 0.8
+        burocrata: 0.05
+        devoto: 0.2
+      bonus_liberado: 1.5   # com a ação liberada, todo mundo faz um pouco mais
+    reuniao:
+      acao: reuniao
+      lugar: town_square
+      minutos: 60
+      comeca_em_minutos: 40
+      bonus: 6
+      memoria: reuniao
+
+  # ------------------------------------------------------------- a Médium
+  medium:
+    profissao: medium
+    acao: revelar_visao
+    bonus: 25
+    horas: 12
+    fala_recebe: voz_recebida
+    fala_confusa: voz_confusa
+    # chance de entender errado (de propósito). Errando, prefere os `desastres`.
+    chance_erro: 0.3
+    desastres: [castigo, ritual_no_cemiterio, festa_da_seita]
+    # quando entende errado, troca uma palavra da mensagem por uma destas
+    palavras_trocadas: [galinha, velas pretas, o Cemitério, sangue de beterraba, o Mike, a lua, sapos, a Sala do Servidor]
+    resistencia:
+      tracos:
+        devoto: 0.3         # quem é da Igreja não dá ouvido à Médium
+        ranzinza: 0.5
+        burocrata: 0.3
+        estranho: 1.6
+        curioso: 1.4
+        rebelde: 1.3
+        misterioso: 1.3
+        vazio: 0.05
+      peso_afinidade: 0.8
+      resiste_abaixo: 0.4
+      atrasa_abaixo: 0.8
+      atraso_horas: [1, 6]
+      max_falas: 2
+    interpretacoes:
+      ritual:
+        nome: ritual
+        palavras: [ritual, vela, lua, anjo, espirit, alma, invoc, chamar, vozes, sinal, segredo]
+        fala: visao_anuncio
+        peso_sem_entender: 1
+        efeitos:
+          memoria: visao
+          objetivos:
+            - {para: quem_recebe, acao: ritual, bonus: 6, horas: 20}
+            - {para: seita, acao: participar_ritual, bonus: 5, horas: 20}
+          necessidades: {fe: -10}
+          necessidades_para: seita
+      convencer:
+        nome: espalhar a palavra
+        palavras: [conte, avise, diga, espalh, conven, recrut, seguidor, fiel, fieis]
+        fala: visao_anuncio
+        peso_sem_entender: 1
+        efeitos:
+          memoria: visao
+          objetivos:
+            - {para: quem_recebe, acao: recrutar, bonus: 8, horas: 24}
+            - {para: seita, acao: conversar, bonus: 1.5, horas: 12}
+      paz:
+        nome: paz
+        palavras: [paz, perdo, desculp, amor, abrac, calma, harmonia, parem de brigar]
+        fala: visao_anuncio
+        peso_sem_entender: 0.5
+        efeitos:
+          memoria: visao
+          objetivos:
+            - {para: seita, acao: abracar, bonus: 4, horas: 12}
+            - {para: seita, acao: pedir_desculpas, bonus: 4, horas: 12}
+      reconstruir:
+        nome: reconstruir
+        palavras: [reconstru, constru, consert, arrum, refaz, reform]
+        fala: visao_anuncio
+        peso_sem_entender: 0.3
+        efeitos:
+          memoria: visao
+          objetivos:
+            - {para: seita, acao: construir, no_lugar_da_ordem: true, bonus: 5, horas: 24}
+      festa:
+        nome: festa
+        palavras: [festa, festej, danc, comemor, celebr, rave, musica]
+        fala: visao_anuncio
+        peso_sem_entender: 0.5
+        efeitos:
+          memoria: visao
+          evento_social: rave_secreta
+      # --- os "desastres": quase só saem quando ela entende errado
+      castigo:
+        nome: castigo do céu
+        palavras: [castig, raiva, furia, vingan, medo, fim do mundo]
+        fala: visao_desastre
+        peso_sem_entender: 0.3
+        efeitos:
+          memoria: visao
+          necessidades: {medo: 25, fe: -20}
+          necessidades_para: todos
+          objetivos:
+            - {para: todos, acao: rezar, bonus: 4, horas: 10}
+            - {para: seita, acao: participar_ritual, bonus: 4, horas: 10}
+      ritual_no_cemiterio:
+        nome: ritual no Cemitério
+        palavras: [morto, morte, cemiterio, tumulo, cova]
+        fala: visao_desastre
+        peso_sem_entender: 0.2
+        efeitos:
+          memoria: visao
+          objetivos:
+            - {para: quem_recebe, acao: ritual, lugar: cemetery, bonus: 8, horas: 20}
+            - {para: seita, acao: participar_ritual, lugar: cemetery, bonus: 6, horas: 20}
+          necessidades: {medo: 15}
+          necessidades_para: todos
+      festa_da_seita:
+        nome: festa no meio do ritual
+        palavras: []
+        fala: visao_desastre
+        peso_sem_entender: 0.2
+        efeitos:
+          memoria: visao
+          evento_social: rave_secreta
+          objetivos:
+            - {para: seita, acao: festejar, bonus: 3, horas: 12}
+
+  # ------------------------------------------------------------- reviver
+  reviver:
+    medo: 85              # volta com medo de morrer de novo
+    chance_esquecer: 0.5  # cada memória (não permanente) some com esta chance
+    assunto: ressurreicao # a cidade comenta por dias
+
+  # ------------------------------------------------------- assuntos do momento
+  # Depois de um acontecimento lendário, nas conversas (acoes) a fala sai, com
+  # `chance` (que vai caindo até `dias`), da situação assunto_<id> em data/lines.
+  assuntos:
+    ressurreicao: {dias: 4, chance: 0.45, acoes: [conversar]}
+    aparicao: {dias: 5, chance: 0.5, acoes: [conversar]}
+    ordem: {dias: 1.5, chance: 0.25, acoes: [conversar]}
+
+  # ------------------------------------------------------- o olhar e a Aparição
+  # MQTT sala/camera/pessoas: quando há gente no quarto, a cidade "sente".
+  presenca:
+    acao_olhar: encarar_tela
+    multiplicador_olhar: 3            # com gente no quarto, encarar a tela fica 3× mais provável
+    multiplicador_olhar_coletivo: 4   # e o olhar coletivo (limites.chance_olhar_por_hora) 4×
+    max_no_olhar_coletivo: 5
+    chance_aparicao: 0.03             # a cada vez que alguém ENTRA no quarto (cooldown: limites.cooldown_aparicao_dias)
+    memoria_aparicao: aparicao
+    assunto_aparicao: aparicao
+    duracao_aparicao_s: 4
+    presenca_expira_minutos: 10
+    faccao_que_enlouquece: seita
+    objetivos:
+      - {para: seita, acao: participar_ritual, bonus: 6, horas: 12}
+      - {para: quem_recebe, acao: ritual, bonus: 8, horas: 12}   # quem_recebe = a Médium
+      - {para: igreja, acao: missa, bonus: 4, horas: 12}
+      - {para: todos, acao: encarar_tela, bonus: 3, horas: 6}

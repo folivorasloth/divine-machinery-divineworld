@@ -111,6 +111,17 @@ situacoes:
     - "{eu} cai do skate e o skate vai sozinho até o chafariz. Splash."
     - "{eu} escorrega e o skate voa direto na canela de alguém."
     - "{eu} cai e fica deitad{o|a} no chão olhando o céu, decidindo se vale a pena levantar."
+    # Fase 4: mais variações (o relatório de variedade pegou "atropela um pombo" 6× numa semana)
+    - "{eu} tenta um kickflip em {lugar}. O skate gira, {eu} não."
+    - "{eu} freia com a cara. Funciona."
+    - "{eu} desvia de uma galinha, de um balde e de uma criança. Não desvia do poste."
+    - "{eu} cai do skate e jura que a culpa é do chão de {lugar}."
+    - "{eu} perde o equilíbrio numa pedrinha minúscula. A pedrinha nem se mexe."
+    - "{eu} sai rolando de skate ladeira abaixo, sem freio, gritando \"TANTO FAZ!\""
+    - "{eu} cai de lado, o fone voa pro outro, e a música continua para ninguém."
+    - "{eu} tenta subir no banco de skate. O banco é mais alto do que parecia."
+    - "{eu} se esborracha em {lugar} e fica imóvel um tempo, só para ver se alguém se importa."
+    - "{eu} tropeça no próprio cadarço em cima do skate. Física pura."
 
   malabarismo:
     - "{eu} faz malabarismo com três bolinhas. Bonito."
@@ -249,6 +260,11 @@ situacoes:
     - "Do que era {objeto}, só ficou a lembrança."
     - "Como castelo de areia, {objeto} se desmancha."
 
+  # Fase 4: o que estava DESTRUÍDO volta a ficar de pé (mas ainda danificado)
+  estrutura_reerguida:
+    - "{eu} junta os pedaços de {objeto} e põe de pé de novo. Ainda torto, mas de pé."
+    - "{eu} começa a reerguer {objeto}, tábua por tábua."
+    - "{eu} tira o entulho e levanta o que sobrou de {objeto}. Falta muito, mas começou."
   estrutura_consertada:
     - "{eu} termina o conserto de {objeto}. Ficou melhor do que antes."
     - "{eu} dá a última martelada em {objeto} e limpa o suor da testa. Pronto."

@@ -99,6 +99,12 @@ STYLES = {
     "fog_off": "white",
     "director_event": "bold cyan",
     "tension": "dim",
+    # Fase 4
+    "creator_command": "bold white on dark_green",
+    "creator_order": "bold green",
+    "creator_voice": "bold magenta",
+    "stare": "italic white",
+    "apparition": "bold white on black",
 }
 
 LOG_LEVELS = {"debug": logging.DEBUG, "info": logging.INFO, "aviso": logging.WARNING, "erro": logging.ERROR}
